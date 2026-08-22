@@ -8,3 +8,5 @@ a=Analysis(["product_sorter_gui.py"],pathex=[],binaries=[],datas=datas+[(".env.e
 pyz=PYZ(a.pure)
 app_icon="assets/branding/product-sorter.icns" if sys.platform=="darwin" else "assets/branding/product-sorter.ico"
 exe=EXE(pyz,a.scripts,a.binaries,a.datas,name="ProductSorterPro",console=False,icon=app_icon)
+if sys.platform=="darwin":
+    app=BUNDLE(exe,name="ProductSorterPro.app",icon="assets/branding/product-sorter.icns",bundle_identifier="io.github.mhmdwaelanwr.product-sorter")
