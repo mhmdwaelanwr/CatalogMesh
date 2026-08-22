@@ -33,7 +33,7 @@ All notable project changes are documented here.
 
 - Added Python package metadata, console and GUI entry points, PyInstaller desktop packaging, Linux `.deb` packaging, and cross-platform brand icons.
 - Added automated build pipelines for Windows, Linux, and macOS, plus wheel and source distributions.
-- Added Windows EXE, Linux binary/DEB, and native macOS application-bundle packaging.
+- Added Windows x64 EXE, Linux x64 binary/DEB, and separate native macOS Apple Silicon (`arm64`) and Intel (`x86_64`) application bundles.
 - Added project roadmap, known limitations, security guidance, contributing guidance, and production verification checklist.
 
 ## 3.1.0-rc1
