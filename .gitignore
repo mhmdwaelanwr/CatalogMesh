@@ -1,0 +1,55 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.build-venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Builds and packages
+build/
+dist/
+*.spec.bak
+*.deb
+*.whl
+
+# Runtime data and generated outputs
+progress.sqlite3*
+run_history.log*
+classification_report.csv
+processing_status.csv
+completed_files.txt
+pending_files.txt
+error_report.csv
+api_usage.csv
+quality_score.txt
+backups/
+Needs_Review/
+Sorted_Products*/
+
+# User product/media/catalog files
+*.xlsx
+*.xls
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.heic
+*.tif
+*.tiff
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Product Sorter Pro
+Comment=AI product photo organizer
+Exec=@INSTALL_DIR@/.venv/bin/python @INSTALL_DIR@/product_sorter_gui.py
+Path=@INSTALL_DIR@
+Terminal=false
+Categories=Graphics;Utility;
