@@ -28,8 +28,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
 
       - uses: actions/setup-python@v5
         with:
@@ -52,9 +50,16 @@ jobs:
         if: runner.os == 'Linux'
         run: python -m build
 
-      - name: Build README demo GIF
+      - name: Verify README demo GIF
         if: runner.os == 'Linux' && github.event_name == 'pull_request'
-        run: python scripts/build_demo_gif.py
+        shell: bash
+        run: |
+          cp docs/demo.gif "$RUNNER_TEMP/demo-before.gif"
+          python scripts/build_demo_gif.py
+          cmp --silent "$RUNNER_TEMP/demo-before.gif" docs/demo.gif || {
+            echo "docs/demo.gif is out of date; run python scripts/build_demo_gif.py and commit it."
+            exit 1
+          }
 
       - name: Upload README demo GIF
         if: runner.os == 'Linux' && github.event_name == 'pull_request'
@@ -63,20 +68,6 @@ jobs:
           name: readme-demo
           path: docs/demo.gif
           if-no-files-found: error
-
-      - name: Commit README demo GIF
-        if: runner.os == 'Linux' && github.event_name == 'pull_request'
-        shell: bash
-        run: |
-          if [[ -z "$(git status --porcelain -- docs/demo.gif)" ]]; then
-            echo "README demo GIF is already up to date."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add docs/demo.gif
-            git commit -m "Generate README demo GIF"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
 
       - name: Build desktop application
         run: pyinstaller --clean --noconfirm product_sorter.spec
