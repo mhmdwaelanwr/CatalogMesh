@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from i18n import confirm_language, tr
+from model_catalog import default_model
 from professional import (VERSION, OperationLock, backup_progress, clear_failure,
     ensure_failure_schema, estimate_work, evaluate_report, export_failures,
     export_usage, migrate_database, record_failure, record_usage, rotate_log)
@@ -405,7 +406,7 @@ def parse_args(env_file: Path) -> argparse.Namespace:
                         help="Output folder; defaults beside source")
     parser.add_argument("--prices", type=Path, default=env_path("PRICES_FILE"),
                         help="Optional .xlsx product-price catalog")
-    parser.add_argument("--model", default=os.getenv("GEMINI_MODEL", "gemini-3.6-flash"))
+    parser.add_argument("--model", default=os.getenv("GEMINI_MODEL", default_model("gemini") or "gemini-3.6-flash"))
     parser.add_argument("--limit", type=int, default=os.getenv("PHOTO_LIMIT") or None,
                         help="Only analyze the first N photos")
     parser.add_argument("--batch-size", type=int, default=os.getenv("BATCH_SIZE", "6"), choices=range(3, 9))
