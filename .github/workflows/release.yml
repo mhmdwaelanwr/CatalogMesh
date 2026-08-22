@@ -100,6 +100,20 @@ jobs:
             macos-x64) file dist/ProductSorterPro.app/Contents/MacOS/ProductSorterPro | grep -q 'x86_64' ;;
           esac
 
+      - name: Verify macOS bundle version
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          EXPECTED_VERSION=$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          PLIST="dist/ProductSorterPro.app/Contents/Info.plist"
+          SHORT_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST")
+          BUNDLE_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PLIST")
+          echo "Expected version: $EXPECTED_VERSION"
+          echo "CFBundleShortVersionString: $SHORT_VERSION"
+          echo "CFBundleVersion: $BUNDLE_VERSION"
+          test "$SHORT_VERSION" = "$EXPECTED_VERSION"
+          test "$BUNDLE_VERSION" = "$EXPECTED_VERSION"
+
       - name: Package macOS application
         if: runner.os == 'macOS'
         run: ditto -c -k --sequesterRsrc --keepParent dist/ProductSorterPro.app dist/ProductSorterPro-${{ matrix.artifact }}.zip
