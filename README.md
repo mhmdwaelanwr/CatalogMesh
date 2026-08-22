@@ -92,7 +92,7 @@ work rather than starting over.
 The GUI and CLI use the same processing engine and progress database. The GUI is
 organized into four workspaces and supports persistent light and dark themes.
 
-![Product Sorter Pro — dark operation workspace](docs/screenshots/actual/dark-operation-setup.jpg)
+![Product Sorter Pro — complete light operation workspace](docs/screenshots/actual/hero-light-operation.jpg)
 
 ### Operation workspace
 
