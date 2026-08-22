@@ -53,3 +53,6 @@
 - Expanded the README with workflow, GUI, resume, model-selection, and
   troubleshooting guidance.
 - Added instant persistent dark/light mode switching to the desktop GUI.
+- Added a localized About workspace with version, developer, MIT license,
+  profile links, and one-click contact copying.
+- Added matching dark and light GUI previews to the README.
