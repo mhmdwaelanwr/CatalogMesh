@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from sorter_core import (
-    Photo, call_gemini, check_internet, choose_operation, connect_db, load_api_keys,
+    Photo, batch_already_processed, call_gemini, check_internet, choose_operation, connect_db, load_api_keys,
     format_duration, install_requirements, internet_quality, load_env_file,
     merge_observations, missing_requirements, normalize_response, progress_count,
     select_photo_sample, write_status_files,
@@ -76,6 +76,16 @@ class ApiKeyTests(unittest.TestCase):
 
 
 class RequirementsTests(unittest.TestCase):
+    def test_non_retryable_model_error_stops_immediately(self):
+        models = MagicMock()
+        models.generate_content.side_effect = RuntimeError("404 NOT_FOUND model retired")
+        pool = SimpleNamespace(client=SimpleNamespace(models=models), clients=[object()], index=0)
+        fake_types = SimpleNamespace(GenerateContentConfig=lambda **kwargs: kwargs)
+        with patch("sorter_core.types", fake_types):
+            with self.assertRaisesRegex(RuntimeError, "cannot be retried"):
+                call_gemini(pool, "retired", [], "", max_retries=3)
+        self.assertEqual(models.generate_content.call_count, 1)
+
     @patch("sorter_core.importlib.util.find_spec")
     def test_missing_requirements_are_reported(self, mocked_find_spec):
         mocked_find_spec.side_effect = lambda name: None if name == "PIL" else object()
@@ -158,6 +168,19 @@ class RequirementsTests(unittest.TestCase):
 
 
 class ProgressTests(unittest.TestCase):
+    def test_completed_batch_remains_cached_after_model_change(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            photos = [Photo(root / f"{i}.jpg", datetime.now()) for i in range(2)]
+            db = connect_db(root / "progress.sqlite3")
+            db.execute(
+                "INSERT INTO batches VALUES (?, ?, ?, ?, ?)",
+                ("old-key", "old-model", '["0.jpg","1.jpg"]',
+                 '{"items":[{"filename":"0.jpg"},{"filename":"1.jpg"}]}', datetime.now().isoformat()),
+            )
+            db.commit()
+            self.assertTrue(batch_already_processed(db, photos))
+
     @patch("builtins.input", return_value="2")
     def test_quick_sample_uses_configured_limit(self, mocked_input):
         photos = [Photo(Path(f"{i}.jpg"), datetime.now()) for i in range(100)]

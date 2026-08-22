@@ -80,13 +80,26 @@ def discover_models(provider: str, api_key: str, base_url: str = "") -> list[str
 
 
 def refresh_catalog(provider: str, api_key: str, base_url: str = "", path: Path = CATALOG_FILE) -> list[str]:
-    models = discover_models(provider, api_key, base_url)
+    return refresh_catalog_for_keys(provider, [api_key], base_url, path)
+
+
+def refresh_catalog_for_keys(provider: str, api_keys: list[str], base_url: str = "",
+                             path: Path = CATALOG_FILE) -> list[str]:
+    """Save only models shared by every configured key so rotation remains valid."""
+    unique_keys = list(dict.fromkeys(key.strip() for key in api_keys if key.strip()))
+    if not unique_keys:
+        raise ValueError("At least one API key is required to download model lists")
+    visible_sets = [set(discover_models(provider, key, base_url)) for key in unique_keys]
+    models = sorted(set.intersection(*visible_sets))
+    if not models:
+        raise RuntimeError(f"No {provider} model is available to every configured API key")
     data = load_catalog(path)
     entry = data.setdefault("providers", {}).setdefault(provider, {})
     previous_default = str(entry.get("default", ""))
     entry["models"] = models
     entry["default"] = previous_default if previous_default in models else models[0]
-    entry["source"] = "live_api"
+    entry["source"] = "live_api_common_keys"
+    entry["key_count_checked"] = len(unique_keys)
     entry["updated_at"] = datetime.now(timezone.utc).isoformat()
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -96,10 +109,10 @@ def refresh_catalog(provider: str, api_key: str, base_url: str = "", path: Path 
 
 def choose_from_list(provider: str, current: str, models: list[str]) -> str:
     ordered = list(models)
-    if current and current not in ordered:
-        ordered.insert(0, current)
     if not ordered:
         return current
+    if current and current not in ordered:
+        print(f"Saved model '{current}' is not shared by all configured keys; choose another model.")
     print(f"\nAvailable {provider.title()} models:")
     for index, model in enumerate(ordered, 1):
         marker = " (current)" if model == current else ""

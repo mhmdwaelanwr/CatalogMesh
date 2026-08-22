@@ -516,6 +516,12 @@ def progress_count(db: sqlite3.Connection, photos: list[Photo]) -> int:
     return len(known & processed_filenames(db))
 
 
+def batch_already_processed(db: sqlite3.Connection, photos: list[Photo]) -> bool:
+    """Allow safe resume even when the selected provider model has changed."""
+    completed = processed_filenames(db)
+    return bool(photos) and all(photo.path.name in completed for photo in photos)
+
+
 def write_status_files(output: Path, photos: list[Photo], db: sqlite3.Connection) -> None:
     """Maintain exact completed/pending lists after every saved batch."""
     completed = processed_filenames(db)
@@ -704,6 +710,7 @@ def call_gemini(pool: GeminiClientPool, model: str, photos: list[Photo], catalog
             return normalize_response(response.text, photos)
         except Exception as exc:
             message = str(exc)
+            upper_message = message.upper()
             quota = "429" in message or "RESOURCE_EXHAUSTED" in message.upper()
             if quota:
                 quota_failures += 1
@@ -722,6 +729,12 @@ def call_gemini(pool: GeminiClientPool, model: str, photos: list[Photo], catalog
                 message = tr("switch_key", current=pool.index + 1, total=len(pool.clients))
                 live_progress.note(message) if live_progress else print(message)
                 continue
+            terminal = any(marker in upper_message for marker in (
+                "400 ", "401 ", "403 ", "404 ", "INVALID_ARGUMENT", "UNAUTHENTICATED",
+                "PERMISSION_DENIED", "NOT_FOUND",
+            ))
+            if terminal:
+                raise RuntimeError(f"Gemini request cannot be retried with this model/configuration: {exc}") from exc
             if other_failures >= max_retries:
                 raise RuntimeError(
                     "Gemini quota/error persisted. Progress is saved; run the same command later. "
@@ -945,7 +958,7 @@ def main() -> int:
             if len(batch) < 2 and start:
                 break
             key = batch_key(batch, args.model)
-            if db.execute("SELECT 1 FROM batches WHERE batch_key=?", (key,)).fetchone():
+            if batch_already_processed(db, batch) or db.execute("SELECT 1 FROM batches WHERE batch_key=?", (key,)).fetchone():
                 print(f"Cached: {batch[0].path.name} … {batch[-1].path.name}")
                 continue
             if not require_internet(output):

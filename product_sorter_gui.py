@@ -10,7 +10,7 @@ except ImportError as exc:
     raise SystemExit("Tkinter is not installed. On Ubuntu/Debian: sudo apt install python3-tk") from exc
 
 from i18n import detect_language
-from model_catalog import default_model, models_for, refresh_catalog
+from model_catalog import default_model, models_for, refresh_catalog_for_keys
 from set_data import ENV_FILE, read_env, save_env
 
 ROOT=Path(__file__).resolve().parent
@@ -83,12 +83,13 @@ class App:
         for provider in ("GEMINI","OPENAI","ANTHROPIC"): v[f"{provider}_MODEL"]=self.vars[f"{provider}_MODEL"].get()
         return v
     def refresh_models(self,provider):
-        key=self.vars[f"{provider}_API_KEY_1"].get().strip()
-        if not key: messagebox.showerror("Models",f"Enter {provider} API key 1 first."); return
+        keys=[self.vars[f"{provider}_API_KEY_{index}"].get().strip() for index in range(1,5)]
+        keys=[key for key in keys if key]
+        if not keys: messagebox.showerror("Models",f"Enter at least one {provider} API key first."); return
         try:
-            models=refresh_catalog(provider.lower(),key,self.values.get("OPENAI_BASE_URL","")); self.model_boxes[provider]["values"]=models
+            models=refresh_catalog_for_keys(provider.lower(),keys,self.values.get("OPENAI_BASE_URL","")); self.model_boxes[provider]["values"]=models
             if self.vars[f"{provider}_MODEL"].get() not in models:self.vars[f"{provider}_MODEL"].set(models[0])
-            messagebox.showinfo("Models",f"Downloaded {len(models)} {provider} models.")
+            messagebox.showinfo("Models",f"Downloaded {len(models)} models shared by all {len(keys)} {provider} keys.")
         except Exception as exc: messagebox.showerror("Models",f"Could not download models: {exc}")
     def save(self): self.values=self.collect(); save_env(self.values); self.status.set(self.t("saved"))
     def command(self):
