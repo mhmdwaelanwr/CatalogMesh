@@ -48,3 +48,7 @@
 - Reworked progress rendering to keep one clean ANSI terminal line.
 - Prevented captured GUI, CI, and redirected output from flooding logs with
   per-second progress snapshots.
+- Redesigned the desktop GUI as a three-workspace dashboard with dark styling,
+  operation controls, live status, result metrics, and improved activity views.
+- Expanded the README with workflow, GUI, resume, model-selection, and
+  troubleshooting guidance.
