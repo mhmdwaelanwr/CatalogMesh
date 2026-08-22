@@ -39,6 +39,16 @@ class ReleaseMetadataTests(unittest.TestCase):
         self.assertIn("macos-x64", workflow)
         self.assertIn("ProductSorterPro-${{ matrix.artifact }}.zip", workflow)
 
+    def test_macos_bundle_version_comes_from_pyproject(self):
+        spec = (ROOT / "product_sorter.spec").read_text(encoding="utf-8")
+        workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+        self.assertIn("pyproject.toml", spec)
+        self.assertIn('"CFBundleShortVersionString": APP_VERSION', spec)
+        self.assertIn('"CFBundleVersion": APP_VERSION', spec)
+        self.assertIn("Verify macOS bundle version", workflow)
+        self.assertIn("CFBundleShortVersionString", workflow)
+        self.assertIn("CFBundleVersion", workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
