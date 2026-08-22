@@ -72,3 +72,4 @@
   binary/DEB, macOS app, wheel, and source distributions.
 - Added project roadmap and known-limitations documentation.
 - Added a native macOS application bundle to the PyInstaller specification.
+- Run cross-platform artifact builds automatically for pull requests and main.
