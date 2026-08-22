@@ -2,6 +2,7 @@ from __future__ import annotations
 import base64, json, os, urllib.request
 from pathlib import Path
 from typing import Any, Callable
+from model_catalog import default_model
 
 SUPPORTED_REST_PROVIDERS=("openai","anthropic")
 
@@ -66,7 +67,7 @@ def configured_rest_providers()->list[RestProviderPool]:
     for name in wanted:
         keys=load_provider_keys(name) if name in SUPPORTED_REST_PROVIDERS else []
         if name=="openai" and keys:
-            result.append(RestProviderPool("openai",keys,os.getenv("OPENAI_MODEL","gpt-4.1-mini"),os.getenv("OPENAI_BASE_URL","")))
+            result.append(RestProviderPool("openai",keys,os.getenv("OPENAI_MODEL",default_model("openai") or "gpt-4.1-mini"),os.getenv("OPENAI_BASE_URL","")))
         if name=="anthropic" and keys:
-            result.append(RestProviderPool("anthropic",keys,os.getenv("ANTHROPIC_MODEL","claude-sonnet-4-5")))
+            result.append(RestProviderPool("anthropic",keys,os.getenv("ANTHROPIC_MODEL",default_model("anthropic") or "claude-sonnet-4-5")))
     return result

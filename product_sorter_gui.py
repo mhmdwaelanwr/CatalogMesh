@@ -10,6 +10,7 @@ except ImportError as exc:
     raise SystemExit("Tkinter is not installed. On Ubuntu/Debian: sudo apt install python3-tk") from exc
 
 from i18n import detect_language
+from model_catalog import default_model, models_for, refresh_catalog
 from set_data import ENV_FILE, read_env, save_env
 
 ROOT=Path(__file__).resolve().parent
@@ -21,7 +22,7 @@ L={
 
 class App:
     def __init__(self,root:tk.Tk):
-        self.root=root; self.values=read_env(ENV_FILE); self.lang=self.values.get("APP_LANGUAGE") or detect_language(); self.lang=self.lang if self.lang in L else "en"; self.p=None; self.q=queue.Queue(); self.vars={}; self.table_signature=None; self.key_response_file=None
+        self.root=root; self.values=read_env(ENV_FILE); self.lang=self.values.get("APP_LANGUAGE") or detect_language(); self.lang=self.lang if self.lang in L else "en"; self.p=None; self.q=queue.Queue(); self.vars={}; self.model_boxes={}; self.table_signature=None; self.key_response_file=None
         root.geometry("1120x780"); root.minsize(900,650); self.build(); self.apply_language(); self.load_values(); root.after(100,self.poll); root.protocol("WM_DELETE_WINDOW",self.close)
     def t(self,k): return L[self.lang][k]
     def build(self):
@@ -41,6 +42,10 @@ class App:
             for i in range(1,5):
                 name=f"{provider}_API_KEY_{i}"; ttk.Label(page,text=f"API key {i}").grid(row=i-1,column=0,sticky="w",padx=4,pady=2)
                 self.vars[name]=tk.StringVar(); ttk.Entry(page,textvariable=self.vars[name],show="•").grid(row=i-1,column=1,sticky="ew",padx=4,pady=2)
+            model_name=f"{provider}_MODEL"; ttk.Label(page,text="Model").grid(row=4,column=0,sticky="w",padx=4,pady=2)
+            self.vars[model_name]=tk.StringVar(); box=ttk.Combobox(page,textvariable=self.vars[model_name],values=models_for(provider.lower()))
+            box.grid(row=4,column=1,sticky="ew",padx=4,pady=2); self.model_boxes[provider]=box
+            ttk.Button(page,text="Refresh models",command=lambda p=provider:self.refresh_models(p)).grid(row=4,column=2,padx=4,pady=2)
             page.columnconfigure(1,weight=1)
         actions=ttk.Frame(self.root,padding=(12,8)); actions.pack(fill="x")
         self.buttons={k:ttk.Button(actions,command=getattr(self,k)) for k in ("start","stop","resume","save","open")}
@@ -67,13 +72,24 @@ class App:
         for k in KEY_NAMES:
             legacy=k.rsplit("_",1)[0] if k.endswith("_1") else ""
             self.vars[k].set(self.values.get(k,"") or self.values.get(legacy,""))
+        for provider in ("GEMINI","OPENAI","ANTHROPIC"):
+            name=f"{provider}_MODEL"; self.vars[name].set(self.values.get(name,"") or default_model(provider.lower()))
     def browse(self,key):
         value=filedialog.askopenfilename() if key=="prices" else filedialog.askdirectory()
         if value:self.vars[key].set(value)
     def collect(self):
         v=dict(self.values); v.update({"APP_LANGUAGE":self.lang,"PRODUCT_SOURCE":self.vars["source"].get(),"PRODUCT_OUTPUT":self.vars["output"].get(),"PRICES_FILE":self.vars["prices"].get(),"AI_PROVIDERS":self.vars["providers"].get() or "gemini","PHOTO_LIMIT":self.vars["sample"].get()})
         for k in KEY_NAMES: v[k]=self.vars[k].get()
+        for provider in ("GEMINI","OPENAI","ANTHROPIC"): v[f"{provider}_MODEL"]=self.vars[f"{provider}_MODEL"].get()
         return v
+    def refresh_models(self,provider):
+        key=self.vars[f"{provider}_API_KEY_1"].get().strip()
+        if not key: messagebox.showerror("Models",f"Enter {provider} API key 1 first."); return
+        try:
+            models=refresh_catalog(provider.lower(),key,self.values.get("OPENAI_BASE_URL","")); self.model_boxes[provider]["values"]=models
+            if self.vars[f"{provider}_MODEL"].get() not in models:self.vars[f"{provider}_MODEL"].set(models[0])
+            messagebox.showinfo("Models",f"Downloaded {len(models)} {provider} models.")
+        except Exception as exc: messagebox.showerror("Models",f"Could not download models: {exc}")
     def save(self): self.values=self.collect(); save_env(self.values); self.status.set(self.t("saved"))
     def command(self):
         cmd=[sys.executable,str(ROOT/"product_sorter.py"),"--non-interactive","--source",self.vars["source"].get(),"--output",self.vars["output"].get()]

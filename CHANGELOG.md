@@ -1,6 +1,7 @@
 # Changelog
 
 ## 3.1.0-rc1
+- إضافة `provider_models.json` واكتشاف حي للموديلات المتاحة لكل مفتاح مع اختيارها من CLI وGUI.
 - تحديث موديل Gemini الافتراضي إلى `gemini-3.6-flash` وقبول استجابة JSON كقائمة مباشرة أو كائن `items`.
 - دعم 1–4 مفاتيح مستقلة لكل من Gemini وOpenAI وAnthropic.
 - تدوير مفاتيح OpenAI وAnthropic عند الكوتا أو Rate Limit مثل Gemini.

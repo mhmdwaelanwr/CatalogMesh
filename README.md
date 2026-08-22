@@ -79,6 +79,8 @@ ANTHROPIC_API_KEY_1=your_key
 
 Providers are attempted in the listed order. Keys rotate only for quota and rate-limit failures; connectivity and invalid-request errors are handled separately.
 
+The setup wizard downloads every model visible to each configured provider key and displays a numbered choice. The GUI provides the same selection through a model dropdown and **Refresh models** button. `provider_models.json` is the offline fallback catalog and is refreshed without storing API keys.
+
 ## Outputs
 
 - Organized product/category folders and `Needs_Review/`.

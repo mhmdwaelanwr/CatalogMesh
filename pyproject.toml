@@ -16,4 +16,7 @@ product-sorter-setup = "set_data:main"
 [project.gui-scripts]
 product-sorter-gui = "product_sorter_gui:main"
 [tool.setuptools]
-py-modules = ["sorter_core","product_sorter","product_sorter_gui","set_data","providers","professional","i18n","secrets_store"]
+py-modules = ["sorter_core","product_sorter","product_sorter_gui","set_data","providers","professional","i18n","secrets_store","model_catalog"]
+
+[tool.setuptools.data-files]
+"." = ["provider_models.json"]

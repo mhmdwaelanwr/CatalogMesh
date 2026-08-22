@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from i18n import confirm_language, get_language, tr
+from model_catalog import choose_from_list, default_model, models_for, refresh_catalog
 from secrets_store import SECRET_NAMES, save as save_secrets
 
 
@@ -142,10 +143,21 @@ def collect_settings(current: dict[str, str]) -> dict[str, str]:
             legacy=current.get(f"{provider.upper()}_API_KEY","") if index==1 else ""
             values[name] = ask_key(index, current.get(name, "") or legacy, required=index == 1)
     if "openai" in selected:
-        values["OPENAI_MODEL"] = ask_text("OpenAI model", current.get("OPENAI_MODEL", "gpt-4.1-mini"), True)
         values["OPENAI_BASE_URL"] = ask_text("OpenAI-compatible base URL (optional)", current.get("OPENAI_BASE_URL", ""))
-    if "anthropic" in selected:
-        values["ANTHROPIC_MODEL"] = ask_text("Anthropic model", current.get("ANTHROPIC_MODEL", "claude-sonnet-4-5"), True)
+
+    for provider in ("gemini", "openai", "anthropic"):
+        if provider not in selected:
+            continue
+        key = values.get(f"{provider.upper()}_API_KEY_1", "")
+        try:
+            available = refresh_catalog(provider, key, values.get("OPENAI_BASE_URL", ""))
+            print(f"Downloaded {len(available)} models available to your {provider.title()} key.")
+        except Exception as exc:
+            available = models_for(provider)
+            print(f"Could not refresh {provider} models; using the saved JSON catalog. Reason: {exc}")
+        env_name = f"{provider.upper()}_MODEL"
+        fallback = default_model(provider) or (available[0] if available else current.get(env_name, ""))
+        values[env_name] = choose_from_list(provider, current.get(env_name, fallback), available)
 
     source = ask_text(tr("source_path"), current.get("PRODUCT_SOURCE", ""), True)
     values["PRODUCT_SOURCE"] = str(Path(source).expanduser())
@@ -155,9 +167,6 @@ def collect_settings(current: dict[str, str]) -> dict[str, str]:
     values["PRODUCT_OUTPUT"] = ask_text(tr("output_path"), default_output, True)
     values["PRICES_FILE"] = ask_text(
         tr("prices_path"), current.get("PRICES_FILE", "")
-    )
-    values["GEMINI_MODEL"] = ask_text(
-        tr("model"), current.get("GEMINI_MODEL", "gemini-3.6-flash"), True
     )
     values["BATCH_SIZE"] = ask_number(
         tr("batch_size"), current.get("BATCH_SIZE", "6"), 3, 8, True
