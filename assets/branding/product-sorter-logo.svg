@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Product Sorter — Smart Photo Stack</title>
+  <desc id="desc">Four photo tiles move from a loose stack into an organized grid, with a classification tag and central analysis sparkle.</desc>
+  <!-- 112 px safe area; transparent master canvas -->
+  <g id="mark" stroke-linejoin="round">
+    <!-- incoming photo stack -->
+    <rect x="116" y="190" width="330" height="310" rx="64" fill="#55D6FF" transform="rotate(-7 281 345)"/>
+    <rect x="144" y="158" width="330" height="310" rx="64" fill="#4F8CFF" transform="rotate(5 309 313)"/>
+    <path d="M155 399 260 284a24 24 0 0 1 36 0l72 80 47-50a22 22 0 0 1 34 1l34 43v47a63 63 0 0 1-63 63H207a63 63 0 0 1-52-27Z" fill="#0B1220" transform="rotate(5 309 313)"/>
+    <circle cx="383" cy="237" r="28" fill="#FFF"/>
+
+    <!-- organized top-right tile -->
+    <rect x="550" y="176" width="350" height="310" rx="64" fill="#55D6FF"/>
+    <path d="M550 400 659 286a25 25 0 0 1 37 0l78 83 48-51a22 22 0 0 1 34 1l44 55v48a64 64 0 0 1-64 64H614a64 64 0 0 1-64-64Z" fill="#0B1220"/>
+    <circle cx="807" cy="258" r="28" fill="#FFF"/>
+    <!-- classification tag, inset and reduced -->
+    <path d="M808 176h48l44 44v55a22 22 0 0 1-22 22h-70a22 22 0 0 1-22-22v-77a22 22 0 0 1 22-22Z" fill="#21C98B" stroke="#FFF" stroke-width="14"/>
+    <circle cx="827" cy="214" r="10" fill="#FFF"/>
+
+    <!-- incoming lower photo stack -->
+    <rect x="124" y="552" width="330" height="310" rx="64" fill="#55D6FF" transform="rotate(-5 289 707)"/>
+    <rect x="151" y="525" width="330" height="310" rx="64" fill="#21C98B" transform="rotate(3 316 680)"/>
+    <path d="M157 759 263 647a24 24 0 0 1 36 0l72 77 48-49a22 22 0 0 1 33 1l31 39v52a64 64 0 0 1-64 64H215a64 64 0 0 1-58-37Z" fill="#0B1220" transform="rotate(3 316 680)"/>
+    <circle cx="386" cy="608" r="28" fill="#FFF"/>
+
+    <!-- organized lower-right tile -->
+    <rect x="550" y="540" width="350" height="310" rx="64" fill="#4F8CFF"/>
+    <path d="M550 764 661 649a25 25 0 0 1 37 0l76 80 49-50a22 22 0 0 1 34 1l43 53v53a64 64 0 0 1-64 64H614a64 64 0 0 1-64-64Z" fill="#0B1220"/>
+    <circle cx="807" cy="623" r="28" fill="#FFF"/>
+
+    <!-- smart-analysis sparkle -->
+    <path d="M512 446c11 38 30 57 68 68-38 11-57 30-68 68-11-38-30-57-68-68 38-11 57-30 68-68Z" fill="#FFF" stroke="#0B1220" stroke-width="12"/>
+  </g>
+</svg>

@@ -15,6 +15,10 @@ from professional import VERSION
 from set_data import ENV_FILE, read_env, save_env
 
 ROOT=Path(__file__).resolve().parent
+def branding_file(name:str) -> Path:
+    candidates=(ROOT/"assets"/"branding"/name,Path(sys.prefix)/"assets"/"branding"/name)
+    return next((path for path in candidates if path.is_file()),candidates[0])
+
 KEY_NAMES=[f"{provider}_API_KEY_{i}" for provider in ("GEMINI","OPENAI","ANTHROPIC") for i in range(1,5)]
 L={
 "en":{"title":"Product Sorter Pro","subtitle":"AI workspace for clean, resumable product catalogs","workspace":"WORKSPACE","source":"Photos folder","output":"Output folder","prices":"Price file (optional)","providers":"Provider priority","sample":"Photo count (blank = all)","start":"Start sorting","stop":"Stop safely","resume":"Resume","save":"Save settings","open":"Open output","progress":"CURRENT OPERATION","completed":"Completed","pending":"Pending","failed":"Failed","logs":"Live activity","status":"Status","ready":"Ready to process","saved":"Settings saved","running":"Processing photos","stopped":"Stop requested","settings":"Operation setup","credentials":"Models & API keys","results":"Results & activity","clear":"Clear log","model":"Vision model","refresh":"Refresh models","file":"Filename","state":"Status","light":"Light mode","dark":"Dark mode","about":"About","developer":"Developed and maintained by Mohamed Anwar","open_source":"Open-source software · MIT License","copy_contact":"Copy contact details","copied":"Contact details copied"},
@@ -24,9 +28,16 @@ L={
 class App:
     def __init__(self,root:tk.Tk):
         self.root=root; self.values=read_env(ENV_FILE); self.lang=self.values.get("APP_LANGUAGE") or detect_language(); self.lang=self.lang if self.lang in L else "en"; self.theme=self.values.get("APP_THEME","dark"); self.theme=self.theme if self.theme in {"dark","light"} else "dark"; self.p=None; self.q=queue.Queue(); self.vars={}; self.model_boxes={}; self.table_signature=None; self.key_response_file=None
-        root.geometry("1240x860"); root.minsize(980,700); self.configure_styles(); self.build(); self.apply_language(); self.load_values(); self.set_running(False); root.after(100,self.poll); root.protocol("WM_DELETE_WINDOW",self.close)
+        root.geometry("1240x860"); root.minsize(980,700); self.load_window_icon(); self.configure_styles(); self.build(); self.apply_language(); self.load_values(); self.set_running(False); root.after(100,self.poll); root.protocol("WM_DELETE_WINDOW",self.close)
         root.bind("<Control-Return>",lambda event:self.start()); root.bind("<F5>",lambda event:self.refresh_tables())
     def t(self,k): return L[self.lang][k]
+    def load_window_icon(self):
+        self.window_icon=None
+        try:
+            self.window_icon=tk.PhotoImage(file=str(branding_file("product-sorter-64.png")))
+            self.root.iconphoto(True,self.window_icon)
+        except (tk.TclError,OSError):
+            pass
     def configure_styles(self):
         palettes={
             "dark":{"bg":"#0b1220","panel":"#111c2e","panel2":"#162338","field":"#0d1728","log":"#09111f","text":"#e8eef8","muted":"#94a3b8","accent":"#4f8cff","accent_hover":"#6aa0ff","soft_hover":"#213552","green":"#21c98b","red":"#ff647c","border":"#26364f","trough":"#1d2b42"},
@@ -35,7 +46,7 @@ class App:
         self.colors=palettes[self.theme]
         self.root.configure(bg=self.colors["bg"])
         style=ttk.Style(self.root); style.theme_use("clam" if "clam" in style.theme_names() else style.theme_use())
-        style.configure("App.TFrame",background=self.colors["bg"]); style.configure("Panel.TFrame",background=self.colors["panel"]); style.configure("Card.TFrame",background=self.colors["panel2"])
+        style.configure("App.TFrame",background=self.colors["bg"]); style.configure("Panel.TFrame",background=self.colors["panel"]); style.configure("Card.TFrame",background=self.colors["panel2"]); style.configure("AppImage.TLabel",background=self.colors["bg"]); style.configure("CardImage.TLabel",background=self.colors["panel2"])
         style.configure("Hero.TLabel",background=self.colors["bg"],foreground=self.colors["text"],font=("Sans",22,"bold")); style.configure("Subtitle.TLabel",background=self.colors["bg"],foreground=self.colors["muted"],font=("Sans",10))
         style.configure("Section.TLabel",background=self.colors["panel"],foreground=self.colors["muted"],font=("Sans",9,"bold")); style.configure("Panel.TLabel",background=self.colors["panel"],foreground=self.colors["text"])
         style.configure("Metric.TLabel",background=self.colors["panel2"],foreground=self.colors["text"],font=("Sans",20,"bold")); style.configure("MetricName.TLabel",background=self.colors["panel2"],foreground=self.colors["muted"])
@@ -48,6 +59,12 @@ class App:
     def build(self):
         shell=ttk.Frame(self.root,style="App.TFrame",padding=(24,18)); shell.pack(fill="both",expand=True)
         self.header=ttk.Frame(shell,style="App.TFrame"); self.header.pack(fill="x",pady=(0,16))
+        self.header_logo=None
+        try:
+            self.header_logo=tk.PhotoImage(file=str(branding_file("product-sorter-48.png")))
+            ttk.Label(self.header,image=self.header_logo,style="AppImage.TLabel").pack(side="left",padx=(0,12))
+        except (tk.TclError,OSError):
+            pass
         brand=ttk.Frame(self.header,style="App.TFrame"); brand.pack(side="left")
         self.title=ttk.Label(brand,style="Hero.TLabel"); self.title.pack(anchor="w")
         self.subtitle=ttk.Label(brand,style="Subtitle.TLabel"); self.subtitle.pack(anchor="w",pady=(2,0))
@@ -93,6 +110,12 @@ class App:
         log_header=ttk.Frame(log_frame,style="Panel.TFrame"); log_header.pack(fill="x",pady=(10,5)); self.log_label=ttk.Label(log_header,style="Section.TLabel"); self.log_label.pack(side="left"); self.clear_button=ttk.Button(log_header,style="Soft.TButton",command=self.clear_log); self.clear_button.pack(side="right")
         self.log=tk.Text(log_frame,height=9,wrap="word",state="disabled",bg=self.colors["log"],fg=self.colors["text"],insertbackground=self.colors["text"],selectbackground=self.colors["accent"],relief="flat",padx=10,pady=8,font=("Monospace",9)); self.log.pack(fill="both",expand=True)
         about_card=ttk.Frame(about_page,style="Card.TFrame",padding=24); about_card.pack(fill="both",expand=True)
+        self.about_logo=None
+        try:
+            self.about_logo=tk.PhotoImage(file=str(branding_file("product-sorter-128.png")))
+            ttk.Label(about_card,image=self.about_logo,style="CardImage.TLabel").pack(anchor="w",pady=(0,14))
+        except (tk.TclError,OSError):
+            pass
         ttk.Label(about_card,text="AI PRODUCT PHOTO SORTER",style="MetricName.TLabel").pack(anchor="w")
         ttk.Label(about_card,text="Product Sorter Pro",style="Metric.TLabel").pack(anchor="w",pady=(6,0))
         self.about_version=ttk.Label(about_card,style="MetricName.TLabel"); self.about_version.pack(anchor="w",pady=(3,18))

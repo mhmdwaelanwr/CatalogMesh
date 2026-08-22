@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Optical small-size variant: no internal suns; thicker gaps and tag -->
+  <g stroke-linejoin="round">
+    <rect x="128" y="184" width="342" height="316" rx="72" fill="#55D6FF" transform="rotate(-6 299 342)"/>
+    <rect x="158" y="164" width="330" height="304" rx="70" fill="#4F8CFF" transform="rotate(4 323 316)"/>
+    <path d="M164 394 285 274l96 101 67-70 40 52v42a69 69 0 0 1-69 69H227a69 69 0 0 1-63-41Z" fill="#0B1220" transform="rotate(4 323 316)"/>
+    <rect x="548" y="180" width="352" height="308" rx="70" fill="#55D6FF"/>
+    <path d="m548 401 122-124 103 105 75-77 52 63v50a70 70 0 0 1-70 70H618a70 70 0 0 1-70-70Z" fill="#0B1220"/>
+    <path d="M824 180h40l36 36v61a20 20 0 0 1-20 20h-56a20 20 0 0 1-20-20v-77a20 20 0 0 1 20-20Z" fill="#21C98B"/>
+    <rect x="135" y="550" width="342" height="316" rx="72" fill="#55D6FF" transform="rotate(-4 306 708)"/>
+    <rect x="160" y="532" width="330" height="304" rx="70" fill="#21C98B" transform="rotate(3 325 684)"/>
+    <path d="m166 763 121-121 96 99 68-69 39 51v44a69 69 0 0 1-69 69H229a69 69 0 0 1-63-41Z" fill="#0B1220" transform="rotate(3 325 684)"/>
+    <rect x="548" y="536" width="352" height="316" rx="70" fill="#4F8CFF"/>
+    <path d="m548 765 122-124 103 105 75-77 52 63v50a70 70 0 0 1-70 70H618a70 70 0 0 1-70-70Z" fill="#0B1220"/>
+    <path d="M512 455c10 32 27 49 59 59-32 10-49 27-59 59-10-32-27-49-59-59 32-10 49-27 59-59Z" fill="#FFF" stroke="#0B1220" stroke-width="18"/>
+  </g>
+</svg>

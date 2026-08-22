@@ -62,3 +62,9 @@
 - Rebuilt the README with a project-style hero, status badges, navigation,
   capability matrix, safety guidance, and documented output structure.
 - Removed the standalone Arabic README section while retaining multilingual app support.
+- Adopted the Smart Photo Stack visual identity across the GUI header, About
+  workspace, window icon, README, PyInstaller builds, Python package data, and
+  Linux desktop/package integration.
+- Added transparent, dark, light, SVG, PNG size variants, Windows ICO, and macOS
+  ICNS production branding assets.
+- Expanded package keywords for ecosystem and repository discovery.

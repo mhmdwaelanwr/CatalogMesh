@@ -7,7 +7,7 @@ version = "3.1.0rc1"
 description = "Multilingual AI product photo sorter with CLI and Tkinter GUI"
 readme = "README.md"
 license = {file = "LICENSE"}
-keywords = ["product-images", "computer-vision", "gemini", "openai", "anthropic", "tkinter"]
+keywords = ["ai", "computer-vision", "product-photography", "photo-organizer", "image-classification", "product-catalog", "gemini", "openai", "anthropic", "multi-provider", "tkinter", "desktop-app", "cli", "api-key-rotation", "open-source"]
 requires-python = ">=3.10"
 dependencies = ["Pillow>=10,<13", "google-genai>=1,<2", "openpyxl>=3.1,<4", "keyring>=25,<27"]
 [project.scripts]
@@ -20,3 +20,4 @@ py-modules = ["sorter_core","product_sorter","product_sorter_gui","set_data","pr
 
 [tool.setuptools.data-files]
 "." = ["provider_models.json"]
+"assets/branding" = ["assets/branding/product-sorter-48.png", "assets/branding/product-sorter-64.png", "assets/branding/product-sorter-128.png", "assets/branding/product-sorter-256.png"]
