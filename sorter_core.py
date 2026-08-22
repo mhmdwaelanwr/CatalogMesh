@@ -222,11 +222,19 @@ class LiveProgress:
         self._stop = threading.Event()
         self._paused = threading.Event()
         self._thread: threading.Thread | None = None
+        self._output_lock = threading.Lock()
+        # Carriage returns are only suitable for a real terminal. When stdout is
+        # captured by a GUI, log file, CI, or copy/paste session, repeated live
+        # updates otherwise become hundreds of concatenated progress bars.
+        self._interactive = bool(getattr(sys.stdout, "isatty", lambda: False)())
 
     def start(self) -> None:
         self.batch_started = time.monotonic()
         self._stop.clear()
         self._paused.clear()
+        if not self._interactive:
+            return
+        self._render(0)
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
 
@@ -238,8 +246,7 @@ class LiveProgress:
         self._stop.set()
         if self._thread:
             self._thread.join(timeout=2)
-        self._render(0, final=True)
-        print()
+        self._render(0, final=True, newline=True)
 
     def stop(self) -> None:
         self._stop.set()
@@ -253,6 +260,8 @@ class LiveProgress:
 
     def resume(self) -> None:
         self._paused.clear()
+        if self._interactive and not self._stop.is_set():
+            self._render(0)
 
     def note(self, message: str) -> None:
         self.pause()
@@ -274,7 +283,7 @@ class LiveProgress:
         estimate = seconds_per_photo * (self.total - self.completed)
         return max(0, estimate - (time.monotonic() - self.batch_started))
 
-    def _render(self, tick: int, final: bool = False) -> None:
+    def _render(self, tick: int, final: bool = False, newline: bool = False) -> None:
         percent = 100 if not self.total else min(100, int(self.completed * 100 / self.total))
         width = 24
         filled = min(width, int(width * percent / 100))
@@ -287,11 +296,24 @@ class LiveProgress:
             f"{spinner} [{bar}] {percent:3d}% | {self.completed}/{self.total} | "
             f"{tr('progress_remaining', count=remaining)} | {tr('progress_eta', eta=eta_text)}"
         )
-        print(f"\r{text:<115}", end="", flush=True)
+        with self._output_lock:
+            if self._interactive:
+                # Return to column zero and erase the complete terminal row so
+                # every refresh replaces the previous one, regardless of width.
+                sys.stdout.write(f"\r\x1b[2K{text}")
+                if newline:
+                    sys.stdout.write("\n")
+                sys.stdout.flush()
+            elif newline:
+                # Captured output must stay readable: one final line per batch.
+                print(text, flush=True)
 
-    @staticmethod
-    def _clear_line() -> None:
-        print("\r" + " " * 120 + "\r", end="", flush=True)
+    def _clear_line(self) -> None:
+        if not self._interactive:
+            return
+        with self._output_lock:
+            sys.stdout.write("\r\x1b[2K")
+            sys.stdout.flush()
 
 
 def load_env_file(path: Path) -> bool:
