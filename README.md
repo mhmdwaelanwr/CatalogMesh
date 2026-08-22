@@ -90,7 +90,11 @@ work rather than starting over.
 ## Desktop GUI
 
 The GUI and CLI use the same processing engine and progress database. The GUI is
-organized into three workspaces:
+organized into four workspaces:
+
+| Dark mode preview | Light mode preview |
+|---|---|
+| ![Product Sorter dark-mode UI preview](docs/screenshots/gui-dark.svg) | ![Product Sorter light-mode UI preview](docs/screenshots/gui-light.svg) |
 
 1. **Operation setup** — choose source/output folders, optional price workbook,
    provider priority, and an optional sample size.
@@ -98,6 +102,8 @@ organized into three workspaces:
    the model list shared by those keys.
 3. **Results & activity** — follow the current operation, inspect completed,
    pending, and failed counts, read logs, and open the output directory.
+4. **About** — project version, developer information, open-source license, and
+   direct links to the maintainer's profiles.
 
 Use the sun/moon button in the header to switch between dark and light mode.
 The selection is saved automatically in `.env` as `APP_THEME`.
@@ -176,6 +182,17 @@ See [PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md) for checks requiring real
 ## Contributing and security
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Report vulnerabilities according to [SECURITY.md](SECURITY.md). Never include API keys or private product images in an issue.
+
+## Developer
+
+Developed and maintained by **Mohamed Anwar**.
+
+- [GitHub](https://github.com/mhmdwaelanwr)
+- [LinkedIn](https://linkedin.com/in/mhmdwaelanwr)
+- [X (Twitter)](https://x.com/mhmdwaelanwr)
+- [Facebook](https://facebook.com/mhmdwaelanwr)
+- [Instagram](https://instagram.com/mhmdwaelanwr)
+- [Telegram DM](https://t.me/Mhmdwaelanwer)
 
 ## License
 
