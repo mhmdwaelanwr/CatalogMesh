@@ -20,11 +20,17 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            label: linux
+            label: linux-x64
+            artifact: linux-x64
           - os: windows-latest
-            label: windows
-          - os: macos-latest
-            label: macos
+            label: windows-x64
+            artifact: windows-x64
+          - os: macos-15
+            label: macos-arm64
+            artifact: macos-arm64
+          - os: macos-15-intel
+            label: macos-x64
+            artifact: macos-x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -84,11 +90,19 @@ jobs:
           tar -C dist -czf dist/ProductSorterPro-linux-x64.tar.gz ProductSorterPro
           bash build_deb.sh
 
-      - name: Package macOS application
+      - name: Verify macOS architecture
         if: runner.os == 'macOS'
         run: |
           test -d dist/ProductSorterPro.app
-          ditto -c -k --sequesterRsrc --keepParent dist/ProductSorterPro.app dist/ProductSorterPro-macos.zip
+          file dist/ProductSorterPro.app/Contents/MacOS/ProductSorterPro
+          case "${{ matrix.artifact }}" in
+            macos-arm64) file dist/ProductSorterPro.app/Contents/MacOS/ProductSorterPro | grep -q 'arm64' ;;
+            macos-x64) file dist/ProductSorterPro.app/Contents/MacOS/ProductSorterPro | grep -q 'x86_64' ;;
+          esac
+
+      - name: Package macOS application
+        if: runner.os == 'macOS'
+        run: ditto -c -k --sequesterRsrc --keepParent dist/ProductSorterPro.app dist/ProductSorterPro-${{ matrix.artifact }}.zip
 
       - uses: actions/upload-artifact@v4
         if: runner.os == 'Windows'
@@ -118,8 +132,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: runner.os == 'macOS'
         with:
-          name: ProductSorterPro-macos
-          path: dist/ProductSorterPro-macos.zip
+          name: ProductSorterPro-${{ matrix.artifact }}
+          path: dist/ProductSorterPro-${{ matrix.artifact }}.zip
           if-no-files-found: error
 
   release:
