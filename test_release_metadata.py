@@ -32,6 +32,13 @@ class ReleaseMetadataTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertTrue((branding / name).is_file(), name)
 
+    def test_release_builds_both_macos_architectures(self):
+        workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+        self.assertIn("macos-15-intel", workflow)
+        self.assertIn("macos-arm64", workflow)
+        self.assertIn("macos-x64", workflow)
+        self.assertIn("ProductSorterPro-${{ matrix.artifact }}.zip", workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
