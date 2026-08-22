@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/branding/product-sorter-logo.svg" width="150" alt="AI Product Photo Sorter logo">
+
 # AI Product Photo Sorter
 
 ### Turn chronological product-shoot photos into an organized, reviewable catalog.
@@ -36,6 +38,17 @@ source files.
 | **Multilingual UI** | Arabic, English, and Chinese with device-language detection. |
 | **Quality controls** | Confidence review folders, CSV reports, usage tracking, internet/latency checks, and failure exports. |
 | **Cross-platform delivery** | Linux, Windows, and macOS launchers plus PyInstaller packaging support. |
+
+## Brand assets
+
+The official Smart Photo Stack identity is available in production-ready forms:
+
+- Transparent and themed PNG artwork from `16×16` through `1024×1024`.
+- Scalable SVG source plus a simplified small-size SVG.
+- Multi-resolution Windows `.ico` and macOS `.icns` application icons.
+- Dedicated dark and light presentation variants.
+
+All official files live in [`assets/branding`](assets/branding).
 
 ## Safety by design
 
