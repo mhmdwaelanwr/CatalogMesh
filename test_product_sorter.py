@@ -1,4 +1,5 @@
 import os
+import io
 import sys
 import tempfile
 import unittest
@@ -6,14 +7,45 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
+from contextlib import redirect_stdout
 from unittest.mock import MagicMock, patch
 
 from sorter_core import (
-    Photo, batch_already_processed, call_gemini, check_internet, choose_operation, connect_db, load_api_keys,
+    LiveProgress, Photo, batch_already_processed, call_gemini, check_internet, choose_operation, connect_db, load_api_keys,
     format_duration, install_requirements, internet_quality, load_env_file,
     merge_observations, missing_requirements, normalize_response, progress_count,
     select_photo_sample, write_status_files,
 )
+
+
+class ProgressDisplayTests(unittest.TestCase):
+    def test_captured_output_prints_only_one_final_snapshot(self):
+        output = io.StringIO()
+        with redirect_stdout(output):
+            progress = LiveProgress(total=10, completed=2)
+            progress.start()
+            self.assertIsNone(progress._thread)
+            progress.finish(5)
+
+        rendered = output.getvalue()
+        self.assertEqual(rendered.count("%"), 1)
+        self.assertNotIn("\r", rendered)
+        self.assertIn("5/10", rendered)
+
+    def test_interactive_output_erases_and_reuses_current_line(self):
+        class InteractiveBuffer(io.StringIO):
+            def isatty(self):
+                return True
+
+        output = InteractiveBuffer()
+        with redirect_stdout(output):
+            progress = LiveProgress(total=10, completed=2)
+            progress._render(0)
+            progress._render(1)
+
+        rendered = output.getvalue()
+        self.assertEqual(rendered.count("\r\x1b[2K"), 2)
+        self.assertNotIn("\n", rendered)
 
 
 class MergeTests(unittest.TestCase):
