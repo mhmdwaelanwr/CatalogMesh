@@ -44,11 +44,23 @@ jobs:
         run: python -m unittest discover -v
 
       - name: Validate Python sources
-        run: python -m py_compile sorter_core.py product_sorter.py product_sorter_gui.py
+        run: python -m py_compile sorter_core.py product_sorter.py product_sorter_gui.py scripts/build_demo_gif.py
 
       - name: Build Python distributions
         if: runner.os == 'Linux'
         run: python -m build
+
+      - name: Build README demo GIF
+        if: runner.os == 'Linux' && github.event_name == 'pull_request'
+        run: python scripts/build_demo_gif.py
+
+      - name: Upload README demo GIF
+        if: runner.os == 'Linux' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: readme-demo
+          path: docs/demo.gif
+          if-no-files-found: error
 
       - name: Build desktop application
         run: pyinstaller --clean --noconfirm product_sorter.spec
