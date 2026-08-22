@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")"
-version="3.1.0~rc1"; deb_work="$(mktemp -d)"; root="$deb_work/product-sorter-pro_${version}_all"
+
+version="$(sed -n 's/^version = "\([^"]*\)"/\1/p' pyproject.toml | head -n1)"
+if [[ -z "$version" ]]; then
+  echo "Unable to determine version from pyproject.toml" >&2
+  exit 1
+fi
+
+deb_work="$(mktemp -d)"
+trap 'rm -rf "$deb_work"' EXIT
+root="$deb_work/product-sorter-pro_${version}_all"
 mkdir -p "$root/DEBIAN" "$root/opt/product-sorter-pro" "$root/usr/bin" "$root/usr/share/applications" "$root/usr/share/icons/hicolor/256x256/apps"
 cp -a . "$root/opt/product-sorter-pro/"
 find "$root/opt/product-sorter-pro" -type d \( -name .git -o -name __pycache__ -o -name .build-venv -o -name build -o -name dist \) -prune -exec rm -rf {} +
@@ -11,7 +20,8 @@ Package: product-sorter-pro
 Version: $version
 Architecture: all
 Depends: python3 (>= 3.10), python3-venv, python3-tk
-Maintainer: Product Sorter Pro
+Maintainer: Mohamed Anwar
+Homepage: https://github.com/mhmdwaelanwr/ai-product-photo-sorter
 Description: Multilingual AI product photo sorter
 EOF
 cat > "$root/usr/bin/product-sorter-pro" <<'EOF'

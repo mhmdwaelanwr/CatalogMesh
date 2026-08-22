@@ -1,20 +1,41 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
+
 [project]
 name = "ai-product-photo-sorter"
-version = "3.1.0rc1"
+version = "3.1.0"
 description = "Multilingual AI product photo sorter with CLI and Tkinter GUI"
 readme = "README.md"
 license = {file = "LICENSE"}
+authors = [{name = "Mohamed Anwar"}]
 keywords = ["ai", "computer-vision", "product-photography", "photo-organizer", "image-classification", "product-catalog", "gemini", "openai", "anthropic", "multi-provider", "tkinter", "desktop-app", "cli", "api-key-rotation", "open-source"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Operating System :: OS Independent",
+  "Topic :: Multimedia :: Graphics",
+]
 requires-python = ">=3.10"
 dependencies = ["Pillow>=10,<13", "google-genai>=1,<2", "openpyxl>=3.1,<4", "keyring>=25,<27"]
+
+[project.urls]
+Homepage = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter"
+Repository = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter"
+Issues = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter/issues"
+Changelog = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/CHANGELOG.md"
+
 [project.scripts]
 product-sorter = "sorter_core:main"
 product-sorter-setup = "set_data:main"
+
 [project.gui-scripts]
 product-sorter-gui = "product_sorter_gui:main"
+
 [tool.setuptools]
 py-modules = ["sorter_core","product_sorter","product_sorter_gui","set_data","providers","professional","i18n","secrets_store","model_catalog"]
 

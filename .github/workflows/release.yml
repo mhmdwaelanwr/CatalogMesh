@@ -44,11 +44,30 @@ jobs:
         run: python -m unittest discover -v
 
       - name: Validate Python sources
-        run: python -m py_compile sorter_core.py product_sorter.py product_sorter_gui.py
+        run: python -m py_compile sorter_core.py product_sorter.py product_sorter_gui.py scripts/build_demo_gif.py
 
       - name: Build Python distributions
         if: runner.os == 'Linux'
         run: python -m build
+
+      - name: Verify README demo GIF
+        if: runner.os == 'Linux' && github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          cp docs/demo.gif "$RUNNER_TEMP/demo-before.gif"
+          python scripts/build_demo_gif.py
+          cmp --silent "$RUNNER_TEMP/demo-before.gif" docs/demo.gif || {
+            echo "docs/demo.gif is out of date; run python scripts/build_demo_gif.py and commit it."
+            exit 1
+          }
+
+      - name: Upload README demo GIF
+        if: runner.os == 'Linux' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: readme-demo
+          path: docs/demo.gif
+          if-no-files-found: error
 
       - name: Build desktop application
         run: pyinstaller --clean --noconfirm product_sorter.spec
@@ -75,7 +94,9 @@ jobs:
         if: runner.os == 'Windows'
         with:
           name: ProductSorterPro-windows-x64
-          path: dist/ProductSorterPro-windows-x64.zip
+          path: |
+            dist/ProductSorterPro.exe
+            dist/ProductSorterPro-windows-x64.zip
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v4
@@ -85,8 +106,13 @@ jobs:
           path: |
             dist/ProductSorterPro-linux-x64.tar.gz
             dist/*.deb
-            dist/*.whl
-            dist/*.tar.gz
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: python-dists
+          path: dist/ai_product_photo_sorter-*
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v4
@@ -107,8 +133,35 @@ jobs:
           path: release-assets
           merge-multiple: true
 
+      - name: Generate SHA-256 checksums
+        run: |
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           files: release-assets/*
           fail_on_unmatched_files: true
+
+  publish-pypi:
+    name: Publish Python package to PyPI
+    if: startsWith(github.ref, 'refs/tags/v') && vars.PYPI_PUBLISH_ENABLED == 'true'
+    needs:
+      - build
+      - release
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/ai-product-photo-sorter/
+    permissions:
+      id-token: write
+    steps:
+      - name: Retrieve Python distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: python-dists
+          path: dist/
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
