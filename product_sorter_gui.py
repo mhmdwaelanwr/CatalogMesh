@@ -16,29 +16,34 @@ from set_data import ENV_FILE, read_env, save_env
 ROOT=Path(__file__).resolve().parent
 KEY_NAMES=[f"{provider}_API_KEY_{i}" for provider in ("GEMINI","OPENAI","ANTHROPIC") for i in range(1,5)]
 L={
-"en":{"title":"Product Sorter Pro","subtitle":"AI workspace for clean, resumable product catalogs","workspace":"WORKSPACE","source":"Photos folder","output":"Output folder","prices":"Price file (optional)","providers":"Provider priority","sample":"Photo count (blank = all)","start":"Start sorting","stop":"Stop safely","resume":"Resume","save":"Save settings","open":"Open output","progress":"CURRENT OPERATION","completed":"Completed","pending":"Pending","failed":"Failed","logs":"Live activity","status":"Status","ready":"Ready to process","saved":"Settings saved","running":"Processing photos","stopped":"Stop requested","settings":"Operation setup","credentials":"Models & API keys","results":"Results & activity","clear":"Clear log","model":"Vision model","refresh":"Refresh models","file":"Filename","state":"Status"},
-"ar":{"title":"منظم صور المنتجات","subtitle":"مساحة ذكية لبناء كتالوج منتجات مرتب وقابل للاستكمال","workspace":"مساحة العمل","source":"مجلد صور المنتجات","output":"مجلد النتائج","prices":"ملف الأسعار (اختياري)","providers":"أولوية المزودات","sample":"عدد الصور (فارغ = الكل)","start":"ابدأ الترتيب","stop":"إيقاف آمن","resume":"استكمال","save":"حفظ الإعدادات","open":"فتح النتائج","progress":"العملية الحالية","completed":"مكتمل","pending":"متبقي","failed":"فشل","logs":"النشاط المباشر","status":"الحالة","ready":"جاهز للمعالجة","saved":"تم حفظ الإعدادات","running":"جاري معالجة الصور","stopped":"تم طلب الإيقاف","settings":"إعداد العملية","credentials":"الموديلات ومفاتيح API","results":"النتائج والنشاط","clear":"مسح السجل","model":"موديل الرؤية","refresh":"تحديث الموديلات","file":"اسم الملف","state":"الحالة"},
-"zh":{"title":"产品图片整理器","subtitle":"用于构建整洁且可恢复产品目录的 AI 工作区","workspace":"工作区","source":"产品图片文件夹","output":"输出文件夹","prices":"价格文件（可选）","providers":"提供商优先级","sample":"图片数量（留空=全部）","start":"开始整理","stop":"安全停止","resume":"继续","save":"保存设置","open":"打开输出","progress":"当前任务","completed":"已完成","pending":"待处理","failed":"失败","logs":"实时活动","status":"状态","ready":"准备处理","saved":"设置已保存","running":"正在处理图片","stopped":"已请求停止","settings":"任务设置","credentials":"模型和 API 密钥","results":"结果与活动","clear":"清除日志","model":"视觉模型","refresh":"刷新模型","file":"文件名","state":"状态"}}
+"en":{"title":"Product Sorter Pro","subtitle":"AI workspace for clean, resumable product catalogs","workspace":"WORKSPACE","source":"Photos folder","output":"Output folder","prices":"Price file (optional)","providers":"Provider priority","sample":"Photo count (blank = all)","start":"Start sorting","stop":"Stop safely","resume":"Resume","save":"Save settings","open":"Open output","progress":"CURRENT OPERATION","completed":"Completed","pending":"Pending","failed":"Failed","logs":"Live activity","status":"Status","ready":"Ready to process","saved":"Settings saved","running":"Processing photos","stopped":"Stop requested","settings":"Operation setup","credentials":"Models & API keys","results":"Results & activity","clear":"Clear log","model":"Vision model","refresh":"Refresh models","file":"Filename","state":"Status","light":"Light mode","dark":"Dark mode"},
+"ar":{"title":"منظم صور المنتجات","subtitle":"مساحة ذكية لبناء كتالوج منتجات مرتب وقابل للاستكمال","workspace":"مساحة العمل","source":"مجلد صور المنتجات","output":"مجلد النتائج","prices":"ملف الأسعار (اختياري)","providers":"أولوية المزودات","sample":"عدد الصور (فارغ = الكل)","start":"ابدأ الترتيب","stop":"إيقاف آمن","resume":"استكمال","save":"حفظ الإعدادات","open":"فتح النتائج","progress":"العملية الحالية","completed":"مكتمل","pending":"متبقي","failed":"فشل","logs":"النشاط المباشر","status":"الحالة","ready":"جاهز للمعالجة","saved":"تم حفظ الإعدادات","running":"جاري معالجة الصور","stopped":"تم طلب الإيقاف","settings":"إعداد العملية","credentials":"الموديلات ومفاتيح API","results":"النتائج والنشاط","clear":"مسح السجل","model":"موديل الرؤية","refresh":"تحديث الموديلات","file":"اسم الملف","state":"الحالة","light":"الوضع الفاتح","dark":"الوضع الداكن"},
+"zh":{"title":"产品图片整理器","subtitle":"用于构建整洁且可恢复产品目录的 AI 工作区","workspace":"工作区","source":"产品图片文件夹","output":"输出文件夹","prices":"价格文件（可选）","providers":"提供商优先级","sample":"图片数量（留空=全部）","start":"开始整理","stop":"安全停止","resume":"继续","save":"保存设置","open":"打开输出","progress":"当前任务","completed":"已完成","pending":"待处理","failed":"失败","logs":"实时活动","status":"状态","ready":"准备处理","saved":"设置已保存","running":"正在处理图片","stopped":"已请求停止","settings":"任务设置","credentials":"模型和 API 密钥","results":"结果与活动","clear":"清除日志","model":"视觉模型","refresh":"刷新模型","file":"文件名","state":"状态","light":"浅色模式","dark":"深色模式"}}
 
 class App:
     def __init__(self,root:tk.Tk):
-        self.root=root; self.values=read_env(ENV_FILE); self.lang=self.values.get("APP_LANGUAGE") or detect_language(); self.lang=self.lang if self.lang in L else "en"; self.p=None; self.q=queue.Queue(); self.vars={}; self.model_boxes={}; self.table_signature=None; self.key_response_file=None
+        self.root=root; self.values=read_env(ENV_FILE); self.lang=self.values.get("APP_LANGUAGE") or detect_language(); self.lang=self.lang if self.lang in L else "en"; self.theme=self.values.get("APP_THEME","dark"); self.theme=self.theme if self.theme in {"dark","light"} else "dark"; self.p=None; self.q=queue.Queue(); self.vars={}; self.model_boxes={}; self.table_signature=None; self.key_response_file=None
         root.geometry("1240x860"); root.minsize(980,700); self.configure_styles(); self.build(); self.apply_language(); self.load_values(); self.set_running(False); root.after(100,self.poll); root.protocol("WM_DELETE_WINDOW",self.close)
+        root.bind("<Control-Return>",lambda event:self.start()); root.bind("<F5>",lambda event:self.refresh_tables())
     def t(self,k): return L[self.lang][k]
     def configure_styles(self):
-        self.colors={"bg":"#0b1220","panel":"#111c2e","panel2":"#162338","text":"#e8eef8","muted":"#94a3b8","accent":"#4f8cff","green":"#21c98b","red":"#ff647c","border":"#26364f"}
+        palettes={
+            "dark":{"bg":"#0b1220","panel":"#111c2e","panel2":"#162338","field":"#0d1728","log":"#09111f","text":"#e8eef8","muted":"#94a3b8","accent":"#4f8cff","accent_hover":"#6aa0ff","soft_hover":"#213552","green":"#21c98b","red":"#ff647c","border":"#26364f","trough":"#1d2b42"},
+            "light":{"bg":"#eef3f9","panel":"#ffffff","panel2":"#f4f7fb","field":"#ffffff","log":"#f7f9fc","text":"#172033","muted":"#64748b","accent":"#2563eb","accent_hover":"#3977ef","soft_hover":"#e5edf8","green":"#059669","red":"#dc4663","border":"#d9e2ef","trough":"#dbe5f2"},
+        }
+        self.colors=palettes[self.theme]
         self.root.configure(bg=self.colors["bg"])
         style=ttk.Style(self.root); style.theme_use("clam" if "clam" in style.theme_names() else style.theme_use())
         style.configure("App.TFrame",background=self.colors["bg"]); style.configure("Panel.TFrame",background=self.colors["panel"]); style.configure("Card.TFrame",background=self.colors["panel2"])
         style.configure("Hero.TLabel",background=self.colors["bg"],foreground=self.colors["text"],font=("Sans",22,"bold")); style.configure("Subtitle.TLabel",background=self.colors["bg"],foreground=self.colors["muted"],font=("Sans",10))
         style.configure("Section.TLabel",background=self.colors["panel"],foreground=self.colors["muted"],font=("Sans",9,"bold")); style.configure("Panel.TLabel",background=self.colors["panel"],foreground=self.colors["text"])
         style.configure("Metric.TLabel",background=self.colors["panel2"],foreground=self.colors["text"],font=("Sans",20,"bold")); style.configure("MetricName.TLabel",background=self.colors["panel2"],foreground=self.colors["muted"])
-        style.configure("Accent.TButton",font=("Sans",10,"bold"),foreground="#fff",background=self.colors["accent"],padding=(16,9)); style.map("Accent.TButton",background=[("active","#6aa0ff"),("disabled","#334155")])
-        style.configure("Soft.TButton",foreground=self.colors["text"],background=self.colors["panel2"],padding=(12,8)); style.map("Soft.TButton",background=[("active","#213552")]); style.configure("Danger.TButton",foreground="#fff",background="#c83c59",padding=(12,8))
+        style.configure("Accent.TButton",font=("Sans",10,"bold"),foreground="#fff",background=self.colors["accent"],padding=(16,9)); style.map("Accent.TButton",background=[("active",self.colors["accent_hover"]),("disabled",self.colors["border"])])
+        style.configure("Soft.TButton",foreground=self.colors["text"],background=self.colors["panel2"],padding=(12,8)); style.map("Soft.TButton",background=[("active",self.colors["soft_hover"])]); style.configure("Danger.TButton",foreground="#fff",background="#c83c59",padding=(12,8))
         style.configure("TNotebook",background=self.colors["panel"],borderwidth=0); style.configure("TNotebook.Tab",background=self.colors["panel2"],foreground=self.colors["muted"],padding=(14,8)); style.map("TNotebook.Tab",background=[("selected",self.colors["accent"])],foreground=[("selected","#fff")])
-        style.configure("TEntry",fieldbackground="#0d1728",foreground=self.colors["text"],insertcolor=self.colors["text"],padding=7); style.configure("TCombobox",fieldbackground="#0d1728",foreground=self.colors["text"],arrowcolor=self.colors["text"],padding=6)
-        style.configure("Treeview",background="#0d1728",fieldbackground="#0d1728",foreground=self.colors["text"],rowheight=28,borderwidth=0); style.configure("Treeview.Heading",background=self.colors["panel2"],foreground=self.colors["muted"],font=("Sans",9,"bold"),relief="flat")
-        style.configure("Horizontal.TProgressbar",background=self.colors["accent"],troughcolor="#1d2b42",borderwidth=0,thickness=12)
+        style.configure("TEntry",fieldbackground=self.colors["field"],foreground=self.colors["text"],insertcolor=self.colors["text"],bordercolor=self.colors["border"],padding=7); style.configure("TCombobox",fieldbackground=self.colors["field"],foreground=self.colors["text"],arrowcolor=self.colors["text"],padding=6)
+        style.configure("Treeview",background=self.colors["field"],fieldbackground=self.colors["field"],foreground=self.colors["text"],rowheight=28,borderwidth=0); style.configure("Treeview.Heading",background=self.colors["panel2"],foreground=self.colors["muted"],font=("Sans",9,"bold"),relief="flat")
+        style.configure("Horizontal.TProgressbar",background=self.colors["accent"],troughcolor=self.colors["trough"],borderwidth=0,thickness=12)
     def build(self):
         shell=ttk.Frame(self.root,style="App.TFrame",padding=(24,18)); shell.pack(fill="both",expand=True)
         self.header=ttk.Frame(shell,style="App.TFrame"); self.header.pack(fill="x",pady=(0,16))
@@ -46,6 +51,7 @@ class App:
         self.title=ttk.Label(brand,style="Hero.TLabel"); self.title.pack(anchor="w")
         self.subtitle=ttk.Label(brand,style="Subtitle.TLabel"); self.subtitle.pack(anchor="w",pady=(2,0))
         self.langbox=ttk.Combobox(self.header,values=["العربية","English","中文"],state="readonly",width=12); self.langbox.pack(side="right",pady=8); self.langbox.bind("<<ComboboxSelected>>",self.change_lang)
+        self.theme_button=ttk.Button(self.header,style="Soft.TButton",command=self.toggle_theme); self.theme_button.pack(side="right",padx=(0,8),pady=8)
         self.main_tabs=ttk.Notebook(shell); self.main_tabs.pack(fill="both",expand=True)
         setup_page=ttk.Frame(self.main_tabs,style="Panel.TFrame",padding=16); keys_page=ttk.Frame(self.main_tabs,style="Panel.TFrame",padding=16); results_page=ttk.Frame(self.main_tabs,style="Panel.TFrame",padding=16)
         self.main_tabs.add(setup_page,text="Setup"); self.main_tabs.add(keys_page,text="API"); self.main_tabs.add(results_page,text="Results")
@@ -84,12 +90,13 @@ class App:
         for key in ("completed","pending","failed"):
             frame=ttk.Frame(self.tabs,style="Panel.TFrame"); tree=ttk.Treeview(frame,columns=("file","state"),show="headings"); tree.heading("file",text="Filename"); tree.heading("state",text="Status"); tree.column("file",width=650); tree.column("state",width=180); tree.pack(fill="both",expand=True,pady=(4,0)); self.tabs.add(frame,text=key); self.trees[key]=tree
         log_header=ttk.Frame(log_frame,style="Panel.TFrame"); log_header.pack(fill="x",pady=(10,5)); self.log_label=ttk.Label(log_header,style="Section.TLabel"); self.log_label.pack(side="left"); self.clear_button=ttk.Button(log_header,style="Soft.TButton",command=self.clear_log); self.clear_button.pack(side="right")
-        self.log=tk.Text(log_frame,height=9,wrap="word",state="disabled",bg="#09111f",fg="#b8c7dd",insertbackground="#fff",relief="flat",padx=10,pady=8,font=("Monospace",9)); self.log.pack(fill="both",expand=True)
+        self.log=tk.Text(log_frame,height=9,wrap="word",state="disabled",bg=self.colors["log"],fg=self.colors["text"],insertbackground=self.colors["text"],selectbackground=self.colors["accent"],relief="flat",padx=10,pady=8,font=("Monospace",9)); self.log.pack(fill="both",expand=True)
     def apply_language(self):
         self.root.title(self.t("title")); self.title.config(text=self.t("title")); self.subtitle.config(text=self.t("subtitle")); self.workspace_label.config(text=self.t("workspace")); self.langbox.set({"ar":"العربية","en":"English","zh":"中文"}[self.lang])
         for k in ("source","output","prices","providers","sample"): getattr(self,k+"_label").config(text=self.t(k))
         for k,b in self.buttons.items(): b.config(text=self.t(k))
         self.progress_label.config(text=self.t("progress")); self.status.set(self.t("ready")); self.log_label.config(text=self.t("logs")); self.clear_button.config(text=self.t("clear"))
+        self.theme_button.config(text=("☀  "+self.t("light")) if self.theme=="dark" else ("☾  "+self.t("dark")))
         for p in ("GEMINI","OPENAI","ANTHROPIC"):
             getattr(self,p+"_model_label").config(text=self.t("model")); getattr(self,p+"_refresh_button").config(text=self.t("refresh"))
         for key in ("completed","pending","failed"): getattr(self,key+"_metric_label").config(text=self.t(key))
@@ -97,6 +104,11 @@ class App:
         for i,k in enumerate(("completed","pending","failed")): self.tabs.tab(i,text=self.t(k))
         for tree in self.trees.values(): tree.heading("file",text=self.t("file")); tree.heading("state",text=self.t("state"))
     def change_lang(self,event=None): self.lang={"العربية":"ar","English":"en","中文":"zh"}[self.langbox.get()]; self.apply_language()
+    def toggle_theme(self):
+        self.theme="light" if self.theme=="dark" else "dark"; self.configure_styles()
+        self.log.config(bg=self.colors["log"],fg=self.colors["text"],insertbackground=self.colors["text"],selectbackground=self.colors["accent"])
+        self.theme_button.config(text=("☀  "+self.t("light")) if self.theme=="dark" else ("☾  "+self.t("dark")))
+        self.values=self.collect(); save_env(self.values)
     def load_values(self):
         mapping={"source":"PRODUCT_SOURCE","output":"PRODUCT_OUTPUT","prices":"PRICES_FILE","providers":"AI_PROVIDERS","sample":"PHOTO_LIMIT"}
         for gui,env in mapping.items(): self.vars[gui].set(self.values.get(env,""))
@@ -109,7 +121,7 @@ class App:
         value=filedialog.askopenfilename() if key=="prices" else filedialog.askdirectory()
         if value:self.vars[key].set(value)
     def collect(self):
-        v=dict(self.values); v.update({"APP_LANGUAGE":self.lang,"PRODUCT_SOURCE":self.vars["source"].get(),"PRODUCT_OUTPUT":self.vars["output"].get(),"PRICES_FILE":self.vars["prices"].get(),"AI_PROVIDERS":self.vars["providers"].get() or "gemini","PHOTO_LIMIT":self.vars["sample"].get()})
+        v=dict(self.values); v.update({"APP_LANGUAGE":self.lang,"APP_THEME":self.theme,"PRODUCT_SOURCE":self.vars["source"].get(),"PRODUCT_OUTPUT":self.vars["output"].get(),"PRICES_FILE":self.vars["prices"].get(),"AI_PROVIDERS":self.vars["providers"].get() or "gemini","PHOTO_LIMIT":self.vars["sample"].get()})
         for k in KEY_NAMES: v[k]=self.vars[k].get()
         for provider in ("GEMINI","OPENAI","ANTHROPIC"): v[f"{provider}_MODEL"]=self.vars[f"{provider}_MODEL"].get()
         return v

@@ -52,3 +52,4 @@
   operation controls, live status, result metrics, and improved activity views.
 - Expanded the README with workflow, GUI, resume, model-selection, and
   troubleshooting guidance.
+- Added instant persistent dark/light mode switching to the desktop GUI.
