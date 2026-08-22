@@ -10,11 +10,15 @@ Desktop GUI + CLI · Multi-provider vision · Safe resume · Automatic key rotat
 
 [![Tests](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml/badge.svg)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Release](https://img.shields.io/badge/release-3.1.0--rc1-4f8cff)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter)
+[![Release](https://img.shields.io/badge/release-3.1.0-4f8cff)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-21c98b.svg)](LICENSE)
 [![Platforms](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-64748b)](#installation)
 
-[Features](#features) · [Screenshots](#desktop-gui) · [Installation](#installation) · [Configuration](#api-configuration) · [Roadmap](ROADMAP.md) · [Limitations](KNOWN_LIMITATIONS.md)
+[![Download Windows](https://img.shields.io/badge/Download-Windows-0078D4?logo=windows11&logoColor=white)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-windows-x64.zip)
+[![Download Linux](https://img.shields.io/badge/Download-Linux-FCC624?logo=linux&logoColor=111111)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/product-sorter-pro_3.1.0_all.deb)
+[![Download macOS](https://img.shields.io/badge/Download-macOS-111111?logo=apple&logoColor=white)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-macos.zip)
+
+[Features](#features) · [Demo](#quick-demo) · [Installation](#installation) · [Configuration](#api-configuration) · [Roadmap](ROADMAP.md) · [Limitations](KNOWN_LIMITATIONS.md) · [All releases](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases)
 
 </div>
 
@@ -24,6 +28,15 @@ AI Product Photo Sorter analyzes a continuous photo-shoot sequence, recognizes
 which front, back, side, packaging, and detail shots belong to the same product,
 then creates an organized catalog without moving, renaming, or deleting the
 source files.
+
+## Quick demo
+
+![AI Product Photo Sorter desktop workflow demo](docs/demo.gif)
+
+The demo is generated from the real application screenshots in this repository:
+operation setup → API-key configuration → results → generated output → dark mode.
+Run `python scripts/build_demo_gif.py` after changing those screenshots; CI verifies
+that the committed GIF remains synchronized.
 
 ## Features
 
@@ -37,7 +50,7 @@ source files.
 | **Dark and light themes** | Instant persistent appearance switching from the desktop header. |
 | **Multilingual UI** | Arabic, English, and Chinese with device-language detection. |
 | **Quality controls** | Confidence review folders, CSV reports, usage tracking, internet/latency checks, and failure exports. |
-| **Cross-platform delivery** | Linux, Windows, and macOS launchers plus PyInstaller packaging support. |
+| **Cross-platform delivery** | CI-built Windows executable, Linux binary/DEB, macOS app bundle, wheel, and source archive. |
 
 ## Brand assets
 
@@ -59,6 +72,29 @@ All official files live in [`assets/branding`](assets/branding).
 - AI output is probabilistic. Low-confidence classifications are separated for human review.
 
 ## Installation
+
+### Ready-to-run desktop builds
+
+The recommended path for normal desktop use is the latest GitHub Release. Every
+stable release is built by GitHub Actions on Windows, Linux, and macOS before its
+assets are published.
+
+| Platform | Download | Start |
+|---|---|---|
+| **Windows** | [`ProductSorterPro-windows-x64.zip`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-windows-x64.zip) or the standalone [`ProductSorterPro.exe`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro.exe) | Extract the ZIP and run `ProductSorterPro.exe`. |
+| **Linux (Debian/Ubuntu)** | [`product-sorter-pro_3.1.0_all.deb`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/product-sorter-pro_3.1.0_all.deb) | `sudo apt install ./product-sorter-pro_3.1.0_all.deb` |
+| **Linux (standalone)** | [`ProductSorterPro-linux-x64.tar.gz`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-linux-x64.tar.gz) | Extract it and run `ProductSorterPro`. |
+| **macOS** | [`ProductSorterPro-macos.zip`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-macos.zip) | Extract it and open `ProductSorterPro.app`. |
+
+Release assets also include the Python wheel, source archive, and
+`SHA256SUMS.txt` for integrity checking.
+
+> **Signing note:** v3.1.0 desktop binaries are not code-signed or Apple-notarized yet, so Windows SmartScreen or macOS Gatekeeper may show a first-launch warning. See [Known Limitations](KNOWN_LIMITATIONS.md) before production deployment.
+
+You still need an API key for at least one supported vision provider. Configure
+it from the GUI or with the setup wizard after installation.
+
+### Build from source
 
 Requires Python 3.10 or newer.
 
@@ -240,7 +276,7 @@ python -m unittest discover -v
 python -m py_compile *.py
 ```
 
-The suite includes a synthetic image-to-report integration flow and key-rotation scenarios. Live checks are opt-in:
+The suite includes a synthetic image-to-report integration flow, key-rotation scenarios, and release-metadata consistency checks. The CI matrix runs on Linux, Windows, and macOS with Python 3.10 and 3.12. Live checks are opt-in:
 
 ```bash
 python live_api_smoke.py
