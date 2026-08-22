@@ -405,7 +405,7 @@ def parse_args(env_file: Path) -> argparse.Namespace:
                         help="Output folder; defaults beside source")
     parser.add_argument("--prices", type=Path, default=env_path("PRICES_FILE"),
                         help="Optional .xlsx product-price catalog")
-    parser.add_argument("--model", default=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))
+    parser.add_argument("--model", default=os.getenv("GEMINI_MODEL", "gemini-3.6-flash"))
     parser.add_argument("--limit", type=int, default=os.getenv("PHOTO_LIMIT") or None,
                         help="Only analyze the first N photos")
     parser.add_argument("--batch-size", type=int, default=os.getenv("BATCH_SIZE", "6"), choices=range(3, 9))
@@ -656,7 +656,12 @@ def normalize_response(raw: str, photos: list[Photo]) -> dict[str, Any]:
     if text.startswith("```"):
         text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.I)
     data = json.loads(text)
-    items = data.get("items")
+    if isinstance(data, list):
+        items = data
+    elif isinstance(data, dict):
+        items = data.get("items")
+    else:
+        raise ValueError("Gemini response must be a JSON object or list")
     if not isinstance(items, list) or len(items) != len(photos):
         raise ValueError("Gemini response did not contain one item per image")
     expected = [p.path.name for p in photos]

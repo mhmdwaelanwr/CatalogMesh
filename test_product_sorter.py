@@ -11,12 +11,24 @@ from unittest.mock import MagicMock, patch
 from sorter_core import (
     Photo, call_gemini, check_internet, choose_operation, connect_db, load_api_keys,
     format_duration, install_requirements, internet_quality, load_env_file,
-    merge_observations, missing_requirements, progress_count,
+    merge_observations, missing_requirements, normalize_response, progress_count,
     select_photo_sample, write_status_files,
 )
 
 
 class MergeTests(unittest.TestCase):
+    def test_normalize_accepts_top_level_list_from_newer_gemini_models(self):
+        photos = [Photo(Path("one.jpg"), datetime(2026, 8, 22))]
+        raw = '[{"filename":"one.jpg","category":"other","confidence":0.9}]'
+        result = normalize_response(raw, photos)
+        self.assertEqual(result["items"][0]["filename"], "one.jpg")
+
+    def test_normalize_still_accepts_items_object(self):
+        photos = [Photo(Path("one.jpg"), datetime(2026, 8, 22))]
+        raw = '{"items":[{"filename":"one.jpg","category":"other","confidence":0.9}]}'
+        result = normalize_response(raw, photos)
+        self.assertEqual(result["items"][0]["filename"], "one.jpg")
+
     def test_overlap_prefers_higher_confidence(self):
         base = datetime(2026, 8, 20, 10, 0, 0)
         with tempfile.TemporaryDirectory() as directory:

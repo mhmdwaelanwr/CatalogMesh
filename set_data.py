@@ -48,7 +48,7 @@ def build_env_text(values: dict[str, str]) -> str:
         "",
         f"APP_LANGUAGE={clean(values.get('APP_LANGUAGE', ''))}",
         f"AI_PROVIDERS={clean(values.get('AI_PROVIDERS', 'gemini'))}",
-        f"GEMINI_MODEL={clean(values.get('GEMINI_MODEL', 'gemini-2.5-flash'))}",
+        f"GEMINI_MODEL={clean(values.get('GEMINI_MODEL', 'gemini-3.6-flash'))}",
         f"OPENAI_MODEL={clean(values.get('OPENAI_MODEL', 'gpt-4.1-mini'))}",
         f"OPENAI_BASE_URL={clean(values.get('OPENAI_BASE_URL', ''))}",
         f"ANTHROPIC_MODEL={clean(values.get('ANTHROPIC_MODEL', 'claude-sonnet-4-5'))}",
@@ -157,7 +157,7 @@ def collect_settings(current: dict[str, str]) -> dict[str, str]:
         tr("prices_path"), current.get("PRICES_FILE", "")
     )
     values["GEMINI_MODEL"] = ask_text(
-        tr("model"), current.get("GEMINI_MODEL", "gemini-2.5-flash"), True
+        tr("model"), current.get("GEMINI_MODEL", "gemini-3.6-flash"), True
     )
     values["BATCH_SIZE"] = ask_number(
         tr("batch_size"), current.get("BATCH_SIZE", "6"), 3, 8, True
