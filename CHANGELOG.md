@@ -68,3 +68,7 @@
 - Added transparent, dark, light, SVG, PNG size variants, Windows ICO, and macOS
   ICNS production branding assets.
 - Expanded package keywords for ecosystem and repository discovery.
+- Added a cross-platform build-and-release workflow for Windows EXE, Linux
+  binary/DEB, macOS app, wheel, and source distributions.
+- Added project roadmap and known-limitations documentation.
+- Added a native macOS application bundle to the PyInstaller specification.
