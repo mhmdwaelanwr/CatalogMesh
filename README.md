@@ -14,7 +14,7 @@ Desktop GUI + CLI · Multi-provider vision · Safe resume · Automatic key rotat
 [![License: MIT](https://img.shields.io/badge/License-MIT-21c98b.svg)](LICENSE)
 [![Platforms](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-64748b)](#installation)
 
-[Features](#features) · [Screenshots](#desktop-gui) · [Installation](#installation) · [Configuration](#api-configuration) · [Troubleshooting](#troubleshooting)
+[Features](#features) · [Screenshots](#desktop-gui) · [Installation](#installation) · [Configuration](#api-configuration) · [Roadmap](ROADMAP.md) · [Limitations](KNOWN_LIMITATIONS.md)
 
 </div>
 
@@ -252,6 +252,10 @@ See [PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md) for checks requiring real
 ## Contributing and security
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Report vulnerabilities according to [SECURITY.md](SECURITY.md). Never include API keys or private product images in an issue.
+
+Before planning production use, review the [roadmap](ROADMAP.md),
+[known limitations](KNOWN_LIMITATIONS.md), and
+[production checklist](PRODUCTION_CHECKLIST.md).
 
 ## Developer
 
