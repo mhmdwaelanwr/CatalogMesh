@@ -19,6 +19,7 @@ Product shoots often produce a long sequence of front, back, side, and detail ph
 - Resume-safe SQLite progress, run history, backups, and graceful stopping.
 - Professional desktop dashboard with operation setup, model/key management,
   live progress, ETA, activity log, and completed/pending/failed counters.
+- Instant dark/light appearance switching, saved across launches.
 - A single clean terminal progress line, with compact output for GUI/CI capture.
 - Internet connectivity and latency-quality checks before API batches.
 - Arabic, English, and Chinese interface with device-language detection.
@@ -97,6 +98,9 @@ organized into three workspaces:
    the model list shared by those keys.
 3. **Results & activity** — follow the current operation, inspect completed,
    pending, and failed counts, read logs, and open the output directory.
+
+Use the sun/moon button in the header to switch between dark and light mode.
+The selection is saved automatically in `.env` as `APP_THEME`.
 
 Stopping from the GUI is graceful: the active request finishes, its checkpoint
 is saved, and the same operation can be resumed later.
