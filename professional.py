@@ -17,7 +17,12 @@ class OperationLock:
         self.path = output / ".product_sorter.lock"; self.handle = None
     def acquire(self) -> bool:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.handle = self.path.open("w")
+        try:
+            self.handle = self.path.open("w")
+        except (PermissionError, OSError):
+            # Windows may deny opening a lock file while another process owns it.
+            self.handle = None
+            return False
         self.handle.write("0"); self.handle.flush(); self.handle.seek(0)
         try:
             if fcntl: fcntl.flock(self.handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
