@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tkinter interface for the shared Product Sorter engine."""
 from __future__ import annotations
-import csv, os, queue, re, signal, subprocess, sys, tempfile, threading
+import csv, os, queue, re, signal, subprocess, sys, tempfile, threading, webbrowser
 from pathlib import Path
 try:
     import tkinter as tk
@@ -11,14 +11,15 @@ except ImportError as exc:
 
 from i18n import detect_language
 from model_catalog import default_model, models_for, refresh_catalog_for_keys
+from professional import VERSION
 from set_data import ENV_FILE, read_env, save_env
 
 ROOT=Path(__file__).resolve().parent
 KEY_NAMES=[f"{provider}_API_KEY_{i}" for provider in ("GEMINI","OPENAI","ANTHROPIC") for i in range(1,5)]
 L={
-"en":{"title":"Product Sorter Pro","subtitle":"AI workspace for clean, resumable product catalogs","workspace":"WORKSPACE","source":"Photos folder","output":"Output folder","prices":"Price file (optional)","providers":"Provider priority","sample":"Photo count (blank = all)","start":"Start sorting","stop":"Stop safely","resume":"Resume","save":"Save settings","open":"Open output","progress":"CURRENT OPERATION","completed":"Completed","pending":"Pending","failed":"Failed","logs":"Live activity","status":"Status","ready":"Ready to process","saved":"Settings saved","running":"Processing photos","stopped":"Stop requested","settings":"Operation setup","credentials":"Models & API keys","results":"Results & activity","clear":"Clear log","model":"Vision model","refresh":"Refresh models","file":"Filename","state":"Status","light":"Light mode","dark":"Dark mode"},
-"ar":{"title":"منظم صور المنتجات","subtitle":"مساحة ذكية لبناء كتالوج منتجات مرتب وقابل للاستكمال","workspace":"مساحة العمل","source":"مجلد صور المنتجات","output":"مجلد النتائج","prices":"ملف الأسعار (اختياري)","providers":"أولوية المزودات","sample":"عدد الصور (فارغ = الكل)","start":"ابدأ الترتيب","stop":"إيقاف آمن","resume":"استكمال","save":"حفظ الإعدادات","open":"فتح النتائج","progress":"العملية الحالية","completed":"مكتمل","pending":"متبقي","failed":"فشل","logs":"النشاط المباشر","status":"الحالة","ready":"جاهز للمعالجة","saved":"تم حفظ الإعدادات","running":"جاري معالجة الصور","stopped":"تم طلب الإيقاف","settings":"إعداد العملية","credentials":"الموديلات ومفاتيح API","results":"النتائج والنشاط","clear":"مسح السجل","model":"موديل الرؤية","refresh":"تحديث الموديلات","file":"اسم الملف","state":"الحالة","light":"الوضع الفاتح","dark":"الوضع الداكن"},
-"zh":{"title":"产品图片整理器","subtitle":"用于构建整洁且可恢复产品目录的 AI 工作区","workspace":"工作区","source":"产品图片文件夹","output":"输出文件夹","prices":"价格文件（可选）","providers":"提供商优先级","sample":"图片数量（留空=全部）","start":"开始整理","stop":"安全停止","resume":"继续","save":"保存设置","open":"打开输出","progress":"当前任务","completed":"已完成","pending":"待处理","failed":"失败","logs":"实时活动","status":"状态","ready":"准备处理","saved":"设置已保存","running":"正在处理图片","stopped":"已请求停止","settings":"任务设置","credentials":"模型和 API 密钥","results":"结果与活动","clear":"清除日志","model":"视觉模型","refresh":"刷新模型","file":"文件名","state":"状态","light":"浅色模式","dark":"深色模式"}}
+"en":{"title":"Product Sorter Pro","subtitle":"AI workspace for clean, resumable product catalogs","workspace":"WORKSPACE","source":"Photos folder","output":"Output folder","prices":"Price file (optional)","providers":"Provider priority","sample":"Photo count (blank = all)","start":"Start sorting","stop":"Stop safely","resume":"Resume","save":"Save settings","open":"Open output","progress":"CURRENT OPERATION","completed":"Completed","pending":"Pending","failed":"Failed","logs":"Live activity","status":"Status","ready":"Ready to process","saved":"Settings saved","running":"Processing photos","stopped":"Stop requested","settings":"Operation setup","credentials":"Models & API keys","results":"Results & activity","clear":"Clear log","model":"Vision model","refresh":"Refresh models","file":"Filename","state":"Status","light":"Light mode","dark":"Dark mode","about":"About","developer":"Developed and maintained by Mohamed Anwar","open_source":"Open-source software · MIT License","copy_contact":"Copy contact details","copied":"Contact details copied"},
+"ar":{"title":"منظم صور المنتجات","subtitle":"مساحة ذكية لبناء كتالوج منتجات مرتب وقابل للاستكمال","workspace":"مساحة العمل","source":"مجلد صور المنتجات","output":"مجلد النتائج","prices":"ملف الأسعار (اختياري)","providers":"أولوية المزودات","sample":"عدد الصور (فارغ = الكل)","start":"ابدأ الترتيب","stop":"إيقاف آمن","resume":"استكمال","save":"حفظ الإعدادات","open":"فتح النتائج","progress":"العملية الحالية","completed":"مكتمل","pending":"متبقي","failed":"فشل","logs":"النشاط المباشر","status":"الحالة","ready":"جاهز للمعالجة","saved":"تم حفظ الإعدادات","running":"جاري معالجة الصور","stopped":"تم طلب الإيقاف","settings":"إعداد العملية","credentials":"الموديلات ومفاتيح API","results":"النتائج والنشاط","clear":"مسح السجل","model":"موديل الرؤية","refresh":"تحديث الموديلات","file":"اسم الملف","state":"الحالة","light":"الوضع الفاتح","dark":"الوضع الداكن","about":"حول البرنامج","developer":"تطوير وصيانة محمد أنور","open_source":"برنامج مفتوح المصدر · ترخيص MIT","copy_contact":"نسخ بيانات التواصل","copied":"تم نسخ بيانات التواصل"},
+"zh":{"title":"产品图片整理器","subtitle":"用于构建整洁且可恢复产品目录的 AI 工作区","workspace":"工作区","source":"产品图片文件夹","output":"输出文件夹","prices":"价格文件（可选）","providers":"提供商优先级","sample":"图片数量（留空=全部）","start":"开始整理","stop":"安全停止","resume":"继续","save":"保存设置","open":"打开输出","progress":"当前任务","completed":"已完成","pending":"待处理","failed":"失败","logs":"实时活动","status":"状态","ready":"准备处理","saved":"设置已保存","running":"正在处理图片","stopped":"已请求停止","settings":"任务设置","credentials":"模型和 API 密钥","results":"结果与活动","clear":"清除日志","model":"视觉模型","refresh":"刷新模型","file":"文件名","state":"状态","light":"浅色模式","dark":"深色模式","about":"关于","developer":"由 Mohamed Anwar 开发和维护","open_source":"开源软件 · MIT 许可证","copy_contact":"复制联系方式","copied":"联系方式已复制"}}
 
 class App:
     def __init__(self,root:tk.Tk):
@@ -53,8 +54,8 @@ class App:
         self.langbox=ttk.Combobox(self.header,values=["العربية","English","中文"],state="readonly",width=12); self.langbox.pack(side="right",pady=8); self.langbox.bind("<<ComboboxSelected>>",self.change_lang)
         self.theme_button=ttk.Button(self.header,style="Soft.TButton",command=self.toggle_theme); self.theme_button.pack(side="right",padx=(0,8),pady=8)
         self.main_tabs=ttk.Notebook(shell); self.main_tabs.pack(fill="both",expand=True)
-        setup_page=ttk.Frame(self.main_tabs,style="Panel.TFrame",padding=16); keys_page=ttk.Frame(self.main_tabs,style="Panel.TFrame",padding=16); results_page=ttk.Frame(self.main_tabs,style="Panel.TFrame",padding=16)
-        self.main_tabs.add(setup_page,text="Setup"); self.main_tabs.add(keys_page,text="API"); self.main_tabs.add(results_page,text="Results")
+        setup_page=ttk.Frame(self.main_tabs,style="Panel.TFrame",padding=16); keys_page=ttk.Frame(self.main_tabs,style="Panel.TFrame",padding=16); results_page=ttk.Frame(self.main_tabs,style="Panel.TFrame",padding=16); about_page=ttk.Frame(self.main_tabs,style="Panel.TFrame",padding=28)
+        self.main_tabs.add(setup_page,text="Setup"); self.main_tabs.add(keys_page,text="API"); self.main_tabs.add(results_page,text="Results"); self.main_tabs.add(about_page,text="About")
         cfg=ttk.Frame(setup_page,style="Panel.TFrame"); cfg.pack(fill="x")
         self.workspace_label=ttk.Label(cfg,style="Section.TLabel"); self.workspace_label.grid(row=0,column=0,columnspan=3,sticky="w",padx=4,pady=(0,10))
         fields=[("source",True),("output",True),("prices",True),("providers",False),("sample",False)]
@@ -91,6 +92,17 @@ class App:
             frame=ttk.Frame(self.tabs,style="Panel.TFrame"); tree=ttk.Treeview(frame,columns=("file","state"),show="headings"); tree.heading("file",text="Filename"); tree.heading("state",text="Status"); tree.column("file",width=650); tree.column("state",width=180); tree.pack(fill="both",expand=True,pady=(4,0)); self.tabs.add(frame,text=key); self.trees[key]=tree
         log_header=ttk.Frame(log_frame,style="Panel.TFrame"); log_header.pack(fill="x",pady=(10,5)); self.log_label=ttk.Label(log_header,style="Section.TLabel"); self.log_label.pack(side="left"); self.clear_button=ttk.Button(log_header,style="Soft.TButton",command=self.clear_log); self.clear_button.pack(side="right")
         self.log=tk.Text(log_frame,height=9,wrap="word",state="disabled",bg=self.colors["log"],fg=self.colors["text"],insertbackground=self.colors["text"],selectbackground=self.colors["accent"],relief="flat",padx=10,pady=8,font=("Monospace",9)); self.log.pack(fill="both",expand=True)
+        about_card=ttk.Frame(about_page,style="Card.TFrame",padding=24); about_card.pack(fill="both",expand=True)
+        ttk.Label(about_card,text="AI PRODUCT PHOTO SORTER",style="MetricName.TLabel").pack(anchor="w")
+        ttk.Label(about_card,text="Product Sorter Pro",style="Metric.TLabel").pack(anchor="w",pady=(6,0))
+        self.about_version=ttk.Label(about_card,style="MetricName.TLabel"); self.about_version.pack(anchor="w",pady=(3,18))
+        self.developer_label=ttk.Label(about_card,style="MetricName.TLabel",font=("Sans",11)); self.developer_label.pack(anchor="w",pady=3)
+        self.opensource_label=ttk.Label(about_card,style="MetricName.TLabel"); self.opensource_label.pack(anchor="w",pady=(0,18))
+        social=ttk.Frame(about_card,style="Card.TFrame"); social.pack(fill="x",anchor="w")
+        links=[("GitHub","https://github.com/mhmdwaelanwr"),("LinkedIn","https://linkedin.com/in/mhmdwaelanwr"),("X (Twitter)","https://x.com/mhmdwaelanwr"),("Facebook","https://facebook.com/mhmdwaelanwr"),("Instagram","https://instagram.com/mhmdwaelanwr"),("Telegram DM","https://t.me/Mhmdwaelanwer")]
+        for index,(label,url) in enumerate(links):
+            ttk.Button(social,text=label,style="Soft.TButton",command=lambda value=url:self.open_url(value)).grid(row=index//3,column=index%3,sticky="ew",padx=4,pady=4); social.columnconfigure(index%3,weight=1)
+        self.copy_contact_button=ttk.Button(about_card,style="Accent.TButton",command=self.copy_contact); self.copy_contact_button.pack(anchor="w",pady=(20,0))
     def apply_language(self):
         self.root.title(self.t("title")); self.title.config(text=self.t("title")); self.subtitle.config(text=self.t("subtitle")); self.workspace_label.config(text=self.t("workspace")); self.langbox.set({"ar":"العربية","en":"English","zh":"中文"}[self.lang])
         for k in ("source","output","prices","providers","sample"): getattr(self,k+"_label").config(text=self.t(k))
@@ -100,7 +112,8 @@ class App:
         for p in ("GEMINI","OPENAI","ANTHROPIC"):
             getattr(self,p+"_model_label").config(text=self.t("model")); getattr(self,p+"_refresh_button").config(text=self.t("refresh"))
         for key in ("completed","pending","failed"): getattr(self,key+"_metric_label").config(text=self.t(key))
-        for i,key in enumerate(("settings","credentials","results")): self.main_tabs.tab(i,text=self.t(key))
+        for i,key in enumerate(("settings","credentials","results","about")): self.main_tabs.tab(i,text=self.t(key))
+        self.about_version.config(text=f"Version {VERSION}"); self.developer_label.config(text=self.t("developer")); self.opensource_label.config(text=self.t("open_source")); self.copy_contact_button.config(text=self.t("copy_contact"))
         for i,k in enumerate(("completed","pending","failed")): self.tabs.tab(i,text=self.t(k))
         for tree in self.trees.values(): tree.heading("file",text=self.t("file")); tree.heading("state",text=self.t("state"))
     def change_lang(self,event=None): self.lang={"العربية":"ar","English":"en","中文":"zh"}[self.langbox.get()]; self.apply_language()
@@ -109,6 +122,11 @@ class App:
         self.log.config(bg=self.colors["log"],fg=self.colors["text"],insertbackground=self.colors["text"],selectbackground=self.colors["accent"])
         self.theme_button.config(text=("☀  "+self.t("light")) if self.theme=="dark" else ("☾  "+self.t("dark")))
         self.values=self.collect(); save_env(self.values)
+    @staticmethod
+    def open_url(url): webbrowser.open(url,new=2)
+    def copy_contact(self):
+        details="GitHub: github.com/mhmdwaelanwr\nLinkedIn: linkedin.com/in/mhmdwaelanwr\nX: x.com/mhmdwaelanwr\nFacebook: facebook.com/mhmdwaelanwr\nInstagram: instagram.com/mhmdwaelanwr\nTelegram: t.me/Mhmdwaelanwer"
+        self.root.clipboard_clear(); self.root.clipboard_append(details); self.root.update_idletasks(); self.status.set(self.t("copied"))
     def load_values(self):
         mapping={"source":"PRODUCT_SOURCE","output":"PRODUCT_OUTPUT","prices":"PRICES_FILE","providers":"AI_PROVIDERS","sample":"PHOTO_LIMIT"}
         for gui,env in mapping.items(): self.vars[gui].set(self.values.get(env,""))
