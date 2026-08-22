@@ -90,11 +90,57 @@ work rather than starting over.
 ## Desktop GUI
 
 The GUI and CLI use the same processing engine and progress database. The GUI is
-organized into four workspaces:
+organized into four workspaces and supports persistent light and dark themes.
 
-| Dark mode preview | Light mode preview |
+![Product Sorter Pro — dark operation workspace](docs/screenshots/actual/dark-operation-setup.jpg)
+
+### Operation workspace
+
+| Main setup | Native folder selection |
 |---|---|
-| ![Product Sorter dark-mode UI preview](docs/screenshots/gui-dark.svg) | ![Product Sorter light-mode UI preview](docs/screenshots/gui-light.svg) |
+| ![Light operation setup](docs/screenshots/actual/light-operation-setup.jpg) | ![Folder picker](docs/screenshots/actual/light-folder-picker.jpg) |
+| The operation dashboard keeps the photo source, output destination, optional Excel price catalog, provider priority, sample size, actions, and progress in one focused screen. | Native system dialogs make selecting source and output directories familiar and reduce path-entry mistakes. |
+
+| Inspecting generated files | Dark operation workspace |
+|---|---|
+| ![Generated output folder](docs/screenshots/actual/light-output-browser.jpg) | ![Dark operation setup](docs/screenshots/actual/dark-operation-setup.jpg) |
+| **Open output** takes the user directly to the organized folders, CSV reports, progress database, usage data, and run history produced by the current operation. | The same complete workflow in the low-glare dark palette. The selected theme is saved and restored on the next launch. |
+
+### Providers, keys, and live model discovery
+
+| Gemini key pool | Gemini model menu |
+|---|---|
+| ![Gemini API key workspace](docs/screenshots/actual/light-gemini-keys.jpg) | ![Gemini model selector](docs/screenshots/actual/light-gemini-model-menu.jpg) |
+| Four masked Gemini key slots form one rotation pool. The selected vision model is shared by the pool so quota switching remains safe. | The model selector uses the refreshed provider catalog while still allowing the user to inspect and change the active model. |
+
+| Anthropic model menu | Dark provider workspace |
+|---|---|
+| ![Anthropic model selector](docs/screenshots/actual/light-anthropic-model-menu.jpg) | ![Dark Anthropic key workspace](docs/screenshots/actual/dark-anthropic-keys.jpg) |
+| Provider-specific catalogs keep Anthropic choices separate from Gemini and OpenAI while preserving the same four-key workflow. | API configuration remains readable in dark mode, with masked credentials, consistent spacing, and a dedicated model refresh action. |
+
+| Shared-model verification | Full live catalog |
+|---|---|
+| ![Shared model confirmation](docs/screenshots/actual/light-model-refresh-confirmation.jpg) | ![Live provider model catalog](docs/screenshots/actual/light-live-model-catalog.jpg) |
+| After refresh, the GUI confirms how many models are shared by the configured keys. This prevents rotation to a key that cannot access the chosen model. | The live dropdown exposes the provider's currently available models instead of relying only on a hard-coded list—important when models are added or retired. |
+
+### Results and activity
+
+| Completed | Pending |
+|---|---|
+| ![Completed product photos](docs/screenshots/actual/light-results-completed.jpg) | ![Pending product photos](docs/screenshots/actual/light-results-pending.jpg) |
+| Completed photos are listed by filename with a clear status, while the summary cards show operation totals at a glance. | The pending view makes the remaining workload explicit and stays synchronized with the persistent processing report. |
+
+| Failed requests | Dark diagnostics |
+|---|---|
+| ![Failed requests and live activity](docs/screenshots/actual/light-results-failed.jpg) | ![Dark failed-request diagnostics](docs/screenshots/actual/dark-results-failed.jpg) |
+| Errors retain their affected filenames and provider message for troubleshooting. The live activity panel preserves internet checks, batches, rotation events, and safe-stop messages. | Dark diagnostics provide the same failure detail and operational log without sacrificing contrast during long processing sessions. |
+
+### About and open source
+
+| Light About workspace | Dark About workspace |
+|---|---|
+| ![Light About workspace](docs/screenshots/actual/light-about.jpg) | ![Dark About workspace](docs/screenshots/actual/dark-about.jpg) |
+| The About page identifies the application version, developer and maintainer, MIT license, social profiles, and one-click contact copying. | The open-source identity and developer links remain a first-class part of the application in both themes. |
 
 1. **Operation setup** — choose source/output folders, optional price workbook,
    provider priority, and an optional sample size.
