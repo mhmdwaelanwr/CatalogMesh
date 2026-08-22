@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from i18n import confirm_language, get_language, tr
-from model_catalog import choose_from_list, default_model, models_for, refresh_catalog
+from model_catalog import choose_from_list, default_model, models_for, refresh_catalog_for_keys
 from secrets_store import SECRET_NAMES, save as save_secrets
 
 
@@ -148,10 +148,11 @@ def collect_settings(current: dict[str, str]) -> dict[str, str]:
     for provider in ("gemini", "openai", "anthropic"):
         if provider not in selected:
             continue
-        key = values.get(f"{provider.upper()}_API_KEY_1", "")
+        keys = [values.get(f"{provider.upper()}_API_KEY_{index}", "") for index in range(1, 5)]
         try:
-            available = refresh_catalog(provider, key, values.get("OPENAI_BASE_URL", ""))
-            print(f"Downloaded {len(available)} models available to your {provider.title()} key.")
+            available = refresh_catalog_for_keys(provider, keys, values.get("OPENAI_BASE_URL", ""))
+            checked = sum(bool(key) for key in keys)
+            print(f"Downloaded {len(available)} models shared by all {checked} configured {provider.title()} keys.")
         except Exception as exc:
             available = models_for(provider)
             print(f"Could not refresh {provider} models; using the saved JSON catalog. Reason: {exc}")

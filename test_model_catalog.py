@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from model_catalog import choose_from_list, discover_models, refresh_catalog
+from model_catalog import choose_from_list, discover_models, refresh_catalog, refresh_catalog_for_keys
 
 
 def response(payload):
@@ -37,6 +37,18 @@ class ModelCatalogTests(unittest.TestCase):
             text = path.read_text()
             self.assertIn("new-a", text)
             self.assertNotIn("top-secret", text)
+
+    @patch("model_catalog.discover_models")
+    def test_multiple_keys_keep_only_common_models(self, mocked):
+        mocked.side_effect = [["shared", "old-only"], ["shared", "new-only"]]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "models.json"
+            path.write_text('{"schema_version":1,"providers":{"gemini":{"default":"old-only","models":[]}}}')
+            models = refresh_catalog_for_keys("gemini", ["key-one", "key-two"], path=path)
+            self.assertEqual(models, ["shared"])
+            saved = json.loads(path.read_text())
+            self.assertEqual(saved["providers"]["gemini"]["default"], "shared")
+            self.assertEqual(saved["providers"]["gemini"]["key_count_checked"], 2)
 
     @patch("builtins.input", return_value="2")
     def test_user_can_choose_a_numbered_model(self, mocked):
