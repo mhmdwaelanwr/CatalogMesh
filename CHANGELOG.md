@@ -1,18 +1,48 @@
 # Changelog
 
+All notable project changes are documented here.
+
 ## Unreleased
 
-- Fixed Windows cleanup for SQLite progress databases and operation lock files.
-- Kept the `.env` mode assertion on Unix without applying Unix permissions to Windows.
+## 3.1.0 — 2026-08-22
+
+### Desktop experience
+
+- Redesigned the desktop GUI as a four-workspace dashboard for operation setup, models and API keys, results and activity, and project information.
+- Added persistent dark and light themes plus Arabic, English, and Chinese interface support.
+- Added real application screenshots, a high-resolution README hero, and the Smart Photo Stack visual identity across the GUI and distribution assets.
+- Added native folder selection, live progress and ETA, completed/pending/failed views, graceful stopping, resume support, and direct output-folder opening.
+
+### AI providers and model handling
+
+- Added Gemini, OpenAI, and Anthropic provider pools with ordered fallback.
+- Added one to four API keys per provider, for up to 12 configured keys, with automatic quota and rate-limit rotation.
+- Added live provider model discovery and shared-model validation across every key in a provider pool.
+- Preserved completed batches when the selected model changes and fail fast on invalid 4xx requests that should not trigger key rotation.
+- Added `provider_models.json` as the offline fallback model catalog.
+
+### Reliability and reporting
+
+- Added crash-safe SQLite progress, schema migrations, operation locking, backups, failure records, usage reporting, and resumable output folders.
+- Fixed Windows-specific SQLite cleanup and lock-file behavior.
+- Kept Unix `.env` permission validation without applying Unix permission assumptions on Windows.
+- Reduced captured GUI/CI log noise by rendering live terminal progress only when stdout is interactive.
+- Added ground-truth quality scoring, review folders, status exports, failure exports, run history, and usage reports.
+
+### Packaging and delivery
+
+- Added Python package metadata, console and GUI entry points, PyInstaller desktop packaging, Linux `.deb` packaging, and cross-platform brand icons.
+- Added automated build pipelines for Windows, Linux, and macOS, plus wheel and source distributions.
+- Added Windows EXE, Linux binary/DEB, and native macOS application-bundle packaging.
+- Added project roadmap, known limitations, security guidance, contributing guidance, and production verification checklist.
 
 ## 3.1.0-rc1
-- عرض تقاطع الموديلات المتاحة لكل المفاتيح، واستكمال الدفعات المحفوظة عند تغيير الموديل، وإيقاف أخطاء 4xx فورًا.
-- إضافة `provider_models.json` واكتشاف حي للموديلات المتاحة لكل مفتاح مع اختيارها من CLI وGUI.
-- تحديث موديل Gemini الافتراضي إلى `gemini-3.6-flash` وقبول استجابة JSON كقائمة مباشرة أو كائن `items`.
-- دعم 1–4 مفاتيح مستقلة لكل من Gemini وOpenAI وAnthropic.
-- تدوير مفاتيح OpenAI وAnthropic عند الكوتا أو Rate Limit مثل Gemini.
-- طلب مفتاح إضافي عند انتهاء جميع مفاتيح المزود في الوضع التفاعلي.
-- واجهة GUI بتبويبات منفصلة للمفاتيح الـ12 مع توافق الإعدادات القديمة.
+
+- Added shared-model discovery for multi-key provider pools and cached-batch reuse after model changes.
+- Added live model catalogs for Gemini, OpenAI, and Anthropic.
+- Added one to four independent keys per provider and quota/rate-limit rotation across all three providers.
+- Added interactive replacement-key requests after all configured keys are exhausted.
+- Added GUI management for all provider key slots and compatibility with older settings.
 
 ## 3.0.0-rc1
 
@@ -30,8 +60,7 @@
 
 - Split the shared processing implementation into `sorter_core.py`.
 - Kept `product_sorter.py` as a compatible CLI entry point.
-- Added `product_sorter_gui.py` with settings, API keys, start/stop/resume,
-  live progress, ETA, logs, completed/pending/failed tables, and output opening.
+- Added `product_sorter_gui.py` with settings, API keys, start/stop/resume, live progress, ETA, logs, completed/pending/failed tables, and output opening.
 - Added safe non-interactive engine mode for GUI subprocess control.
 - Updated `start.sh` to let users choose GUI or CLI.
 
@@ -46,35 +75,4 @@
 
 ## 1.0.0
 
-- Initial multilingual product-photo sorter with progress, resume, `.env`,
-  internet checks, API-key rotation, status lists and setup wizard.
-# Unreleased
-
-- Reworked progress rendering to keep one clean ANSI terminal line.
-- Prevented captured GUI, CI, and redirected output from flooding logs with
-  per-second progress snapshots.
-- Redesigned the desktop GUI as a three-workspace dashboard with dark styling,
-  operation controls, live status, result metrics, and improved activity views.
-- Expanded the README with workflow, GUI, resume, model-selection, and
-  troubleshooting guidance.
-- Added instant persistent dark/light mode switching to the desktop GUI.
-- Added a localized About workspace with version, developer, MIT license,
-  profile links, and one-click contact copying.
-- Added matching dark and light GUI previews to the README.
-- Replaced design previews with 16 real application screenshots and added a
-  structured, feature-by-feature visual walkthrough to the README.
-- Promoted the high-resolution light operation workspace as the README hero image.
-- Rebuilt the README with a project-style hero, status badges, navigation,
-  capability matrix, safety guidance, and documented output structure.
-- Removed the standalone Arabic README section while retaining multilingual app support.
-- Adopted the Smart Photo Stack visual identity across the GUI header, About
-  workspace, window icon, README, PyInstaller builds, Python package data, and
-  Linux desktop/package integration.
-- Added transparent, dark, light, SVG, PNG size variants, Windows ICO, and macOS
-  ICNS production branding assets.
-- Expanded package keywords for ecosystem and repository discovery.
-- Added a cross-platform build-and-release workflow for Windows EXE, Linux
-  binary/DEB, macOS app, wheel, and source distributions.
-- Added project roadmap and known-limitations documentation.
-- Added a native macOS application bundle to the PyInstaller specification.
-- Run cross-platform artifact builds automatically for pull requests and main.
+- Initial multilingual product-photo sorter with progress, resume, `.env`, internet checks, API-key rotation, status lists, and setup wizard.
