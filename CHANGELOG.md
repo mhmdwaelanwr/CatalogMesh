@@ -43,3 +43,8 @@
 
 - Initial multilingual product-photo sorter with progress, resume, `.env`,
   internet checks, API-key rotation, status lists and setup wizard.
+# Unreleased
+
+- Reworked progress rendering to keep one clean ANSI terminal line.
+- Prevented captured GUI, CI, and redirected output from flooding logs with
+  per-second progress snapshots.
