@@ -14,9 +14,10 @@ Desktop GUI + CLI · Multi-provider vision · Safe resume · Automatic key rotat
 [![License: MIT](https://img.shields.io/badge/License-MIT-21c98b.svg)](LICENSE)
 [![Platforms](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-64748b)](#installation)
 
-[![Download Windows](https://img.shields.io/badge/Download-Windows-0078D4?logo=windows11&logoColor=white)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-windows-x64.zip)
-[![Download Linux](https://img.shields.io/badge/Download-Linux-FCC624?logo=linux&logoColor=111111)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/product-sorter-pro_3.1.0_all.deb)
-[![Download macOS](https://img.shields.io/badge/Download-macOS-111111?logo=apple&logoColor=white)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-macos.zip)
+[![Download Windows](https://img.shields.io/badge/Download-Windows%20x64-0078D4?logo=windows11&logoColor=white)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-windows-x64.zip)
+[![Download Linux](https://img.shields.io/badge/Download-Linux%20x64-FCC624?logo=linux&logoColor=111111)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/product-sorter-pro_3.1.0_all.deb)
+[![Download macOS Apple Silicon](https://img.shields.io/badge/macOS-Apple%20Silicon-111111?logo=apple&logoColor=white)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-macos-arm64.zip)
+[![Download macOS Intel](https://img.shields.io/badge/macOS-Intel-555555?logo=apple&logoColor=white)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-macos-x64.zip)
 
 [Features](#features) · [Demo](#quick-demo) · [Installation](#installation) · [Configuration](#api-configuration) · [Roadmap](ROADMAP.md) · [Limitations](KNOWN_LIMITATIONS.md) · [All releases](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases)
 
@@ -50,7 +51,7 @@ that the committed GIF remains synchronized.
 | **Dark and light themes** | Instant persistent appearance switching from the desktop header. |
 | **Multilingual UI** | Arabic, English, and Chinese with device-language detection. |
 | **Quality controls** | Confidence review folders, CSV reports, usage tracking, internet/latency checks, and failure exports. |
-| **Cross-platform delivery** | CI-built Windows executable, Linux binary/DEB, macOS app bundle, wheel, and source archive. |
+| **Cross-platform delivery** | CI-built Windows x64 executable, Linux x64 binary/DEB, native macOS Apple Silicon and Intel app bundles, wheel, and source archive. |
 
 ## Brand assets
 
@@ -76,15 +77,16 @@ All official files live in [`assets/branding`](assets/branding).
 ### Ready-to-run desktop builds
 
 The recommended path for normal desktop use is the latest GitHub Release. Every
-stable release is built by GitHub Actions on Windows, Linux, and macOS before its
-assets are published.
+stable release is built by GitHub Actions for Windows x64, Linux x64, macOS Apple
+Silicon, and macOS Intel before its assets are published.
 
 | Platform | Download | Start |
 |---|---|---|
-| **Windows** | [`ProductSorterPro-windows-x64.zip`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-windows-x64.zip) or the standalone [`ProductSorterPro.exe`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro.exe) | Extract the ZIP and run `ProductSorterPro.exe`. |
-| **Linux (Debian/Ubuntu)** | [`product-sorter-pro_3.1.0_all.deb`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/product-sorter-pro_3.1.0_all.deb) | `sudo apt install ./product-sorter-pro_3.1.0_all.deb` |
-| **Linux (standalone)** | [`ProductSorterPro-linux-x64.tar.gz`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-linux-x64.tar.gz) | Extract it and run `ProductSorterPro`. |
-| **macOS** | [`ProductSorterPro-macos.zip`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-macos.zip) | Extract it and open `ProductSorterPro.app`. |
+| **Windows x64** | [`ProductSorterPro-windows-x64.zip`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-windows-x64.zip) or the standalone [`ProductSorterPro.exe`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro.exe) | Extract the ZIP and run `ProductSorterPro.exe`. |
+| **Linux x64 (Debian/Ubuntu)** | [`product-sorter-pro_3.1.0_all.deb`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/product-sorter-pro_3.1.0_all.deb) | `sudo apt install ./product-sorter-pro_3.1.0_all.deb` |
+| **Linux x64 (standalone)** | [`ProductSorterPro-linux-x64.tar.gz`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-linux-x64.tar.gz) | Extract it and run `ProductSorterPro`. |
+| **macOS Apple Silicon** | [`ProductSorterPro-macos-arm64.zip`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-macos-arm64.zip) | Extract it and open `ProductSorterPro.app`. |
+| **macOS Intel** | [`ProductSorterPro-macos-x64.zip`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-macos-x64.zip) | Extract it and open `ProductSorterPro.app`. |
 
 Release assets also include the Python wheel, source archive, and
 `SHA256SUMS.txt` for integrity checking.
