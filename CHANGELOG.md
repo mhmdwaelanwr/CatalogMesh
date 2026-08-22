@@ -58,3 +58,4 @@
 - Added matching dark and light GUI previews to the README.
 - Replaced design previews with 16 real application screenshots and added a
   structured, feature-by-feature visual walkthrough to the README.
+- Promoted the high-resolution light operation workspace as the README hero image.
