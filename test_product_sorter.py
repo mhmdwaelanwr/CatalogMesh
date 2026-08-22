@@ -212,6 +212,7 @@ class ProgressTests(unittest.TestCase):
             )
             db.commit()
             self.assertTrue(batch_already_processed(db, photos))
+            db.close()
 
     @patch("builtins.input", return_value="2")
     def test_quick_sample_uses_configured_limit(self, mocked_input):
@@ -239,6 +240,7 @@ class ProgressTests(unittest.TestCase):
             )
             db.commit()
             self.assertEqual(progress_count(db, photos), 2)
+            db.close()
 
     def test_status_files_list_completed_and_pending_names(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -261,6 +263,7 @@ class ProgressTests(unittest.TestCase):
             self.assertIn("0.jpg", status_csv)
             self.assertIn("completed", status_csv)
             self.assertIn("pending", status_csv)
+            db.close()
 
     @patch("builtins.input", return_value="2")
     def test_new_operation_gets_separate_folder(self, mocked_input):

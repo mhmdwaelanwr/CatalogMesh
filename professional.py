@@ -17,13 +17,23 @@ class OperationLock:
         self.path = output / ".product_sorter.lock"; self.handle = None
     def acquire(self) -> bool:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.handle = self.path.open("w")
-        self.handle.write("0"); self.handle.flush(); self.handle.seek(0)
         try:
+            # Append mode avoids truncating or writing through a byte already
+            # locked by another Windows process.
+            self.handle = self.path.open("a+")
+            self.handle.seek(0, os.SEEK_END)
+            if self.handle.tell() == 0:
+                self.handle.write("0")
+                self.handle.flush()
+            self.handle.seek(0)
             if fcntl: fcntl.flock(self.handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
             elif msvcrt: msvcrt.locking(self.handle.fileno(),msvcrt.LK_NBLCK,1)
-        except (BlockingIOError,OSError): self.handle.close(); self.handle=None; return False
-        self.handle.write(str(os.getpid())); self.handle.flush(); return True
+        except (PermissionError, OSError):
+            if self.handle:
+                self.handle.close()
+            self.handle = None
+            return False
+        return True
     def release(self) -> None:
         if self.handle:
             if fcntl: fcntl.flock(self.handle, fcntl.LOCK_UN)

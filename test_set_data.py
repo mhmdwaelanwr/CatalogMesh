@@ -22,7 +22,8 @@ class SetDataTests(unittest.TestCase):
             loaded = read_env(path)
             self.assertEqual(loaded["GEMINI_API_KEY_1"], "secret-key")
             self.assertEqual(loaded["PRODUCT_SOURCE"], "/tmp/Product Photos")
-            self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
+            if os.name != "nt":
+                self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
 
     def test_env_text_never_contains_python_execution(self):
         text = build_env_text({"PRODUCT_SOURCE": "/tmp/photos"})

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Fixed Windows cleanup for SQLite progress databases and operation lock files.
+- Kept the `.env` mode assertion on Unix without applying Unix permissions to Windows.
+
 ## 3.1.0-rc1
 - عرض تقاطع الموديلات المتاحة لكل المفاتيح، واستكمال الدفعات المحفوظة عند تغيير الموديل، وإيقاف أخطاء 4xx فورًا.
 - إضافة `provider_models.json` واكتشاف حي للموديلات المتاحة لكل مفتاح مع اختيارها من CLI وGUI.
@@ -72,3 +77,4 @@
   binary/DEB, macOS app, wheel, and source distributions.
 - Added project roadmap and known-limitations documentation.
 - Added a native macOS application bundle to the PyInstaller specification.
+- Run cross-platform artifact builds automatically for pull requests and main.
