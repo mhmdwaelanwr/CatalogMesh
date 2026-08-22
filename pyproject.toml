@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "ai-product-photo-sorter"
+version = "3.1.0rc1"
+description = "Multilingual AI product photo sorter with CLI and Tkinter GUI"
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["product-images", "computer-vision", "gemini", "openai", "anthropic", "tkinter"]
+requires-python = ">=3.10"
+dependencies = ["Pillow>=10,<13", "google-genai>=1,<2", "openpyxl>=3.1,<4", "keyring>=25,<27"]
+[project.scripts]
+product-sorter = "sorter_core:main"
+product-sorter-setup = "set_data:main"
+[project.gui-scripts]
+product-sorter-gui = "product_sorter_gui:main"
+[tool.setuptools]
+py-modules = ["sorter_core","product_sorter","product_sorter_gui","set_data","providers","professional","i18n","secrets_store"]
