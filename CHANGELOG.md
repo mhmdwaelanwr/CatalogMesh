@@ -59,3 +59,6 @@
 - Replaced design previews with 16 real application screenshots and added a
   structured, feature-by-feature visual walkthrough to the README.
 - Promoted the high-resolution light operation workspace as the README hero image.
+- Rebuilt the README with a project-style hero, status badges, navigation,
+  capability matrix, safety guidance, and documented output structure.
+- Removed the standalone Arabic README section while retaining multilingual app support.
