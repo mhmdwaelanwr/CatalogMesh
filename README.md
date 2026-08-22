@@ -1,39 +1,51 @@
+<div align="center">
+
 # AI Product Photo Sorter
 
-An open-source desktop workspace and CLI that turns chronological product-shoot
-photos into an organized, reviewable catalog—without modifying the originals.
+### Turn chronological product-shoot photos into an organized, reviewable catalog.
 
-> Current release: **3.1.0-rc1** (release candidate)
+Desktop GUI + CLI · Multi-provider vision · Safe resume · Automatic key rotation
 
-## Why it exists
+[![Tests](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml/badge.svg)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Release](https://img.shields.io/badge/release-3.1.0--rc1-4f8cff)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter)
+[![License: MIT](https://img.shields.io/badge/License-MIT-21c98b.svg)](LICENSE)
+[![Platforms](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-64748b)](#installation)
 
-Product shoots often produce a long sequence of front, back, side, and detail photos. This project analyzes that sequence, identifies photos of the same product, and builds an organized output catalog with review and progress reports.
+[Features](#features) · [Screenshots](#desktop-gui) · [Installation](#installation) · [Configuration](#api-configuration) · [Troubleshooting](#troubleshooting)
 
-## Highlights
+</div>
 
-- Shared Tkinter GUI and CLI engine.
-- Gemini, OpenAI, and Anthropic support.
-- One to four configured API keys per provider (up to 12 total).
-- Automatic key rotation on quota/rate-limit errors and optional provider fallback.
-- Secure prompt for an extra key when all configured keys are exhausted.
-- Resume-safe SQLite progress, run history, backups, and graceful stopping.
-- Professional desktop dashboard with operation setup, model/key management,
-  live progress, ETA, activity log, and completed/pending/failed counters.
-- Instant dark/light appearance switching, saved across launches.
-- A single clean terminal progress line, with compact output for GUI/CI capture.
-- Internet connectivity and latency-quality checks before API batches.
-- Arabic, English, and Chinese interface with device-language detection.
-- Optional OS keyring storage for API credentials.
-- Windows, Linux, and macOS launchers.
+![Product Sorter Pro — complete light operation workspace](docs/screenshots/actual/hero-light-operation.jpg)
 
-## Safety and privacy
+AI Product Photo Sorter analyzes a continuous photo-shoot sequence, recognizes
+which front, back, side, packaging, and detail shots belong to the same product,
+then creates an organized catalog without moving, renaming, or deleting the
+source files.
 
-- Source photos are never deleted, moved, or renamed.
-- `.env`, databases, output folders, logs, and credentials are ignored by Git.
-- Product images are sent to the provider selected by the user. Review that provider's privacy and billing terms before processing sensitive material.
-- AI classifications can be wrong. Low-confidence results should be reviewed.
+## Features
 
-## Quick start
+| Capability | What it provides |
+|---|---|
+| **Multi-provider vision** | Gemini, OpenAI, and Anthropic with ordered fallback. |
+| **Key pools** | One to four keys per provider—up to 12 configured keys—with automatic quota/rate-limit rotation. |
+| **Live model discovery** | Provider model catalogs refreshed from configured credentials; multi-key pools expose only shared models. |
+| **Crash-safe resume** | Successful batches are committed to SQLite immediately and can be resumed from the same output folder. |
+| **Professional GUI + CLI** | One shared engine, live status, ETA, completed/pending/failed views, logs, and graceful stopping. |
+| **Dark and light themes** | Instant persistent appearance switching from the desktop header. |
+| **Multilingual UI** | Arabic, English, and Chinese with device-language detection. |
+| **Quality controls** | Confidence review folders, CSV reports, usage tracking, internet/latency checks, and failure exports. |
+| **Cross-platform delivery** | Linux, Windows, and macOS launchers plus PyInstaller packaging support. |
+
+## Safety by design
+
+- Originals are never deleted, moved, renamed, or overwritten.
+- `.env`, credentials, runtime databases, output folders, and logs are excluded from Git.
+- API keys remain masked in the GUI and can optionally be stored in the OS keyring.
+- Product images are sent only to the selected provider; review its privacy and billing terms before processing sensitive material.
+- AI output is probabilistic. Low-confidence classifications are separated for human review.
+
+## Installation
 
 Requires Python 3.10 or newer.
 
@@ -91,8 +103,6 @@ work rather than starting over.
 
 The GUI and CLI use the same processing engine and progress database. The GUI is
 organized into four workspaces and supports persistent light and dark themes.
-
-![Product Sorter Pro — complete light operation workspace](docs/screenshots/actual/hero-light-operation.jpg)
 
 ### Operation workspace
 
@@ -183,10 +193,19 @@ list and choose a current vision-capable model; saved photos will not be repeate
 
 ## Outputs
 
-- Organized product/category folders and `Needs_Review/`.
-- `classification_report.csv` and `processing_status.csv`.
-- Completed, pending, failed, usage, and run-history reports.
-- `progress.sqlite3` for safe resume.
+```text
+Sorted_Products/
+├── <category>/<product>/       # organized product views
+├── Needs_Review/               # low-confidence classifications
+├── classification_report.csv  # final AI classification report
+├── processing_status.csv       # completed and pending photos
+├── completed_files.txt
+├── pending_files.txt
+├── error_report.csv
+├── usage_report.csv
+├── run_history.log
+└── progress.sqlite3            # resumable operation state
+```
 
 The output folder is the operation identity. Reusing it resumes its saved
 progress; choosing a different output folder starts an independent operation.
@@ -216,14 +235,6 @@ python gui_smoke.py
 ```
 
 See [PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md) for checks requiring real credentials, a graphical desktop, or a labeled product dataset.
-
-## العربية
-
-الأداة ترتب صور جلسات تصوير المنتجات، وتجمع صور الواجهة والخلفية والجوانب
-والتفاصيل للمنتج نفسه، وتحفظ كل دفعة للاستكمال الآمن. الواجهة الرسومية تعرض
-إعداد العملية والموديلات والمفاتيح والنتائج في أقسام واضحة، وتدعم العربية
-والإنجليزية والصينية. يمكن استخدام مفتاح واحد أو حتى أربعة مفاتيح لكل مزود.
-ابدأ بتشغيل `python set_data.py` لإعداد المشروع دون تعديل الملفات يدويًا.
 
 ## Contributing and security
 
