@@ -9,10 +9,14 @@
 
 ## Requires a desktop machine
 
+**v3.1.0 status: completed by the maintainer on real desktop devices.**
+
 Run `python gui_smoke.py` and visually check Arabic, English and Chinese layouts,
-file pickers, scaling and the Start/Stop/Resume buttons.
+file pickers, scaling and the Start/Stop/Resume buttons for future releases.
 
 ## Requires the owner's API keys
+
+**v3.1.0 status: provider-by-provider two-image live verification remains open.**
 
 Run `python live_api_smoke.py`. It validates credentials without uploading
 product images. Then process a two-image non-sensitive sample for each enabled

@@ -14,9 +14,14 @@ releases are promoted only after automated builds and the manual checks in
 - [x] Multilingual dark/light desktop dashboard.
 - [x] Cross-platform brand and application icons.
 - [x] Automated Linux, Windows, and macOS build pipeline.
-- [ ] Validate produced artifacts on real desktop machines.
+- [x] Validate produced artifacts on real desktop machines.
 - [ ] Validate each provider with non-sensitive two-image samples.
-- [ ] Publish signed-off `v3.1.0` release artifacts.
+- [x] Publish signed-off `v3.1.0` release artifacts.
+- [x] Publish `ai-product-photo-sorter` 3.1.0 to PyPI using Trusted Publishing.
+
+`v3.1.0` is published on GitHub Releases and PyPI. Provider-by-provider live
+sample verification remains open as a post-release validation item and should be
+completed before relying on every provider in production.
 
 ## 3.2 — Quality and workflow
 
