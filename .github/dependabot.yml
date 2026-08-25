@@ -21,3 +21,7 @@ updates:
       time: "09:15"
       timezone: "Africa/Cairo"
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "softprops/action-gh-release"
+        update-types:
+          - "version-update:semver-major"
