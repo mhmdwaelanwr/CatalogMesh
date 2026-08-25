@@ -1,0 +1,73 @@
+name: live-provider-smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      providers:
+        description: "Comma-separated providers to test: gemini,openai,anthropic"
+        required: true
+        default: "gemini,openai,anthropic"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-provider-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Validate credentials and two-image vision sample
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PRODUCT_SORTER_NON_INTERACTIVE: "1"
+      AI_PROVIDERS: ${{ inputs.providers }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Check requested secrets are present
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          supported = {
+              "gemini": "GEMINI_API_KEY",
+              "openai": "OPENAI_API_KEY",
+              "anthropic": "ANTHROPIC_API_KEY",
+          }
+          requested = [x.strip().lower() for x in os.environ.get("AI_PROVIDERS", "").split(",") if x.strip()]
+          unknown = [name for name in requested if name not in supported]
+          if unknown:
+              raise SystemExit("Unsupported provider(s): " + ", ".join(unknown))
+          missing = [supported[name] for name in requested if not os.environ.get(supported[name], "").strip()]
+          if missing:
+              raise SystemExit("Missing GitHub repository secret(s): " + ", ".join(missing))
+          if not requested:
+              raise SystemExit("No providers requested.")
+          print("Requested providers:", ", ".join(requested))
+          print("Required secrets are present; secret values were not printed.")
+          PY
+
+      - name: Validate provider credentials
+        run: python live_api_smoke.py
+
+      - name: Run two-image synthetic live sample
+        run: python live_provider_sample_smoke.py
