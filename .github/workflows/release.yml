@@ -191,7 +191,7 @@ jobs:
             echo "notes=docs/releases/${version#v}.md" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: steps.release_context.outputs.publish == 'true'
         with:
           path: release-assets
@@ -228,7 +228,7 @@ jobs:
       id-token: write
     steps:
       - name: Retrieve Python distributions
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: python-dists
           path: dist/
