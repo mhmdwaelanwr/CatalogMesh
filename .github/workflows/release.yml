@@ -10,7 +10,11 @@ on:
       - "v*"
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: build-release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -34,6 +38,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@v7
         with:
@@ -174,6 +180,8 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       released: ${{ steps.release_context.outputs.publish }}
       version: ${{ steps.release_context.outputs.version }}
@@ -181,6 +189,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2
+          persist-credentials: false
 
       - name: Resolve release context
         id: release_context
