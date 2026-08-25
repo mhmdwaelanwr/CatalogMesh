@@ -152,29 +152,71 @@ jobs:
 
   release:
     name: Publish GitHub release
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     needs: build
     runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.release_context.outputs.publish }}
+      version: ${{ steps.release_context.outputs.version }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Resolve release context
+        id: release_context
+        shell: bash
+        run: |
+          publish=false
+          version=""
+
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            publish=true
+            version="$GITHUB_REF_NAME"
+          elif [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+            if git diff --name-only HEAD^ HEAD | grep -Fxq '.github/release-trigger'; then
+              version=$(tr -d '[:space:]' < .github/release-trigger)
+              package_version=$(sed -n 's/^version[[:space:]]*=[[:space:]]*"\([^"]*\)"/\1/p' pyproject.toml | head -n 1)
+              if [[ -z "$version" || "$version" != "v$package_version" ]]; then
+                echo "Release trigger '$version' does not match project version 'v$package_version'." >&2
+                exit 1
+              fi
+              publish=true
+            fi
+          fi
+
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ -n "$version" ]]; then
+            echo "notes=docs/releases/${version#v}.md" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/download-artifact@v4
+        if: steps.release_context.outputs.publish == 'true'
         with:
           path: release-assets
           merge-multiple: true
 
       - name: Generate SHA-256 checksums
+        if: steps.release_context.outputs.publish == 'true'
         run: |
           cd release-assets
           sha256sum * > SHA256SUMS.txt
 
-      - uses: softprops/action-gh-release@v2
+      - name: Create GitHub release
+        if: steps.release_context.outputs.publish == 'true'
+        uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          tag_name: ${{ steps.release_context.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Product Sorter Pro ${{ steps.release_context.outputs.version }}
+          body_path: ${{ steps.release_context.outputs.notes }}
           files: release-assets/*
           fail_on_unmatched_files: true
 
   publish-pypi:
     name: Publish Python package to PyPI
-    if: startsWith(github.ref, 'refs/tags/v') && vars.PYPI_PUBLISH_ENABLED == 'true'
+    if: needs.release.outputs.released == 'true' && vars.PYPI_PUBLISH_ENABLED == 'true'
     needs:
       - build
       - release
