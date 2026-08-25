@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/branding/product-sorter-logo.svg" width="150" alt="AI Product Photo Sorter logo">
+<img src="https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/assets/branding/product-sorter-logo.svg" width="150" alt="AI Product Photo Sorter logo">
 
 # AI Product Photo Sorter
 
@@ -11,7 +11,8 @@ Desktop GUI + CLI · Multi-provider vision · Safe resume · Automatic key rotat
 [![Tests](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml/badge.svg)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Release](https://img.shields.io/badge/release-3.1.0-4f8cff)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest)
-[![License: MIT](https://img.shields.io/badge/License-MIT-21c98b.svg)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/ai-product-photo-sorter?logo=pypi&logoColor=white)](https://pypi.org/project/ai-product-photo-sorter/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-21c98b.svg)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/LICENSE)
 [![Platforms](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-64748b)](#installation)
 
 [![Download Windows](https://img.shields.io/badge/Download-Windows%20x64-0078D4?logo=windows11&logoColor=white)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-windows-x64.zip)
@@ -19,20 +20,24 @@ Desktop GUI + CLI · Multi-provider vision · Safe resume · Automatic key rotat
 [![Download macOS Apple Silicon](https://img.shields.io/badge/macOS-Apple%20Silicon-111111?logo=apple&logoColor=white)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-macos-arm64.zip)
 [![Download macOS Intel](https://img.shields.io/badge/macOS-Intel-555555?logo=apple&logoColor=white)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-macos-x64.zip)
 
-[Features](#features) · [Demo](#quick-demo) · [Installation](#installation) · [Configuration](#api-configuration) · [Roadmap](ROADMAP.md) · [Limitations](KNOWN_LIMITATIONS.md) · [All releases](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases)
+[Features](#features) · [Demo](#quick-demo) · [Installation](#installation) · [PyPI](https://pypi.org/project/ai-product-photo-sorter/) · [Configuration](#api-configuration) · [Roadmap](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/ROADMAP.md) · [Limitations](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/KNOWN_LIMITATIONS.md) · [All releases](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases)
 
 </div>
 
-![Product Sorter Pro — complete light operation workspace](docs/screenshots/actual/hero-light-operation.jpg)
+![Product Sorter Pro — complete light operation workspace](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/hero-light-operation.jpg)
 
 AI Product Photo Sorter analyzes a continuous photo-shoot sequence, recognizes
 which front, back, side, packaging, and detail shots belong to the same product,
 then creates an organized catalog without moving, renaming, or deleting the
 source files.
 
+The stable `v3.1.0` release is available both as ready-to-run desktop builds on
+[GitHub Releases](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/tag/v3.1.0)
+and as a Python package on [PyPI](https://pypi.org/project/ai-product-photo-sorter/).
+
 ## Quick demo
 
-![AI Product Photo Sorter desktop workflow demo](docs/demo.gif)
+![AI Product Photo Sorter desktop workflow demo](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/demo.gif)
 
 The demo is generated from the real application screenshots in this repository:
 operation setup → API-key configuration → results → generated output → dark mode.
@@ -51,7 +56,7 @@ that the committed GIF remains synchronized.
 | **Dark and light themes** | Instant persistent appearance switching from the desktop header. |
 | **Multilingual UI** | Arabic, English, and Chinese with device-language detection. |
 | **Quality controls** | Confidence review folders, CSV reports, usage tracking, internet/latency checks, and failure exports. |
-| **Cross-platform delivery** | CI-built Windows x64 executable, Linux x64 binary/DEB, native macOS Apple Silicon and Intel app bundles, wheel, and source archive. |
+| **Cross-platform delivery** | CI-built Windows x64 executable, Linux x64 binary/DEB, native macOS Apple Silicon and Intel app bundles, plus signed-at-publish PyPI wheel/source distributions. |
 
 ## Brand assets
 
@@ -62,7 +67,7 @@ The official Smart Photo Stack identity is available in production-ready forms:
 - Multi-resolution Windows `.ico` and macOS `.icns` application icons.
 - Dedicated dark and light presentation variants.
 
-All official files live in [`assets/branding`](assets/branding).
+All official files live in [`assets/branding`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/tree/main/assets/branding).
 
 ## Safety by design
 
@@ -73,6 +78,30 @@ All official files live in [`assets/branding`](assets/branding).
 - AI output is probabilistic. Low-confidence classifications are separated for human review.
 
 ## Installation
+
+### Install from PyPI
+
+For Python 3.10 or newer, install the published package directly from PyPI:
+
+```bash
+python -m pip install --upgrade ai-product-photo-sorter
+```
+
+Verify the installed version:
+
+```bash
+product-sorter --version
+```
+
+Available commands after installation:
+
+```bash
+product-sorter          # CLI
+product-sorter-gui      # desktop GUI
+product-sorter-setup    # guided API/configuration setup
+```
+
+Package page: [pypi.org/project/ai-product-photo-sorter](https://pypi.org/project/ai-product-photo-sorter/)
 
 ### Ready-to-run desktop builds
 
@@ -91,7 +120,7 @@ Silicon, and macOS Intel before its assets are published.
 Release assets also include the Python wheel, source archive, and
 `SHA256SUMS.txt` for integrity checking.
 
-> **Signing note:** v3.1.0 desktop binaries are not code-signed or Apple-notarized yet, so Windows SmartScreen or macOS Gatekeeper may show a first-launch warning. See [Known Limitations](KNOWN_LIMITATIONS.md) before production deployment.
+> **Signing note:** v3.1.0 desktop binaries are not code-signed or Apple-notarized yet, so Windows SmartScreen or macOS Gatekeeper may show a first-launch warning. See [Known Limitations](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/KNOWN_LIMITATIONS.md) before production deployment.
 
 You still need an API key for at least one supported vision provider. Configure
 it from the GUI or with the setup wizard after installation.
@@ -159,48 +188,48 @@ organized into four workspaces and supports persistent light and dark themes.
 
 | Main setup | Native folder selection |
 |---|---|
-| ![Light operation setup](docs/screenshots/actual/light-operation-setup.jpg) | ![Folder picker](docs/screenshots/actual/light-folder-picker.jpg) |
+| ![Light operation setup](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/light-operation-setup.jpg) | ![Folder picker](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/light-folder-picker.jpg) |
 | The operation dashboard keeps the photo source, output destination, optional Excel price catalog, provider priority, sample size, actions, and progress in one focused screen. | Native system dialogs make selecting source and output directories familiar and reduce path-entry mistakes. |
 
 | Inspecting generated files | Dark operation workspace |
 |---|---|
-| ![Generated output folder](docs/screenshots/actual/light-output-browser.jpg) | ![Dark operation setup](docs/screenshots/actual/dark-operation-setup.jpg) |
+| ![Generated output folder](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/light-output-browser.jpg) | ![Dark operation setup](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/dark-operation-setup.jpg) |
 | **Open output** takes the user directly to the organized folders, CSV reports, progress database, usage data, and run history produced by the current operation. | The same complete workflow in the low-glare dark palette. The selected theme is saved and restored on the next launch. |
 
 ### Providers, keys, and live model discovery
 
 | Gemini key pool | Gemini model menu |
 |---|---|
-| ![Gemini API key workspace](docs/screenshots/actual/light-gemini-keys.jpg) | ![Gemini model selector](docs/screenshots/actual/light-gemini-model-menu.jpg) |
+| ![Gemini API key workspace](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/light-gemini-keys.jpg) | ![Gemini model selector](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/light-gemini-model-menu.jpg) |
 | Four masked Gemini key slots form one rotation pool. The selected vision model is shared by the pool so quota switching remains safe. | The model selector uses the refreshed provider catalog while still allowing the user to inspect and change the active model. |
 
 | Anthropic model menu | Dark provider workspace |
 |---|---|
-| ![Anthropic model selector](docs/screenshots/actual/light-anthropic-model-menu.jpg) | ![Dark Anthropic key workspace](docs/screenshots/actual/dark-anthropic-keys.jpg) |
+| ![Anthropic model selector](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/light-anthropic-model-menu.jpg) | ![Dark Anthropic key workspace](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/dark-anthropic-keys.jpg) |
 | Provider-specific catalogs keep Anthropic choices separate from Gemini and OpenAI while preserving the same four-key workflow. | API configuration remains readable in dark mode, with masked credentials, consistent spacing, and a dedicated model refresh action. |
 
 | Shared-model verification | Full live catalog |
 |---|---|
-| ![Shared model confirmation](docs/screenshots/actual/light-model-refresh-confirmation.jpg) | ![Live provider model catalog](docs/screenshots/actual/light-live-model-catalog.jpg) |
+| ![Shared model confirmation](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/light-model-refresh-confirmation.jpg) | ![Live provider model catalog](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/light-live-model-catalog.jpg) |
 | After refresh, the GUI confirms how many models are shared by the configured keys. This prevents rotation to a key that cannot access the chosen model. | The live dropdown exposes the provider's currently available models instead of relying only on a hard-coded list—important when models are added or retired. |
 
 ### Results and activity
 
 | Completed | Pending |
 |---|---|
-| ![Completed product photos](docs/screenshots/actual/light-results-completed.jpg) | ![Pending product photos](docs/screenshots/actual/light-results-pending.jpg) |
+| ![Completed product photos](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/light-results-completed.jpg) | ![Pending product photos](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/light-results-pending.jpg) |
 | Completed photos are listed by filename with a clear status, while the summary cards show operation totals at a glance. | The pending view makes the remaining workload explicit and stays synchronized with the persistent processing report. |
 
 | Failed requests | Dark diagnostics |
 |---|---|
-| ![Failed requests and live activity](docs/screenshots/actual/light-results-failed.jpg) | ![Dark failed-request diagnostics](docs/screenshots/actual/dark-results-failed.jpg) |
+| ![Failed requests and live activity](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/light-results-failed.jpg) | ![Dark failed-request diagnostics](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/dark-results-failed.jpg) |
 | Errors retain their affected filenames and provider message for troubleshooting. The live activity panel preserves internet checks, batches, rotation events, and safe-stop messages. | Dark diagnostics provide the same failure detail and operational log without sacrificing contrast during long processing sessions. |
 
 ### About and open source
 
 | Light About workspace | Dark About workspace |
 |---|---|
-| ![Light About workspace](docs/screenshots/actual/light-about.jpg) | ![Dark About workspace](docs/screenshots/actual/dark-about.jpg) |
+| ![Light About workspace](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/light-about.jpg) | ![Dark About workspace](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/dark-about.jpg) |
 | The About page identifies the application version, developer and maintainer, MIT license, social profiles, and one-click contact copying. | The open-source identity and developer links remain a first-class part of the application in both themes. |
 
 1. **Operation setup** — choose source/output folders, optional price workbook,
@@ -285,15 +314,15 @@ python live_api_smoke.py
 python gui_smoke.py
 ```
 
-See [PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md) for checks requiring real credentials, a graphical desktop, or a labeled product dataset.
+See [PRODUCTION_CHECKLIST.md](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/PRODUCTION_CHECKLIST.md) for checks requiring real credentials, a graphical desktop, or a labeled product dataset.
 
 ## Contributing and security
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Report vulnerabilities according to [SECURITY.md](SECURITY.md). Never include API keys or private product images in an issue.
+Read [CONTRIBUTING.md](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/CONTRIBUTING.md) before opening a pull request. Report vulnerabilities according to [SECURITY.md](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/SECURITY.md). Never include API keys or private product images in an issue.
 
-Before planning production use, review the [roadmap](ROADMAP.md),
-[known limitations](KNOWN_LIMITATIONS.md), and
-[production checklist](PRODUCTION_CHECKLIST.md).
+Before planning production use, review the [roadmap](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/ROADMAP.md),
+[known limitations](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/KNOWN_LIMITATIONS.md), and
+[production checklist](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/PRODUCTION_CHECKLIST.md).
 
 ## Developer
 
@@ -308,4 +337,4 @@ Developed and maintained by **Mohamed Anwar**.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/LICENSE).
