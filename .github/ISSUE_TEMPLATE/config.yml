@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/mhmdwaelanwr/ai-product-photo-sorter/security/policy
+    about: Read the security policy and use a private reporting path for sensitive vulnerabilities.
+  - name: Usage and setup documentation
+    url: https://github.com/mhmdwaelanwr/ai-product-photo-sorter#readme
+    about: Check installation, configuration, troubleshooting, and platform notes before opening an issue.
