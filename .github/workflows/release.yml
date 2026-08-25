@@ -216,7 +216,7 @@ jobs:
 
   publish-pypi:
     name: Publish Python package to PyPI
-    if: needs.release.outputs.released == 'true' && vars.PYPI_PUBLISH_ENABLED == 'true'
+    if: needs.release.outputs.released == 'true'
     needs:
       - build
       - release
