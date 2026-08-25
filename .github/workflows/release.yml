@@ -33,7 +33,7 @@ jobs:
             artifact: macos-x64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v5
         with:
@@ -159,7 +159,7 @@ jobs:
       released: ${{ steps.release_context.outputs.publish }}
       version: ${{ steps.release_context.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
 
