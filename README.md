@@ -326,15 +326,31 @@ Before planning production use, review the [roadmap](https://github.com/mhmdwael
 
 ## Developer
 
-Developed and maintained by **Mohamed Anwar**.
+<div align="center">
 
-- [GitHub](https://github.com/mhmdwaelanwr)
-- [LinkedIn](https://linkedin.com/in/mhmdwaelanwr)
-- [X (Twitter)](https://x.com/mhmdwaelanwr)
-- [Facebook](https://facebook.com/mhmdwaelanwr)
-- [Instagram](https://instagram.com/mhmdwaelanwr)
-- [Telegram DM](https://t.me/Mhmdwaelanwer)
+**Mohamed Anwar**  
+Developer & Maintainer of **AI Product Photo Sorter**
+
+<br>
+
+<a href="https://github.com/mhmdwaelanwr"><img src="https://img.shields.io/badge/GitHub-mhmdwaelanwr-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a>
+<a href="https://linkedin.com/in/mhmdwaelanwr"><img src="https://img.shields.io/badge/LinkedIn-mhmdwaelanwr-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
+<a href="https://x.com/mhmdwaelanwr"><img src="https://img.shields.io/badge/X-@mhmdwaelanwr-000000?style=for-the-badge&logo=x&logoColor=white" alt="X"></a>
+
+<br>
+
+<a href="https://facebook.com/mhmdwaelanwr"><img src="https://img.shields.io/badge/Facebook-mhmdwaelanwr-1877F2?style=for-the-badge&logo=facebook&logoColor=white" alt="Facebook"></a>
+<a href="https://instagram.com/mhmdwaelanwr"><img src="https://img.shields.io/badge/Instagram-@mhmdwaelanwr-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Instagram"></a>
+<a href="https://t.me/Mhmdwaelanwer"><img src="https://img.shields.io/badge/Telegram-Message-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram"></a>
+
+</div>
 
 ## License
 
-MIT — see [LICENSE](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/LICENSE).
+<div align="center">
+
+[![MIT License](https://img.shields.io/badge/License-MIT-21c98b?style=for-the-badge)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/LICENSE)
+
+Released under the **MIT License**. See [LICENSE](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/LICENSE) for details.
+
+</div>
