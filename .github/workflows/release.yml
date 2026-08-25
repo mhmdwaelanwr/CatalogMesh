@@ -150,6 +150,25 @@ jobs:
           path: dist/ProductSorterPro-${{ matrix.artifact }}.zip
           if-no-files-found: error
 
+  verify-artifact-download:
+    name: Verify release artifact download
+    if: github.event_name == 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Python distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: python-dists
+          path: artifact-check/
+
+      - name: Verify downloaded distributions
+        shell: bash
+        run: |
+          find artifact-check -maxdepth 1 -type f -print
+          test -n "$(find artifact-check -maxdepth 1 -type f -name '*.whl' -print -quit)"
+          test -n "$(find artifact-check -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+
   release:
     name: Publish GitHub release
     if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
