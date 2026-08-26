@@ -5,6 +5,7 @@ improvements that are useful for long-running, real-world catalog jobs:
 
 * safer handling of very high-resolution phone/camera JPEGs;
 * a broader retail-technology category taxonomy;
+* independent copy outputs by default, with an opt-in zero-copy reference mode;
 * output materialization that survives cross-volume and Windows link failures;
 * managed-output cleanup so rebuilds do not leave stale duplicate links behind.
 """
@@ -22,12 +23,16 @@ from typing import Any
 
 
 # Modern phone cameras can legitimately produce 100 MP+ JPEG files. Pillow's
-# default warning threshold is lower than that on many releases. We still keep
-# a finite ceiling instead of disabling decompression-bomb protection entirely.
+# default warning threshold is lower than that on many releases. We raise the
+# finite warning threshold rather than disabling decompression-bomb protection.
 MAX_TRUSTED_IMAGE_PIXELS = 200_000_000
 API_IMAGE_EDGE = 1600
 API_JPEG_QUALITY = 82
 MANIFEST_NAME = ".product-sorter-managed-outputs.json"
+OUTPUT_MODE_ENV = "PRODUCT_SORTER_OUTPUT_MODE"
+DEFAULT_OUTPUT_MODE = "copy"
+OUTPUT_MODES = {"copy", "auto", "hardlink", "symlink"}
+COPY_RESERVE_BYTES = 512 * 1024 * 1024
 
 RETAIL_CATEGORIES = {
     "adapter",
@@ -130,6 +135,14 @@ Rules:
 """
 
 
+def _output_mode() -> str:
+    mode = os.getenv(OUTPUT_MODE_ENV, DEFAULT_OUTPUT_MODE).strip().lower() or DEFAULT_OUTPUT_MODE
+    if mode not in OUTPUT_MODES:
+        allowed = ", ".join(sorted(OUTPUT_MODES))
+        raise RuntimeError(f"Invalid {OUTPUT_MODE_ENV}={mode!r}; choose one of: {allowed}")
+    return mode
+
+
 def _managed_relative_path(output: Path, destination: Path) -> str:
     return destination.relative_to(output).as_posix()
 
@@ -138,12 +151,11 @@ def _safe_manifest_target(output: Path, relative: str) -> Path | None:
     candidate = Path(relative)
     if candidate.is_absolute() or ".." in candidate.parts:
         return None
-    target = output.joinpath(candidate)
-    return target
+    return output.joinpath(candidate)
 
 
 def _remove_previous_managed_outputs(output: Path) -> None:
-    """Remove only files created by a previous hardened build.
+    """Remove only files created/adopted by a previous hardened build.
 
     User-created files inside the output tree are deliberately left alone.
     Empty product/category directories are removed opportunistically afterwards.
@@ -159,7 +171,9 @@ def _remove_previous_managed_outputs(output: Path) -> None:
         return
 
     touched_parents: set[Path] = set()
-    for relative in entries:
+    for entry in entries:
+        # Schema 1 stored strings. Schema 2 stores {path, mode} objects.
+        relative = entry.get("path") if isinstance(entry, dict) else entry
         if not isinstance(relative, str):
             continue
         target = _safe_manifest_target(output, relative)
@@ -188,33 +202,117 @@ def _remove_previous_managed_outputs(output: Path) -> None:
             pass
 
 
-def _materialize(source: Path, destination: Path) -> str:
-    """Expose an original in the catalog without touching the original file.
+def _same_file(first: Path, second: Path) -> bool:
+    try:
+        return os.path.samefile(first, second)
+    except OSError:
+        return False
 
-    Prefer a hardlink (zero duplicate image data on the same filesystem), then a
-    symlink, and finally a real copy when the platform/filesystem permits neither.
+
+def _collision_safe_destination(destination: Path, source: Path) -> tuple[Path, bool]:
+    """Never overwrite or adopt an unrelated file at a generated destination.
+
+    Returns ``(path, existing_same_source)``. Legacy hardlinks/symlinks that
+    already point to the source can be safely adopted; unrelated files are left
+    untouched and the generated output gets a deterministic ``__sorter_N`` name.
     """
 
+    if not os.path.lexists(destination):
+        return destination, False
+    if _same_file(destination, source):
+        return destination, True
+
+    for index in range(1, 10_000):
+        candidate = destination.with_name(
+            f"{destination.stem}__sorter_{index}{destination.suffix}"
+        )
+        if not os.path.lexists(candidate):
+            return candidate, False
+        if _same_file(candidate, source):
+            return candidate, True
+    raise RuntimeError(f"Could not find a safe output filename for {destination.name}")
+
+
+def _materialize(source: Path, destination: Path, mode: str | None = None) -> str:
+    """Expose an original in the catalog without modifying the source.
+
+    ``copy`` is the safe default because the catalog file is independent and can
+    be edited later without changing the source photo. ``auto`` preserves the
+    historical zero-copy preference: hardlink, then symlink, then copy fallback.
+    Explicit ``hardlink``/``symlink`` modes fail clearly if unsupported instead
+    of silently changing storage semantics.
+    """
+
+    selected = mode or _output_mode()
+    if selected == "copy":
+        shutil.copy2(source, destination)
+        return "copy"
+    if selected == "hardlink":
+        try:
+            os.link(source, destination)
+        except OSError as exc:
+            raise RuntimeError(f"Could not create hardlink for {source.name}: {exc}") from exc
+        return "hardlink"
+    if selected == "symlink":
+        try:
+            destination.symlink_to(source.resolve())
+        except OSError as exc:
+            raise RuntimeError(f"Could not create symlink for {source.name}: {exc}") from exc
+        return "symlink"
+
+    # auto: retain the previous disk-saving behavior, but always finish with a
+    # real copy when links are unavailable (common on Windows/cross-volume runs).
     try:
         os.link(source, destination)
         return "hardlink"
     except OSError:
         pass
-
     try:
         destination.symlink_to(source.resolve())
         return "symlink"
     except OSError:
-        # Windows commonly reaches this branch when Developer Mode/admin symlink
-        # privileges are unavailable, and cross-volume hardlinks are impossible.
         try:
             if destination.is_symlink() or os.path.lexists(destination):
                 destination.unlink()
         except OSError:
             pass
-
     shutil.copy2(source, destination)
     return "copy"
+
+
+def _copy_bytes_required(items: list[dict[str, Any]]) -> int:
+    seen: set[Path] = set()
+    total = 0
+    for item in items:
+        path = Path(item["path"])
+        try:
+            identity = path.resolve()
+        except OSError:
+            identity = path.absolute()
+        if identity in seen:
+            continue
+        seen.add(identity)
+        total += path.stat().st_size
+    return total
+
+
+def _ensure_copy_capacity(items: list[dict[str, Any]], output: Path) -> None:
+    """Fail before copying when there is clearly not enough destination space."""
+
+    required = _copy_bytes_required(items)
+    if required <= 0:
+        return
+    free = shutil.disk_usage(output).free
+    reserve = max(COPY_RESERVE_BYTES, int(required * 0.05))
+    if free < required + reserve:
+        gib = 1024 ** 3
+        raise RuntimeError(
+            "Not enough free space for independent catalog copies: "
+            f"need about {required / gib:.2f} GiB plus reserve, "
+            f"but only {free / gib:.2f} GiB is free. Free disk space or set "
+            f"{OUTPUT_MODE_ENV}=auto for disk-saving links (do not edit linked "
+            "catalog images if you need the source originals to remain byte-identical)."
+        )
 
 
 def _write_json_atomic(path: Path, payload: Any) -> None:
@@ -232,13 +330,19 @@ def _build_outputs(
 ) -> None:
     output.mkdir(parents=True, exist_ok=True)
     report_path = output / "classification_report.csv"
+    selected_mode = _output_mode()
+
     if not dry_run:
+        # Clear only files tracked by the program. Cached AI results remain in
+        # SQLite, so an out-of-space error never requires paying for analysis again.
         _remove_previous_managed_outputs(output)
+        if selected_mode == "copy":
+            _ensure_copy_capacity(items, output)
 
     product_number = 0
     current_folder = ""
     rows: list[dict[str, Any]] = []
-    managed_files: list[str] = []
+    managed_files: list[dict[str, str]] = []
     materialization_modes: Counter[str] = Counter()
 
     for index, item in enumerate(items):
@@ -251,19 +355,28 @@ def _build_outputs(
 
         review = item["confidence"] < confidence or item["category"] == "other"
         destination_dir = output / ("Needs_Review" if review else item["category"]) / current_folder
-        destination = destination_dir / item["path"].name
+        requested_destination = destination_dir / item["path"].name
+        destination = requested_destination
+        materialization = "dry_run"
 
         if not dry_run:
             destination_dir.mkdir(parents=True, exist_ok=True)
-            if not os.path.lexists(destination):
-                mode = _materialize(item["path"], destination)
-                materialization_modes[mode] += 1
+            destination, existing_same_source = _collision_safe_destination(
+                requested_destination, item["path"]
+            )
+            if existing_same_source:
+                materialization = "existing_same_source"
             else:
-                materialization_modes["existing"] += 1
-            managed_files.append(_managed_relative_path(output, destination))
+                materialization = _materialize(item["path"], destination, selected_mode)
+            materialization_modes[materialization] += 1
+            managed_files.append({
+                "path": _managed_relative_path(output, destination),
+                "mode": materialization,
+            })
 
         rows.append({
             "filename": item["path"].name,
+            "output_filename": destination.name,
             "taken_at": item["taken_at"].isoformat(sep=" "),
             "product_group": current_folder,
             "category": item["category"],
@@ -290,7 +403,8 @@ def _build_outputs(
         _write_json_atomic(
             output / MANIFEST_NAME,
             {
-                "schema": 1,
+                "schema": 2,
+                "output_mode": selected_mode,
                 "files": managed_files,
                 "materialization": dict(materialization_modes),
             },
@@ -299,7 +413,11 @@ def _build_outputs(
             summary = "; ".join(
                 f"{name}={count}" for name, count in sorted(materialization_modes.items())
             ) or "no_files=0"
-            module.append_log(output, "OUTPUT_BUILT", summary)
+            module.append_log(
+                output,
+                "OUTPUT_BUILT",
+                f"mode={selected_mode}; {summary}",
+            )
 
     print(f"Grouped {len(rows)} photos into {product_number} tentative products")
     if not dry_run:
