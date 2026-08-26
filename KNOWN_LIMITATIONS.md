@@ -14,10 +14,23 @@
 
 - The source scanner currently processes JPG/JPEG files in the selected folder;
   it does not recursively scan nested folders or ingest RAW/HEIC/PNG files.
+- Very high-resolution JPG/JPEG files use a finite 200 MP Pillow warning
+  threshold instead of disabling decompression-bomb protection. API payloads are
+  downsampled to at most 1600 px on the longest edge; the original files are
+  never resized or rewritten by Product Sorter.
 - Chronological capture order is important. Interleaved shoots of multiple
   products make grouping more ambiguous.
 - The same output directory represents the same resumable operation. Select a
   new output directory when intentionally starting an independent run.
+- Catalog output defaults to independent file copies (`PRODUCT_SORTER_OUTPUT_MODE=copy`).
+  This is safest for later editing but needs roughly the selected source size in
+  free destination space. The program checks available capacity before copying.
+- `PRODUCT_SORTER_OUTPUT_MODE=auto` prefers a hardlink, then a symlink, then a
+  copy fallback. It can save substantial disk space, but editing a linked catalog
+  image can also change the source image data. Use link modes only when catalog
+  outputs are treated as read-only references.
+- Existing unrelated files at a generated destination are never overwritten;
+  Product Sorter chooses a `__sorter_N` filename and records it in the CSV report.
 - Internet access is required for cloud providers. Previously completed batches
   remain available while offline, but new AI analysis cannot continue.
 

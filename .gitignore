@@ -27,12 +27,15 @@ dist/
 progress.sqlite3*
 run_history.log*
 classification_report.csv
+classification_report.csv.tmp
 processing_status.csv
 completed_files.txt
 pending_files.txt
 error_report.csv
 api_usage.csv
 quality_score.txt
+.product_sorter.lock
+.product-sorter-managed-outputs.json*
 backups/
 Needs_Review/
 Sorted_Products*/
