@@ -14,10 +14,16 @@
 
 - The source scanner currently processes JPG/JPEG files in the selected folder;
   it does not recursively scan nested folders or ingest RAW/HEIC/PNG files.
+- Very high-resolution JPG/JPEG files are accepted up to a finite 200 MP safety
+  ceiling. API payloads are downsampled to at most 1600 px on the longest edge;
+  the original files are never resized or rewritten.
 - Chronological capture order is important. Interleaved shoots of multiple
   products make grouping more ambiguous.
 - The same output directory represents the same resumable operation. Select a
   new output directory when intentionally starting an independent run.
+- Managed catalog outputs prefer zero-copy hardlinks, then symlinks, and finally
+  real file copies when the filesystem or operating system does not permit links.
+  A cross-volume run can therefore require additional free disk space.
 - Internet access is required for cloud providers. Previously completed batches
   remain available while offline, but new AI analysis cannot continue.
 
