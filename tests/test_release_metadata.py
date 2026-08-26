@@ -5,7 +5,7 @@ from pathlib import Path
 from professional import VERSION
 
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 
 
 class ReleaseMetadataTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class ReleaseMetadataTests(unittest.TestCase):
         self.assertEqual(package_version, VERSION.replace("-rc", "rc"))
 
     def test_debian_package_derives_version_from_pyproject(self):
-        script = (ROOT / "build_deb.sh").read_text(encoding="utf-8")
+        script = (ROOT / "packaging" / "linux" / "build_deb.sh").read_text(encoding="utf-8")
         self.assertIn("pyproject.toml", script)
         self.assertNotIn('version="3.1.0', script)
 
@@ -40,7 +40,7 @@ class ReleaseMetadataTests(unittest.TestCase):
         self.assertIn("ProductSorterPro-${{ matrix.artifact }}.zip", workflow)
 
     def test_macos_bundle_version_comes_from_pyproject(self):
-        spec = (ROOT / "product_sorter.spec").read_text(encoding="utf-8")
+        spec = (ROOT / "packaging" / "pyinstaller" / "product_sorter.spec").read_text(encoding="utf-8")
         workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
         self.assertIn("pyproject.toml", spec)
         self.assertIn('"CFBundleShortVersionString": APP_VERSION', spec)

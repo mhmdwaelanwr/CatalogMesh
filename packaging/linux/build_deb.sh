@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$REPO_ROOT"
 
 version="$(sed -n 's/^version = "\([^"]*\)"/\1/p' pyproject.toml | head -n1)"
 if [[ -z "$version" ]]; then
@@ -29,7 +31,7 @@ cat > "$root/usr/bin/product-sorter-pro" <<'EOF'
 exec /opt/product-sorter-pro/start.sh --gui
 EOF
 chmod +x "$root/usr/bin/product-sorter-pro"
-sed "s|@INSTALL_DIR@|/opt/product-sorter-pro|g" product-sorter.desktop.in > "$root/usr/share/applications/product-sorter-pro.desktop"
+sed "s|@INSTALL_DIR@|/opt/product-sorter-pro|g" packaging/linux/product-sorter.desktop.in > "$root/usr/share/applications/product-sorter-pro.desktop"
 cp assets/branding/product-sorter-256.png "$root/usr/share/icons/hicolor/256x256/apps/product-sorter-pro.png"
 mkdir -p dist
 dpkg-deb --build "$root" "dist/product-sorter-pro_${version}_all.deb"

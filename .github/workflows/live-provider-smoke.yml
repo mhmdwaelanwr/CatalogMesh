@@ -67,7 +67,7 @@ jobs:
           PY
 
       - name: Validate provider credentials
-        run: python live_api_smoke.py
+        run: python -m scripts.smoke.live_api_smoke
 
       - name: Run two-image synthetic live sample
-        run: python live_provider_sample_smoke.py
+        run: python -m scripts.smoke.live_provider_sample_smoke
