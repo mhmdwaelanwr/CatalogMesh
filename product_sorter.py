@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
-"""Command-line interface for the shared Product Sorter engine."""
+"""Source-checkout compatibility launcher for the Product Sorter CLI."""
 
-from sorter_core import *  # preserves the public API for existing users
-from sorter_core import main as cli_main
+from pathlib import Path
+import sys
+
+SRC = Path(__file__).resolve().parent / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from ai_product_photo_sorter.core import *  # noqa: F401,F403,E402
+from ai_product_photo_sorter.core import main  # noqa: E402
 
 
 if __name__ == "__main__":
-    raise SystemExit(cli_main())
+    raise SystemExit(main())

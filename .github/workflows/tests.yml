@@ -21,6 +21,6 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v7
         with: {python-version: "${{ matrix.python }}"}
-      - run: python -m pip install -r requirements.txt
+      - run: python -m pip install -e .
       - run: python -m unittest discover -s tests -t . -v
-      - run: python -m py_compile sorter_core.py product_sorter.py product_sorter_gui.py
+      - run: python -m compileall -q src product_sorter.py product_sorter_gui.py set_data.py scripts

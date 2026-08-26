@@ -30,15 +30,22 @@ Issues = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter/issues"
 Changelog = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/CHANGELOG.md"
 
 [project.scripts]
-product-sorter = "sorter_core:main"
-product-sorter-setup = "set_data:main"
+product-sorter = "ai_product_photo_sorter.cli:main"
+product-sorter-setup = "ai_product_photo_sorter.setup_wizard:main"
 
 [project.gui-scripts]
-product-sorter-gui = "product_sorter_gui:main"
+product-sorter-gui = "ai_product_photo_sorter.gui:main"
 
 [tool.setuptools]
-py-modules = ["sorter_core","product_sorter","product_sorter_gui","set_data","providers","professional","i18n","secrets_store","model_catalog"]
+package-dir = {"" = "src"}
+py-modules = ["sorter_core", "product_sorter", "product_sorter_gui", "set_data", "providers", "professional", "i18n", "secrets_store", "model_catalog"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+ai_product_photo_sorter = ["provider_models.json", "requirements.txt"]
 
 [tool.setuptools.data-files]
-"." = ["provider_models.json"]
 "assets/branding" = ["assets/branding/product-sorter-48.png", "assets/branding/product-sorter-64.png", "assets/branding/product-sorter-128.png", "assets/branding/product-sorter-256.png"]

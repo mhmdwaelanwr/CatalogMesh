@@ -6,9 +6,6 @@ from pathlib import Path
 from PyInstaller.utils.hooks import collect_all
 
 
-# PyInstaller exposes SPECPATH while evaluating a spec file. Keep every source
-# and data path anchored to the repository instead of the spec directory so the
-# packaging definition can live under packaging/ without changing runtime code.
 ROOT = Path(SPECPATH).resolve().parents[1]
 
 
@@ -34,12 +31,12 @@ for package in ("google.genai", "PIL", "openpyxl", "keyring"):
 
 a = Analysis(
     [repo_path("product_sorter_gui.py")],
-    pathex=[str(ROOT)],
+    pathex=[repo_path("src"), str(ROOT)],
     binaries=[],
     datas=datas + [
         (repo_path(".env.example"), "."),
         (repo_path("requirements.txt"), "."),
-        (repo_path("provider_models.json"), "."),
+        (repo_path("src", "ai_product_photo_sorter", "provider_models.json"), "ai_product_photo_sorter"),
         (repo_path("assets", "branding"), "assets/branding"),
     ],
     hiddenimports=hidden,
