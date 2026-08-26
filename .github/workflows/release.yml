@@ -53,10 +53,10 @@ jobs:
         run: python -m pip install -r requirements.txt
 
       - name: Run automated tests
-        run: python -m unittest discover -v
+        run: python -m unittest discover -s tests -t . -v
 
       - name: Validate Python sources
-        run: python -m py_compile sorter_core.py product_sorter.py product_sorter_gui.py scripts/build_demo_gif.py
+        run: python -m py_compile sorter_core.py product_sorter.py product_sorter_gui.py scripts/build_demo_gif.py scripts/smoke/gui_smoke.py scripts/smoke/live_api_smoke.py scripts/smoke/live_provider_sample_smoke.py
 
       - name: Build Python distributions
         if: runner.os == 'Linux'
@@ -82,7 +82,7 @@ jobs:
           if-no-files-found: error
 
       - name: Build desktop application
-        run: pyinstaller --clean --noconfirm product_sorter.spec
+        run: pyinstaller --clean --noconfirm packaging/pyinstaller/product_sorter.spec
 
       - name: Package Windows application
         if: runner.os == 'Windows'
@@ -94,7 +94,7 @@ jobs:
         run: |
           test -x dist/ProductSorterPro
           tar -C dist -czf dist/ProductSorterPro-linux-x64.tar.gz ProductSorterPro
-          bash build_deb.sh
+          bash packaging/linux/build_deb.sh
 
       - name: Verify macOS architecture
         if: runner.os == 'macOS'

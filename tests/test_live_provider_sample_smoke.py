@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import live_provider_sample_smoke as smoke
+from scripts.smoke import live_provider_sample_smoke as smoke
 
 
 class LiveProviderSampleSmokeTests(unittest.TestCase):
