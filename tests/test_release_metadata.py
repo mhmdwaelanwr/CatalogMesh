@@ -9,17 +9,34 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 class ReleaseMetadataTests(unittest.TestCase):
-    def test_pyproject_version_matches_application_version(self):
+    def project_version(self) -> str:
         text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)
         self.assertIsNotNone(match)
-        package_version = match.group(1)
-        self.assertEqual(package_version, VERSION.replace("-rc", "rc"))
+        return match.group(1)
+
+    def test_pyproject_version_matches_application_version(self):
+        self.assertEqual(self.project_version(), VERSION.replace("-rc", "rc"))
 
     def test_debian_package_derives_version_from_pyproject(self):
         script = (ROOT / "packaging" / "linux" / "build_deb.sh").read_text(encoding="utf-8")
         self.assertIn("pyproject.toml", script)
-        self.assertNotIn('version="3.1.0', script)
+        self.assertNotRegex(script, r'(?m)^version=["\']\d+\.\d+\.\d+["\']')
+
+    def test_readme_stable_release_matches_project_version(self):
+        version = self.project_version()
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn(f"release-{version}-4f8cff", readme)
+        self.assertIn(f"stable `v{version}` release", readme)
+        self.assertIn(f"product-sorter-pro_{version}_all.deb", readme)
+
+    def test_release_notes_exist_for_project_version(self):
+        notes = ROOT / "docs" / "releases" / f"v{self.project_version()}.md"
+        self.assertTrue(notes.is_file(), notes)
+
+    def test_release_trigger_matches_project_version(self):
+        trigger = (ROOT / ".github" / "release-trigger").read_text(encoding="utf-8").strip()
+        self.assertEqual(trigger, f"v{self.project_version()}")
 
     def test_release_brand_assets_exist(self):
         branding = ROOT / "assets" / "branding"
