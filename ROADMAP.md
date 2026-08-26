@@ -18,8 +18,11 @@ releases are promoted only after automated builds and the manual checks in
 - [x] Validate the selected funded live provider with a non-sensitive two-image sample; OpenAI and Anthropic remain covered by automated integration tests until funded keys are available.
 - [x] Publish signed-off `v3.1.0` release artifacts.
 - [x] Publish `ai-product-photo-sorter` 3.1.0 to PyPI using Trusted Publishing.
+- [x] Publish the backward-compatible `v3.1.1` maintenance release with the canonical `src/ai_product_photo_sorter/` package layout.
 
-`v3.1.0` is published on GitHub Releases and PyPI. Gemini passed the funded
+`v3.1.1` is the current stable patch release on GitHub Releases and PyPI. It
+preserves the v3.1 command/configuration surface while moving the canonical
+runtime into a maintainable `src/` package layout. Gemini passed the funded
 end-to-end synthetic live sample. OpenAI and Anthropic integration paths remain
 covered by automated request, key-pool, and compatibility tests, with optional
 funded live verification available through the manual `live-provider-smoke`
