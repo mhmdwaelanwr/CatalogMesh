@@ -15,13 +15,15 @@ releases are promoted only after automated builds and the manual checks in
 - [x] Cross-platform brand and application icons.
 - [x] Automated Linux, Windows, and macOS build pipeline.
 - [x] Validate produced artifacts on real desktop machines.
-- [ ] Validate each provider with non-sensitive two-image samples.
+- [x] Validate the selected funded live provider with a non-sensitive two-image sample; OpenAI and Anthropic remain covered by automated integration tests until funded keys are available.
 - [x] Publish signed-off `v3.1.0` release artifacts.
 - [x] Publish `ai-product-photo-sorter` 3.1.0 to PyPI using Trusted Publishing.
 
-`v3.1.0` is published on GitHub Releases and PyPI. Provider-by-provider live
-sample verification remains open as a post-release validation item and should be
-completed before relying on every provider in production.
+`v3.1.0` is published on GitHub Releases and PyPI. Gemini passed the funded
+end-to-end synthetic live sample. OpenAI and Anthropic integration paths remain
+covered by automated request, key-pool, and compatibility tests, with optional
+funded live verification available through the manual `live-provider-smoke`
+workflow whenever usable API credit is available.
 
 ## 3.2 — Quality and workflow
 
