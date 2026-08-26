@@ -5,6 +5,11 @@
 - Grouping is probabilistic. Similar-looking products, abrupt camera-order
   changes, reflections, packaging-only shots, and missing views can reduce
   accuracy.
+- Categories are discovered dynamically by the configured AI model. Categories
+  already observed in completed batches are fed back to later batches so the
+  model can reuse them, while genuinely new product types may create new
+  categories. Near-synonyms can still occur; review `category_registry.json` and
+  `classification_report.csv` before treating the taxonomy as final.
 - Confidence scores are model estimates, not calibrated guarantees. Review
   `Needs_Review` and the CSV report before using results as a final catalog.
 - Provider models can be renamed, retired, region-limited, or billing-limited.
