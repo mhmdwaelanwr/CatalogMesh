@@ -1,4 +1,4 @@
-# Build with: pyinstaller --clean product_sorter.spec
+# Build with: pyinstaller --clean packaging/pyinstaller/product_sorter.spec
 import re
 import sys
 from pathlib import Path
@@ -6,8 +6,18 @@ from pathlib import Path
 from PyInstaller.utils.hooks import collect_all
 
 
+# PyInstaller exposes SPECPATH while evaluating a spec file. Keep every source
+# and data path anchored to the repository instead of the spec directory so the
+# packaging definition can live under packaging/ without changing runtime code.
+ROOT = Path(SPECPATH).resolve().parents[1]
+
+
+def repo_path(*parts: str) -> str:
+    return str(ROOT.joinpath(*parts))
+
+
 def project_version():
-    text = Path("pyproject.toml").read_text(encoding="utf-8")
+    text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)
     if not match:
         raise RuntimeError("Unable to read project version from pyproject.toml")
@@ -15,18 +25,43 @@ def project_version():
 
 
 APP_VERSION = project_version()
-datas=[]; hidden=[]
-for package in ("google.genai","PIL","openpyxl","keyring"):
-    d,b,h=collect_all(package); datas+=d; hidden+=h
-a=Analysis(["product_sorter_gui.py"],pathex=[],binaries=[],datas=datas+[(".env.example","."),("requirements.txt","."),("provider_models.json","."),("assets/branding","assets/branding")],hiddenimports=hidden)
-pyz=PYZ(a.pure)
-app_icon="assets/branding/product-sorter.icns" if sys.platform=="darwin" else "assets/branding/product-sorter.ico"
-exe=EXE(pyz,a.scripts,a.binaries,a.datas,name="ProductSorterPro",console=False,icon=app_icon)
-if sys.platform=="darwin":
-    app=BUNDLE(
+datas = []
+hidden = []
+for package in ("google.genai", "PIL", "openpyxl", "keyring"):
+    package_datas, package_binaries, package_hidden = collect_all(package)
+    datas += package_datas
+    hidden += package_hidden
+
+a = Analysis(
+    [repo_path("product_sorter_gui.py")],
+    pathex=[str(ROOT)],
+    binaries=[],
+    datas=datas + [
+        (repo_path(".env.example"), "."),
+        (repo_path("requirements.txt"), "."),
+        (repo_path("provider_models.json"), "."),
+        (repo_path("assets", "branding"), "assets/branding"),
+    ],
+    hiddenimports=hidden,
+)
+pyz = PYZ(a.pure)
+app_icon = repo_path(
+    "assets", "branding", "product-sorter.icns" if sys.platform == "darwin" else "product-sorter.ico"
+)
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas,
+    name="ProductSorterPro",
+    console=False,
+    icon=app_icon,
+)
+if sys.platform == "darwin":
+    app = BUNDLE(
         exe,
         name="ProductSorterPro.app",
-        icon="assets/branding/product-sorter.icns",
+        icon=repo_path("assets", "branding", "product-sorter.icns"),
         bundle_identifier="io.github.mhmdwaelanwr.product-sorter",
         info_plist={
             "CFBundleShortVersionString": APP_VERSION,
