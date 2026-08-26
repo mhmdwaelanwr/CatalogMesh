@@ -1,8 +1,10 @@
 import os
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
-from providers import RestProviderPool, configured_rest_providers, load_provider_keys
+from providers import RestProviderPool, RestVisionProvider, configured_rest_providers, load_provider_keys
 from sorter_core import call_rest_pool
 
 
@@ -16,6 +18,33 @@ class ProviderKeyPoolTests(unittest.TestCase):
         pools=configured_rest_providers()
         self.assertEqual(len(pools),1)
         self.assertEqual(len(pools[0].clients),2)
+
+    @patch.dict(os.environ,{"AI_PROVIDERS":"anthropic","ANTHROPIC_API_KEY":"one"},clear=True)
+    def test_anthropic_uses_current_fallback_model(self):
+        pools=configured_rest_providers()
+        self.assertEqual(len(pools),1)
+        self.assertEqual(pools[0].model,"claude-sonnet-5")
+
+    def test_anthropic_request_omits_sampling_parameters(self):
+        provider=RestVisionProvider("anthropic","secret","claude-sonnet-5")
+        photos=[SimpleNamespace(path=Path("synthetic.jpg"))]
+        response={"content":[{"type":"text","text":"{}"}],"usage":{}}
+        with patch("providers._post",return_value=response) as post:
+            self.assertEqual(provider.generate("prompt",photos,lambda path:b"jpeg"),"{}")
+        payload=post.call_args.args[2]
+        self.assertNotIn("temperature",payload)
+        self.assertNotIn("top_p",payload)
+        self.assertNotIn("top_k",payload)
+        self.assertEqual(payload["model"],"claude-sonnet-5")
+
+    def test_openai_request_uses_default_sampling_behavior(self):
+        provider=RestVisionProvider("openai","secret","gpt-4.1-mini")
+        photos=[SimpleNamespace(path=Path("synthetic.jpg"))]
+        response={"choices":[{"message":{"content":"{}"}}],"usage":{}}
+        with patch("providers._post",return_value=response) as post:
+            self.assertEqual(provider.generate("prompt",photos,lambda path:b"jpeg"),"{}")
+        payload=post.call_args.args[2]
+        self.assertNotIn("temperature",payload)
 
     def test_rotates_on_quota_and_succeeds(self):
         class Client:
