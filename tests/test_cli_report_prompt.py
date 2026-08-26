@@ -22,9 +22,9 @@ class CliReportPromptTests(unittest.TestCase):
             {"PRODUCT_SORTER_MD_REPORT": "false", "APP_LANGUAGE": "en"},
         ), patch("builtins.input", return_value="y") as prompt:
             args = core.parse_args(Path("/tmp/no-product-sorter-env"))
+            self.assertEqual(os.environ["PRODUCT_SORTER_MD_REPORT"], "true")
 
         self.assertTrue(args.md_report)
-        self.assertEqual(os.environ["PRODUCT_SORTER_MD_REPORT"], "true")
         prompt.assert_called_once()
         self.assertIn("smart Markdown report", prompt.call_args.args[0])
 
