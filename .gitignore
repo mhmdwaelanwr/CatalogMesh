@@ -34,6 +34,7 @@ pending_files.txt
 error_report.csv
 api_usage.csv
 quality_score.txt
+category_registry.json*
 .product_sorter.lock
 .product-sorter-managed-outputs.json*
 backups/
