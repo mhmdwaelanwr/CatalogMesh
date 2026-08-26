@@ -35,6 +35,8 @@ error_report.csv
 api_usage.csv
 quality_score.txt
 category_registry.json*
+SMART_REPORT.md
+SMART_REPORT.md.tmp
 .product_sorter.lock
 .product-sorter-managed-outputs.json*
 backups/
