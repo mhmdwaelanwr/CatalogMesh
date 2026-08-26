@@ -4,6 +4,22 @@ All notable project changes are documented here.
 
 ## Unreleased
 
+## 3.1.1 — 2026-08-26
+
+### Repository and package architecture
+
+- Moved the canonical runtime into `src/ai_product_photo_sorter/` while preserving the existing source launchers and top-level compatibility imports.
+- Added package-native CLI, GUI, and setup entry points backed by the same shared engine.
+- Centralized source-checkout, installed-package, and frozen-application path resolution.
+- Reorganized tests, smoke tools, examples, and packaging assets into dedicated project directories and documented the architecture.
+
+### Packaging and reliability
+
+- Updated PyInstaller and release workflows for the `src/` package layout across Windows, Linux, macOS Apple Silicon, and macOS Intel.
+- Updated the frozen GUI so CLI worker execution can run through the same packaged executable rather than depending on a loose source script.
+- Added regression coverage for the package boundary, legacy configuration location, release metadata, and compatibility shims.
+- Preserved the v3.1 command surface and user data/configuration behavior while modernizing the internal layout.
+
 ## 3.1.0 — 2026-08-22
 
 ### Desktop experience
@@ -53,7 +69,7 @@ All notable project changes are documented here.
 - Added schema-versioned SQLite migrations and token/cost usage reporting.
 - Added `pyproject.toml`, PyInstaller build specification and release builder.
 - Added GitHub Actions across Linux, Windows, macOS and Python 3.10/3.12.
-- Added synthetic image-to-provider-to-report integration testing.
+- Added synthetic image-to-report integration testing.
 - Added opt-in live credential smoke testing without uploading product images.
 
 ## 2.1.0
