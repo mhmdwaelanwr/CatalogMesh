@@ -83,6 +83,19 @@ def _relative_report_name(output: str, path: Path) -> str:
     return path.name
 
 
+def _selected_report_path(owner: Any) -> Path | None:
+    """Resolve a user selection while suppressing refresh-generated events."""
+    if getattr(owner, "_report_refreshing", False):
+        return None
+    selected = owner.report_tree.selection()
+    if not selected:
+        return None
+    path = owner.report_paths.get(selected[0])
+    if path == getattr(owner, "current_report_path", None):
+        return None
+    return path
+
+
 def apply_report_gui(module: Any) -> None:
     base_build = module.App.build
     base_apply_language = module.App.apply_language
@@ -100,6 +113,7 @@ def apply_report_gui(module: Any) -> None:
         self.current_report_path: Path | None = None
         self.current_report_text = ""
         self.report_paths: dict[str, Path] = {}
+        self._report_refreshing = False
 
         page = module.ttk.Frame(self.main_tabs, style="Panel.TFrame", padding=20)
         self.main_tabs.insert(5, page, text="Reports")
@@ -195,33 +209,34 @@ def apply_report_gui(module: Any) -> None:
         current = self.current_report_path
         if current and current.is_file() and current not in paths:
             paths.insert(0, current)
-        self.report_tree.delete(*self.report_tree.get_children())
-        self.report_paths = {}
-        selected_iid = None
-        for index, path in enumerate(paths):
-            iid = f"report-{index}"
-            self.report_paths[iid] = path
-            self.report_tree.insert(
-                "",
-                "end",
-                iid=iid,
-                values=(report_kind(path), _relative_report_name(output, path), _modified_text(path)),
-            )
-            if current and path == current:
-                selected_iid = iid
-        if selected_iid:
-            self.report_tree.selection_set(selected_iid)
-            self.report_tree.see(selected_iid)
+        self._report_refreshing = True
+        try:
+            self.report_tree.delete(*self.report_tree.get_children())
+            self.report_paths = {}
+            selected_iid = None
+            for index, path in enumerate(paths):
+                iid = f"report-{index}"
+                self.report_paths[iid] = path
+                self.report_tree.insert(
+                    "",
+                    "end",
+                    iid=iid,
+                    values=(report_kind(path), _relative_report_name(output, path), _modified_text(path)),
+                )
+                if current and path == current:
+                    selected_iid = iid
+            if selected_iid:
+                self.report_tree.selection_set(selected_iid)
+                self.report_tree.see(selected_iid)
+        finally:
+            self._report_refreshing = False
         if paths:
             self.report_status.set(f"{len(paths)} report artifact{'s' if len(paths) != 1 else ''}")
         else:
             self.report_status.set(_text(self)["empty"])
 
     def select_report(self, event=None):
-        selected = self.report_tree.selection()
-        if not selected:
-            return
-        path = self.report_paths.get(selected[0])
+        path = _selected_report_path(self)
         if path:
             self.show_report(path, select_tab=False)
 
@@ -236,7 +251,11 @@ def apply_report_gui(module: Any) -> None:
         self.current_report_text = text
         if select_tab:
             self.main_tabs.select(5)
-        self.refresh_reports()
+        # Do not rebuild/reselect the Treeview here. Re-selection emits another
+        # <<TreeviewSelect>> event on Tk and previously caused an infinite
+        # select -> show -> refresh loop that froze the desktop application.
+        if path not in self.report_paths.values():
+            self.refresh_reports()
         self.render_report()
         self.report_status.set(f"{report_kind(path)} · {path.name}")
 
