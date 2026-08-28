@@ -17,6 +17,7 @@ import io
 import json
 import os
 import shutil
+import threading
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -33,6 +34,7 @@ OUTPUT_MODE_ENV = "PRODUCT_SORTER_OUTPUT_MODE"
 DEFAULT_OUTPUT_MODE = "copy"
 OUTPUT_MODES = {"copy", "auto", "hardlink", "symlink"}
 COPY_RESERVE_BYTES = 512 * 1024 * 1024
+_TRUNCATED_IMAGE_LOCK = threading.Lock()
 
 RETAIL_CATEGORIES = {
     "adapter",
@@ -73,34 +75,57 @@ def _compressed_image_bytes(module: Any, path: Path) -> bytes:
     if Image is None or ImageOps is None:
         raise RuntimeError("Pillow is required before product images can be processed")
 
-    with Image.open(path) as original:
-        # JPEG supports decoder-level downsampling through draft(). Other image
-        # types simply ignore or reject the hint; the existing v3.1 scanner only
-        # admits JPG/JPEG inputs.
-        try:
-            original.draft("RGB", (API_IMAGE_EDGE, API_IMAGE_EDGE))
-        except (AttributeError, ValueError):
-            pass
+    def encode() -> bytes:
+        with Image.open(path) as original:
+            # JPEG supports decoder-level downsampling through draft(). Other
+            # image types ignore or reject the hint.
+            try:
+                original.draft("RGB", (API_IMAGE_EDGE, API_IMAGE_EDGE))
+            except (AttributeError, ValueError):
+                pass
 
-        working = ImageOps.exif_transpose(original)
-        try:
-            if working.mode != "RGB":
-                converted = working.convert("RGB")
+            working = ImageOps.exif_transpose(original)
+            try:
+                if working.mode != "RGB":
+                    converted = working.convert("RGB")
+                    if working is not original:
+                        working.close()
+                    working = converted
+                working.thumbnail((API_IMAGE_EDGE, API_IMAGE_EDGE), Image.Resampling.LANCZOS)
+                buffer = io.BytesIO()
+                working.save(
+                    buffer,
+                    format="JPEG",
+                    quality=API_JPEG_QUALITY,
+                    optimize=True,
+                )
+                return buffer.getvalue()
+            finally:
                 if working is not original:
                     working.close()
-                working = converted
-            working.thumbnail((API_IMAGE_EDGE, API_IMAGE_EDGE), Image.Resampling.LANCZOS)
-            buffer = io.BytesIO()
-            working.save(
-                buffer,
-                format="JPEG",
-                quality=API_JPEG_QUALITY,
-                optimize=True,
-            )
-            return buffer.getvalue()
+
+    try:
+        return encode()
+    except OSError as exc:
+        if "truncated" not in str(exc).lower():
+            raise OSError(f"Cannot decode product image '{path.name}': {exc}") from exc
+
+    # Some cameras/transfer tools leave a usable JPEG without its complete end
+    # marker. Pillow can recover those pixels explicitly. The setting is global,
+    # so protect and restore it even though image encoding is currently serial.
+    from PIL import ImageFile
+
+    with _TRUNCATED_IMAGE_LOCK:
+        previous = ImageFile.LOAD_TRUNCATED_IMAGES
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
+        try:
+            return encode()
+        except OSError as exc:
+            raise OSError(
+                f"Cannot recover truncated product image '{path.name}': {exc}"
+            ) from exc
         finally:
-            if working is not original:
-                working.close()
+            ImageFile.LOAD_TRUNCATED_IMAGES = previous
 
 
 def _prompt_for(module: Any, photos: list[Any], catalog: str) -> str:
