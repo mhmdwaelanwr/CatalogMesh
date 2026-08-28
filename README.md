@@ -6,7 +6,7 @@
 
 ### Turn chronological product-shoot photos into an organized, reviewable catalog.
 
-Desktop GUI + CLI · Multi-provider vision · Safe resume · Automatic key rotation
+Desktop GUI + CLI · Multi-provider vision · Safe resume · Automatic key rotation · Reproducible benchmarks
 
 [![Tests](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml/badge.svg)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -20,7 +20,7 @@ Desktop GUI + CLI · Multi-provider vision · Safe resume · Automatic key rotat
 [![Download macOS Apple Silicon](https://img.shields.io/badge/macOS-Apple%20Silicon-111111?logo=apple&logoColor=white)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-macos-arm64.zip)
 [![Download macOS Intel](https://img.shields.io/badge/macOS-Intel-555555?logo=apple&logoColor=white)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest/download/ProductSorterPro-macos-x64.zip)
 
-[Features](#features) · [Demo](#quick-demo) · [Installation](#installation) · [PyPI](https://pypi.org/project/ai-product-photo-sorter/) · [Configuration](#api-configuration) · [Roadmap](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/ROADMAP.md) · [Limitations](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/KNOWN_LIMITATIONS.md) · [All releases](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases)
+[Features](#features) · [Demo](#quick-demo) · [Installation](#installation) · [Benchmark](BENCHMARK.md) · [Configuration](#api-configuration) · [Roadmap](ROADMAP.md) · [Limitations](KNOWN_LIMITATIONS.md) · [All releases](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases)
 
 </div>
 
@@ -34,6 +34,10 @@ source files.
 The stable `v3.1.1` release is available both as ready-to-run desktop builds on
 [GitHub Releases](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/tag/v3.1.1)
 and as a Python package on [PyPI](https://pypi.org/project/ai-product-photo-sorter/).
+
+> **Development note:** Benchmark Center belongs to the current 3.2 development
+> line. Until a 3.2 release is published, the stable `v3.1.1` desktop/PyPI builds
+> do not contain this feature; build from the current source branch to test it.
 
 ## Quick demo
 
@@ -53,10 +57,60 @@ that the committed GIF remains synchronized.
 | **Live model discovery** | Provider model catalogs refreshed from configured credentials; multi-key pools expose only shared models. |
 | **Crash-safe resume** | Successful batches are committed to SQLite immediately and can be resumed from the same output folder. |
 | **Professional GUI + CLI** | One shared engine, live status, ETA, completed/pending/failed views, logs, and graceful stopping. |
+| **Benchmark Center** | Fresh isolated real-pipeline runs with provider/model timing, throughput, image-encoding metrics, token/cost totals, hardware snapshots, JSON history, Markdown reports, and optional ground-truth accuracy. |
+| **Smart report** | Optional operation-wide Markdown summary built from deterministic catalog facts plus one final advisory text-only AI analysis. |
 | **Dark and light themes** | Instant persistent appearance switching from the desktop header. |
 | **Multilingual UI** | Arabic, English, and Chinese with device-language detection. |
-| **Quality controls** | Confidence review folders, CSV reports, usage tracking, internet/latency checks, and failure exports. |
-| **Cross-platform delivery** | CI-built Windows x64 executable, Linux x64 binary/DEB, native macOS Apple Silicon and Intel app bundles, plus signed-at-publish PyPI wheel/source distributions. |
+| **Quality controls** | Confidence review folders, CSV reports, usage tracking, internet/latency checks, failure exports, and labeled-dataset scoring. |
+| **Cross-platform delivery** | CI-built Windows x64 executable, Linux x64 binary/DEB, native macOS Apple Silicon and Intel app bundles, plus PyPI wheel/source distributions. |
+
+## Benchmark Center
+
+Benchmark mode measures the **same production sorting path** used by a normal
+operation. It does not replace the classifier with a synthetic test and it does
+not reuse an existing operation cache.
+
+```bash
+product-sorter \
+  --source ./Products \
+  --output ./Sorted_Products \
+  --limit 100 \
+  --benchmark
+```
+
+Every run gets a fresh output directory under `Sorted_Products/benchmarks/` and
+produces both human-readable and machine-readable evidence:
+
+```text
+Sorted_Products/
+└── benchmarks/
+    ├── history.jsonl
+    ├── latest.txt
+    └── run_YYYYMMDD_HHMMSS_microseconds/
+        ├── BENCHMARK_REPORT.md
+        ├── benchmark.json
+        ├── processing_status.csv
+        ├── api_usage.csv
+        ├── progress.sqlite3
+        └── normal sorter outputs
+```
+
+A benchmark records wall time, average time per completed photo, throughput,
+provider/model timing, logical provider calls, failures, image compression time,
+encoded payload size, token usage, configured cost estimates, process memory,
+platform/CPU information, and NVIDIA GPU information when `nvidia-smi` is
+available. Add `--ground-truth expected.csv` to include measured classification
+accuracy.
+
+Smart Markdown reporting is disabled automatically during benchmark mode so its
+optional extra AI narrative request cannot distort the benchmark timing or token
+totals. Provider-internal retry delays remain part of elapsed time, while the
+report labels its request counter as **logical provider calls** rather than
+pretending every internal retry is individually observable.
+
+For methodology, fair model comparisons, cloud/local caveats, and the verified
+results table, see **[BENCHMARK.md](BENCHMARK.md)**. The repository intentionally
+does not publish guessed performance numbers.
 
 ## Brand assets
 
@@ -67,7 +121,7 @@ The official Smart Photo Stack identity is available in production-ready forms:
 - Multi-resolution Windows `.ico` and macOS `.icns` application icons.
 - Dedicated dark and light presentation variants.
 
-All official files live in [`assets/branding`](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/tree/main/assets/branding).
+All official files live in [`assets/branding`](assets/branding).
 
 ## Safety by design
 
@@ -76,12 +130,13 @@ All official files live in [`assets/branding`](https://github.com/mhmdwaelanwr/a
 - API keys remain masked in the GUI and can optionally be stored in the OS keyring.
 - Product images are sent only to the selected provider; review its privacy and billing terms before processing sensitive material.
 - AI output is probabilistic. Low-confidence classifications are separated for human review.
+- Benchmark mode uses a fresh operation directory so cached responses cannot make a result look artificially fast.
 
 ## Installation
 
 ### Install from PyPI
 
-For Python 3.10 or newer, install the published package directly from PyPI:
+For Python 3.10 or newer, install the published stable package directly from PyPI:
 
 ```bash
 python -m pip install --upgrade ai-product-photo-sorter
@@ -120,10 +175,10 @@ Silicon, and macOS Intel before its assets are published.
 Release assets also include the Python wheel, source archive, and
 `SHA256SUMS.txt` for integrity checking.
 
-> **Signing note:** v3.1.1 desktop binaries are not code-signed or Apple-notarized yet, so Windows SmartScreen or macOS Gatekeeper may show a first-launch warning. See [Known Limitations](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/KNOWN_LIMITATIONS.md) before production deployment.
+> **Signing note:** v3.1.1 desktop binaries are not code-signed or Apple-notarized yet, so Windows SmartScreen or macOS Gatekeeper may show a first-launch warning. See [Known Limitations](KNOWN_LIMITATIONS.md) before production deployment.
 
-You still need an API key for at least one supported vision provider. Configure
-it from the GUI or with the setup wizard after installation.
+You still need an API key for at least one supported cloud vision provider.
+Configure it from the GUI or with the setup wizard after installation.
 
 ### Build from source
 
@@ -171,6 +226,7 @@ flowchart LR
     D --> E[CSV review reports]
     B -. saved after every batch .-> F[(SQLite progress)]
     F -. resume .-> B
+    B -. benchmark instrumentation .-> G[Benchmark report + JSON]
 ```
 
 The engine analyzes overlapping batches so a front photo can stay connected to
@@ -179,10 +235,15 @@ batch is committed to SQLite immediately. If the app closes, the internet drops,
 or a key reaches quota, reopening the same output folder continues from saved
 work rather than starting over.
 
+Benchmark instrumentation wraps that shared engine rather than maintaining a
+second classifier implementation. This keeps performance measurements tied to
+the code path users actually run.
+
 ## Desktop GUI
 
-The GUI and CLI use the same processing engine and progress database. The GUI is
-organized into four workspaces and supports persistent light and dark themes.
+The GUI and CLI use the same processing engine and progress database. The current
+development GUI is organized into **five workspaces** and supports persistent
+light and dark themes.
 
 ### Operation workspace
 
@@ -225,6 +286,17 @@ organized into four workspaces and supports persistent light and dark themes.
 | ![Failed requests and live activity](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/light-results-failed.jpg) | ![Dark failed-request diagnostics](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/dark-results-failed.jpg) |
 | Errors retain their affected filenames and provider message for troubleshooting. The live activity panel preserves internet checks, batches, rotation events, and safe-stop messages. | Dark diagnostics provide the same failure detail and operational log without sacrificing contrast during long processing sessions. |
 
+### Benchmark workspace
+
+The Benchmark workspace deliberately reuses the normal source/output settings,
+provider priority, selected model, and configured API credentials. Choose a photo
+count, start the benchmark, and open the latest generated report from the same
+application. Normal sorting remains the default; benchmark mode is opt-in.
+
+The generated report lives in a fresh benchmark run directory, so an existing
+`progress.sqlite3` from a production operation cannot turn a cached resume into a
+misleading speed result.
+
 ### About and open source
 
 | Light About workspace | Dark About workspace |
@@ -238,7 +310,9 @@ organized into four workspaces and supports persistent light and dark themes.
    the model list shared by those keys.
 3. **Results & activity** — follow the current operation, inspect completed,
    pending, and failed counts, read logs, and open the output directory.
-4. **About** — project version, developer information, open-source license, and
+4. **Benchmark Center** — run isolated real-pipeline measurements and open the
+   generated Markdown benchmark report.
+5. **About** — project version, developer information, open-source license, and
    direct links to the maintainer's profiles.
 
 Use the sun/moon button in the header to switch between dark and light mode.
@@ -271,7 +345,17 @@ processing from failing halfway through when key rotation selects a key without
 access to the chosen model. If an old model returns `404 NOT_FOUND`, refresh the
 list and choose a current vision-capable model; saved photos will not be repeated.
 
+### Local models and Ollama
+
+The current runtime supports Gemini plus OpenAI and Anthropic provider pools.
+An optional local vision-model adapter is tracked separately on the 4.0 roadmap;
+Benchmark Center is intentionally provider-agnostic so that adapter can reuse the
+same measurement/reporting layer when it is implemented. The README does not
+claim Ollama/Gemma support before that runtime adapter exists.
+
 ## Outputs
+
+Normal operation:
 
 ```text
 Sorted_Products/
@@ -282,12 +366,15 @@ Sorted_Products/
 ├── completed_files.txt
 ├── pending_files.txt
 ├── error_report.csv
-├── usage_report.csv
+├── api_usage.csv
 ├── run_history.log
 └── progress.sqlite3            # resumable operation state
 ```
 
-The output folder is the operation identity. Reusing it resumes its saved
+Benchmark operation adds its own isolated `benchmarks/run_*` tree as documented
+in [BENCHMARK.md](BENCHMARK.md).
+
+The normal output folder is the operation identity. Reusing it resumes its saved
 progress; choosing a different output folder starts an independent operation.
 
 ## Troubleshooting
@@ -298,6 +385,7 @@ progress; choosing a different output folder starts an independent operation.
 | A key reaches quota | The app rotates to the next key; after all keys are exhausted it asks for another. |
 | Internet disconnects | Retry after reconnecting; completed batches remain saved. |
 | Progress appears paused | The current API request is still running; the count advances after the batch is saved. |
+| Benchmark is unexpectedly fast | Confirm you used `--benchmark`; benchmark mode creates a fresh isolated run specifically to avoid cached-batch timing. |
 | Large-image Pillow warning | Product photos are still downscaled for requests; inspect unexpected files if the image is untrusted. |
 
 ## Tests
@@ -307,22 +395,46 @@ python -m unittest discover -s tests -t . -v
 python -m compileall -q src product_sorter.py product_sorter_gui.py set_data.py scripts
 ```
 
-The suite includes a synthetic image-to-report integration flow, key-rotation scenarios, and release-metadata consistency checks. The CI matrix runs on Linux, Windows, and macOS with Python 3.10 and 3.12. Live checks are opt-in:
+The suite includes synthetic image-to-report integration, key-rotation scenarios,
+release-metadata consistency, package-layout checks, and Benchmark Center report
+coverage. The CI matrix runs on Linux, Windows, and macOS with Python 3.10 and
+3.12. Live-provider checks remain opt-in so CI does not require user credentials.
 
-```bash
-python live_api_smoke.py
-python gui_smoke.py
+See [PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md) for checks requiring real
+credentials, a graphical desktop, or a labeled product dataset.
+
+## Architecture
+
+The canonical runtime lives under `src/ai_product_photo_sorter/`. Public
+`core.py` and `gui.py` facades preserve the stable v3.1 surface while applying
+small extension modules around the compatibility-preserved engine. Benchmark
+instrumentation follows that same pattern instead of expanding `_core_impl.py`
+with a second processing implementation.
+
+```text
+src/ai_product_photo_sorter/
+├── core.py                 # public core facade
+├── _core_impl.py           # compatibility-preserved processing engine
+├── gui.py                  # public GUI facade
+├── _gui_impl.py            # compatibility-preserved Tkinter implementation
+├── benchmark.py            # benchmark instrumentation/reporting
+├── benchmark_gui.py        # Benchmark workspace extension
+├── smart_report.py
+├── dynamic_taxonomy.py
+├── hardening.py
+├── providers.py
+└── ...
 ```
-
-See [PRODUCTION_CHECKLIST.md](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/PRODUCTION_CHECKLIST.md) for checks requiring real credentials, a graphical desktop, or a labeled product dataset.
 
 ## Contributing and security
 
-Read [CONTRIBUTING.md](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/CONTRIBUTING.md) before opening a pull request. Report vulnerabilities according to [SECURITY.md](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/SECURITY.md). Never include API keys or private product images in an issue.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Report
+vulnerabilities according to [SECURITY.md](SECURITY.md). Never include API keys
+or private product images in an issue.
 
-Before planning production use, review the [roadmap](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/ROADMAP.md),
-[known limitations](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/KNOWN_LIMITATIONS.md), and
-[production checklist](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/PRODUCTION_CHECKLIST.md).
+Before planning production use, review the [roadmap](ROADMAP.md), [known
+limitations](KNOWN_LIMITATIONS.md), [benchmark methodology](BENCHMARK.md), and
+[production checklist](PRODUCTION_CHECKLIST.md).
 
 ## Developer
 
@@ -349,8 +461,8 @@ Developer & Maintainer of **AI Product Photo Sorter**
 
 <div align="center">
 
-[![MIT License](https://img.shields.io/badge/License-MIT-21c98b?style=for-the-badge)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/LICENSE)
+[![MIT License](https://img.shields.io/badge/License-MIT-21c98b?style=for-the-badge)](LICENSE)
 
-Released under the **MIT License**. See [LICENSE](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/LICENSE) for details.
+Released under the **MIT License**. See [LICENSE](LICENSE) for details.
 
 </div>
