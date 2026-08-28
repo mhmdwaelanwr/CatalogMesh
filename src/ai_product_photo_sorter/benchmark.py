@@ -281,6 +281,7 @@ def build_result(session: BenchmarkSession) -> dict[str, Any]:
         "providers": sorted(providers.values(), key=lambda row: (row["provider"], row["model"])),
         "notes": [
             "The benchmark uses the real Product Sorter processing pipeline and an isolated output directory.",
+            "Benchmark mode is non-interactive so human response time is not included in the measurement.",
             "Smart Markdown reporting is disabled during benchmark mode so its optional final AI narrative call cannot skew timing or token totals.",
             "Logical provider calls count wrapper-level batch calls. Retries performed inside a provider call are included in elapsed time but are not counted separately.",
             "Image encode calls can exceed unique photo count because neighboring batches intentionally overlap by one image.",
@@ -470,6 +471,8 @@ def apply_benchmark(module: Any) -> None:
         setattr(args, "benchmark", enabled)
         setattr(args, "benchmark_label", label)
         if enabled:
+            args.non_interactive = True
+            os.environ["PRODUCT_SORTER_NON_INTERACTIVE"] = "1"
             source = args.source.expanduser().resolve()
             base_output = (args.output or source.parent / "Sorted_Products").expanduser().resolve()
             stamp = datetime.now().strftime("run_%Y%m%d_%H%M%S_%f")
@@ -536,11 +539,7 @@ def apply_benchmark(module: Any) -> None:
             if session is not None:
                 session.return_code = code
                 try:
-                    if not session.run_output.is_dir():
-                        continue_reporting = False
-                    else:
-                        continue_reporting = True
-                    if continue_reporting:
+                    if session.run_output.is_dir():
                         md_path, json_path, result = write_reports(session)
                         print("\nBenchmark result")
                         print(f"Photos: {result['photos_completed']}/{result['photos_selected']}")
