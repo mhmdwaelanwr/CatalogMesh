@@ -508,7 +508,8 @@ def apply_benchmark(module: Any) -> None:
         except Exception as exc:
             _record_batch("gemini", model, len(photos), time.perf_counter() - started, False, error=str(exc))
             raise
-        _record_batch("gemini", model, len(photos), time.perf_counter() - started, True, getattr(pool, "last_usage", {}))
+        actual_model = getattr(pool, "last_model", "") or model
+        _record_batch("gemini", actual_model, len(photos), time.perf_counter() - started, True, getattr(pool, "last_usage", {}))
         return result
 
     def call_rest_pool(pool: Any, photos: list[Any], catalog: str, max_retries: int, live_progress: Any = None) -> dict[str, Any]:
