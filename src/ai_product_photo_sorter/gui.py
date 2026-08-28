@@ -10,6 +10,7 @@ from . import _gui_impl as _impl
 from .benchmark_gui import apply_benchmark_gui
 from .provider_gui import apply_provider_gui
 from .environment_gui import apply_environment_gui
+from .report_gui import apply_report_gui
 
 _impl.ROOT = runtime_root()
 
@@ -133,6 +134,7 @@ _impl.App.set_running = _set_running
 apply_benchmark_gui(_impl)
 apply_provider_gui(_impl)
 apply_environment_gui(_impl)
+apply_report_gui(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main
