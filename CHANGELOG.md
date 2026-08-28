@@ -4,6 +4,17 @@ All notable project changes are documented here.
 
 ## Unreleased
 
+### Desktop workflow and reliability
+
+- Added canonical provider preflight shared by CLI and GUI, including safe correction of the observed `gemeni` typo to `gemini` and clear rejection of unknown providers before a run starts.
+- Added a live Benchmark elapsed timer and post-run success/failure summary with completed photos, logical provider calls, throughput, and seconds per photo.
+- Added an in-app Environment Center for validated configuration editing, masked API-key management, reload/save/delete actions, and complete key removal from both `.env` and the optional OS keyring.
+- Fixed desktop persistence for `APP_THEME`, `PRODUCT_SORTER_MD_REPORT`, `BENCHMARK_LIMIT`, and `PRODUCT_SORTER_OUTPUT_MODE`, which were previously collected by the GUI but not serialized by the legacy fixed `.env` writer.
+- Added an in-app Report Center that discovers operation and benchmark evidence, renders Product Sorter Markdown reports with a GitHub-inspired native preview, and provides Raw, Copy, and Open externally actions.
+- Added automatic Report Center refresh after saved configuration/output paths load or are reloaded, and routed the Benchmark tab's latest-report action into the in-app viewer when available.
+- Bounded in-app report reads to 5 MiB and limited discovery to known report locations so large photo trees are never recursively scanned by the viewer.
+- Reduced duplicate CI work by running feature-branch tests on pull requests while retaining push validation on `main`.
+
 ### Benchmark Center
 
 - Added an opt-in `--benchmark` mode that measures the real sorting pipeline in a fresh isolated run instead of reusing cached batches.
