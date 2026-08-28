@@ -96,11 +96,6 @@ def _selected_report_path(owner: Any) -> Path | None:
     return path
 
 
-# Kept as a small public seam for the headless regression test. Tk widgets
-# themselves cannot be constructed reliably on every CI runner.
-_select_report_for_test = _selected_report_path
-
-
 def apply_report_gui(module: Any) -> None:
     base_build = module.App.build
     base_apply_language = module.App.apply_language
