@@ -9,6 +9,9 @@ All notable project changes are documented here.
 - Added an opt-in `--benchmark` mode that measures the real sorting pipeline in a fresh isolated run instead of reusing cached batches.
 - Added deterministic `BENCHMARK_REPORT.md` and `benchmark.json` artifacts plus append-only benchmark history and a latest-report pointer.
 - Added provider/model timing, throughput, image-encoding metrics, token/cost totals, process-memory reporting, hardware snapshots, and optional ground-truth accuracy.
+- Added reproducibility metadata for application version/revision, model and batch configuration, and connectivity-probe latency so cloud comparisons expose their test conditions.
+- Added a synthetic end-to-end benchmark CI test that runs the real pipeline twice and verifies isolation, reporting, token accounting, and source preservation without live credentials.
+- Fixed deterministic SQLite connection and operation-lock cleanup on every engine exit path, preventing retained Windows file handles after successful or interrupted runs.
 - Added a dedicated desktop Benchmark tab that reuses the configured workspace, provider priority, model, and API credentials.
 - Added `BENCHMARK.md` with reproducible comparison methodology and explicit caveats for cloud versus future local-provider measurements.
 
