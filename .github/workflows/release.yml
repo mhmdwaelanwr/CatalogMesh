@@ -171,7 +171,7 @@ jobs:
           cache: pip
 
       - name: Install GUI automation dependencies
-        run: python -m pip install --upgrade pywinauto pyautogui pillow
+        run: python -m pip install --upgrade pywinauto pyautogui pillow psutil
 
       - name: Download packaged Windows executable
         uses: actions/download-artifact@v8
