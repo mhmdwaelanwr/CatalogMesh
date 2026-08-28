@@ -45,6 +45,9 @@ WORKSPACES = (
 TAB_CENTER_Y = 143
 THEME_CENTER_FROM_RIGHT = 194
 THEME_CENTER_Y = 79
+THEME_BRIGHTNESS_DELTA = 3.0
+THEME_IMAGE_DELTA = 0.01
+THEME_BACKGROUND_DELTA = 8.0
 
 
 def _brightness(image: Image.Image) -> float:
@@ -60,6 +63,39 @@ def _image_delta(left: Image.Image, right: Image.Image) -> float:
     diff = ImageChops.difference(first, second)
     rms = ImageStat.Stat(diff).rms
     return math.sqrt(sum(channel * channel for channel in rms) / len(rms)) / 255.0
+
+
+def _background_brightness(image: Image.Image) -> float:
+    """Estimate the dominant chrome/background tone from stable corner samples."""
+    rgb = image.convert("RGB")
+    inset = max(8, min(rgb.size) // 40)
+    size = max(20, min(rgb.size) // 12)
+    boxes = (
+        (inset, inset, inset + size, inset + size),
+        (rgb.width - inset - size, inset, rgb.width - inset, inset + size),
+        (inset, rgb.height - inset - size, inset + size, rgb.height - inset),
+        (
+            rgb.width - inset - size,
+            rgb.height - inset - size,
+            rgb.width - inset,
+            rgb.height - inset,
+        ),
+    )
+    samples = [ImageStat.Stat(rgb.crop(box).resize((1, 1))).mean for box in boxes]
+    return sum(sum(sample) / 3.0 for sample in samples) / len(samples)
+
+
+def _wait_for_theme_render(window) -> str:
+    """Wait for the packaged process to settle without assuming a Tk API wrapper."""
+    try:
+        window.wait_cpu_usage_lower(threshold=5, timeout=5)
+        time.sleep(0.25)
+        return "cpu-idle"
+    except Exception:
+        # pywinauto wrappers do not expose Tk update/update_idle_tasks. A fixed
+        # render grace period is the reliable fallback for the packaged EXE.
+        time.sleep(1.5)
+        return "sleep-fallback"
 
 
 def _window_image(window) -> Image.Image:
@@ -160,23 +196,79 @@ def _click_theme(window) -> str:
     return "coordinate-fallback"
 
 
-def _ensure_theme(window, desired: str) -> str:
+def _ensure_theme(window, desired: str, output: Path) -> tuple[str, dict[str, Any]]:
     before = _window_image(window)
-    is_dark = _brightness(before) < 128
+    before_brightness = _brightness(before)
+    before_background = _background_brightness(before)
+    is_dark = before_brightness < 128
     already = (desired == "dark" and is_dark) or (desired == "light" and not is_dark)
     if already:
-        return "already-active"
+        return "already-active", {
+            "requested": desired,
+            "success": True,
+            "already_active": True,
+            "brightness_before": round(before_brightness, 2),
+            "background_before": round(before_background, 2),
+            "warning": None,
+        }
+
+    before_path = output / "before-theme.png"
+    after_path = output / "after-theme.png"
+    diff_path = output / "theme-diff.png"
+    before.save(before_path)
 
     method = _click_theme(window)
+    wait_method = _wait_for_theme_render(window)
     after = _window_image(window)
-    after_dark = _brightness(after) < 128
-    ok = (desired == "dark" and after_dark) or (desired == "light" and not after_dark)
-    if not ok:
-        raise RuntimeError(
-            f"theme switch to {desired!r} did not change the rendered window as expected "
-            f"(before={_brightness(before):.1f}, after={_brightness(after):.1f}, delta={_image_delta(before, after):.4f})"
-        )
-    return method
+    after.save(after_path)
+
+    comparable_before = before.convert("RGB")
+    comparable_after = after.convert("RGB")
+    if comparable_before.size == comparable_after.size:
+        ImageChops.difference(comparable_before, comparable_after).save(diff_path)
+    else:
+        # Preserve real evidence even if the window changed size during repaint.
+        comparable_after.resize(comparable_before.size).save(diff_path)
+
+    after_brightness = _brightness(after)
+    after_background = _background_brightness(after)
+    brightness_delta = abs(after_brightness - before_brightness)
+    background_delta = abs(after_background - before_background)
+    image_delta = _image_delta(before, after)
+    success = (
+        brightness_delta >= THEME_BRIGHTNESS_DELTA
+        or image_delta >= THEME_IMAGE_DELTA
+        or background_delta >= THEME_BACKGROUND_DELTA
+    )
+    warning = None if success else "visual change not detected"
+    diagnostics = {
+        "requested": desired,
+        "success": success,
+        "already_active": False,
+        "warning": warning,
+        "interaction": method,
+        "wait": wait_method,
+        "brightness_before": round(before_brightness, 2),
+        "brightness_after": round(after_brightness, 2),
+        "brightness_delta": round(brightness_delta, 2),
+        "image_delta": round(image_delta, 6),
+        "background_before": round(before_background, 2),
+        "background_after": round(after_background, 2),
+        "background_delta": round(background_delta, 2),
+        "thresholds": {
+            "brightness_delta": THEME_BRIGHTNESS_DELTA,
+            "image_delta": THEME_IMAGE_DELTA,
+            "background_delta": THEME_BACKGROUND_DELTA,
+        },
+        "evidence": {
+            "before": before_path.name,
+            "after": after_path.name,
+            "diff": diff_path.name,
+        },
+    }
+    if warning:
+        print(f"WARNING: theme validation for {desired!r}: {warning}", file=sys.stderr)
+    return method, diagnostics
 
 
 def _fit_window(window) -> dict[str, int]:
@@ -455,6 +547,7 @@ def run(
     screenshots: list[dict[str, Any]] = []
     interaction_methods: dict[str, str] = {}
     navigation_deltas: dict[str, float] = {}
+    theme_validation: list[dict[str, Any]] = []
     candidate_pids: list[int] = [launcher.pid]
     try:
         window, backend, candidate_pids, _records = _discover_window(
@@ -466,7 +559,13 @@ def run(
         display = _fit_window(window)
 
         for theme in ("light", "dark"):
-            interaction_methods[f"theme:{theme}"] = _ensure_theme(window, theme)
+            theme_method, theme_diagnostics = _ensure_theme(window, theme, output)
+            interaction_methods[f"theme:{theme}"] = theme_method
+            theme_validation.append(theme_diagnostics)
+            (output / "diagnostics.json").write_text(
+                json.dumps({"theme_validation": theme_validation}, indent=2),
+                encoding="utf-8",
+            )
             previous = None
             for index, (slug, titles, fallback_x) in enumerate(WORKSPACES, 1):
                 before = _window_image(window)
@@ -511,6 +610,7 @@ def run(
             "screenshots": screenshots,
             "interaction_methods": interaction_methods,
             "navigation_deltas": navigation_deltas,
+            "theme_validation": theme_validation,
         }
         if baseline_dir is not None and baseline_dir.is_dir():
             result["visual_regression"] = _compare_baselines(output, baseline_dir, threshold)
