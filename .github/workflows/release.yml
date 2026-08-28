@@ -156,6 +156,59 @@ jobs:
           path: dist/ProductSorterPro-${{ matrix.artifact }}.zip
           if-no-files-found: error
 
+  gui-smoke-windows:
+    name: GUI smoke (Windows executable)
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install GUI automation dependencies
+        run: python -m pip install --upgrade pywinauto pyautogui pillow
+
+      - name: Download packaged Windows executable
+        uses: actions/download-artifact@v8
+        with:
+          name: ProductSorterPro-windows-x64
+          path: gui-build/
+
+      - name: Inspect packaged executable
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse gui-build
+          if (-not (Test-Path "gui-build/ProductSorterPro.exe")) {
+            throw "ProductSorterPro.exe was not found in the downloaded build artifact."
+          }
+
+      - name: Launch executable and capture GUI screenshots
+        shell: pwsh
+        run: |
+          $args = @(
+            "scripts/gui_smoke_windows.py",
+            "--exe", "gui-build/ProductSorterPro.exe",
+            "--output", "gui-artifacts",
+            "--timeout", "60"
+          )
+          if (Test-Path "tests/visual/baseline/windows") {
+            $args += @("--baseline-dir", "tests/visual/baseline/windows", "--visual-threshold", "0.08")
+          }
+          python @args
+
+      - name: Upload GUI screenshots and smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gui-screenshots-windows
+          path: gui-artifacts/
+          if-no-files-found: warn
+
   verify-artifact-download:
     name: Verify release artifact download
     if: github.event_name == 'pull_request'
@@ -178,7 +231,9 @@ jobs:
   release:
     name: Publish GitHub release
     if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    needs: build
+    needs:
+      - build
+      - gui-smoke-windows
     runs-on: ubuntu-latest
     permissions:
       contents: write
