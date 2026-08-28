@@ -108,10 +108,65 @@ class ApiKeyTests(unittest.TestCase):
 
 
 class RequirementsTests(unittest.TestCase):
+    def test_retired_gemini_model_uses_known_replacement(self):
+        response = SimpleNamespace(text='{"items": []}', usage_metadata=None)
+        models = MagicMock()
+        models.generate_content.return_value = response
+        pool = SimpleNamespace(
+            client=SimpleNamespace(models=models),
+            clients=[object()],
+            index=0,
+            last_usage={},
+            last_model="",
+            model_aliases={},
+        )
+        fake_types = SimpleNamespace(GenerateContentConfig=lambda **kwargs: kwargs)
+        with patch("sorter_core.types", fake_types):
+            call_gemini(pool, "gemini-2.5-flash", [], "", max_retries=3)
+        self.assertEqual(
+            "gemini-3.6-flash",
+            models.generate_content.call_args.kwargs["model"],
+        )
+        self.assertEqual("gemini-3.6-flash", pool.last_model)
+
+    def test_gemini_404_retries_once_with_provider_recommendation(self):
+        response = SimpleNamespace(text='{"items": []}', usage_metadata=None)
+        models = MagicMock()
+        models.generate_content.side_effect = [
+            RuntimeError(
+                "404 NOT_FOUND models/old-model is unavailable; "
+                "use models/gemini-3.6-flash"
+            ),
+            response,
+        ]
+        pool = SimpleNamespace(
+            client=SimpleNamespace(models=models),
+            clients=[object()],
+            index=0,
+            last_usage={},
+            last_model="",
+            model_aliases={},
+        )
+        fake_types = SimpleNamespace(GenerateContentConfig=lambda **kwargs: kwargs)
+        with patch("sorter_core.types", fake_types):
+            call_gemini(pool, "old-model", [], "", max_retries=3)
+        self.assertEqual(2, models.generate_content.call_count)
+        self.assertEqual(
+            "gemini-3.6-flash",
+            models.generate_content.call_args.kwargs["model"],
+        )
+
     def test_non_retryable_model_error_stops_immediately(self):
         models = MagicMock()
         models.generate_content.side_effect = RuntimeError("404 NOT_FOUND model retired")
-        pool = SimpleNamespace(client=SimpleNamespace(models=models), clients=[object()], index=0)
+        pool = SimpleNamespace(
+            client=SimpleNamespace(models=models),
+            clients=[object()],
+            index=0,
+            last_usage={},
+            last_model="",
+            model_aliases={},
+        )
         fake_types = SimpleNamespace(GenerateContentConfig=lambda **kwargs: kwargs)
         with patch("sorter_core.types", fake_types):
             with self.assertRaisesRegex(RuntimeError, "cannot be retried"):
