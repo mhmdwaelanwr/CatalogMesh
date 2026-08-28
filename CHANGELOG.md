@@ -4,6 +4,14 @@ All notable project changes are documented here.
 
 ## Unreleased
 
+### Benchmark Center
+
+- Added an opt-in `--benchmark` mode that measures the real sorting pipeline in a fresh isolated run instead of reusing cached batches.
+- Added deterministic `BENCHMARK_REPORT.md` and `benchmark.json` artifacts plus append-only benchmark history and a latest-report pointer.
+- Added provider/model timing, throughput, image-encoding metrics, token/cost totals, process-memory reporting, hardware snapshots, and optional ground-truth accuracy.
+- Added a dedicated desktop Benchmark tab that reuses the configured workspace, provider priority, model, and API credentials.
+- Added `BENCHMARK.md` with reproducible comparison methodology and explicit caveats for cloud versus future local-provider measurements.
+
 ## 3.1.1 — 2026-08-26
 
 ### Repository and package architecture
