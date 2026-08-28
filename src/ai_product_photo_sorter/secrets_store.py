@@ -41,6 +41,7 @@ def clear(names: tuple[str, ...] = SECRET_NAMES) -> bool:
     """Best-effort removal of Product Sorter credentials from the OS keyring."""
     try:
         import keyring
+        from keyring.errors import PasswordDeleteError
     except Exception:
         return False
 
@@ -48,12 +49,11 @@ def clear(names: tuple[str, ...] = SECRET_NAMES) -> bool:
     for name in names:
         try:
             keyring.delete_password(SERVICE, name)
-        except Exception as exc:
-            # Most keyring backends raise when an entry does not exist. That is
-            # already the desired final state, so only backend-wide failures are
-            # relevant to the return value.
-            if exc.__class__.__name__ not in {"PasswordDeleteError", "KeyringError"}:
-                available = False
+        except PasswordDeleteError:
+            # Missing is already the desired final state.
+            pass
+        except Exception:
+            available = False
     return available
 
 
