@@ -18,6 +18,8 @@ Each benchmark run records:
 - estimated cost using the existing Product Sorter cost configuration;
 - peak process memory when the operating system exposes it;
 - CPU/platform/Python details and an NVIDIA GPU snapshot when `nvidia-smi` is available;
+- Product Sorter version, code revision when available, provider priority, requested model, batch size, confidence threshold, retry limit, and photo limit;
+- average/median/minimum/maximum connectivity-probe latency for cloud runs when those probes are available;
 - optional ground-truth accuracy when `--ground-truth` is supplied.
 
 No extra AI request is made to create a benchmark report.
@@ -101,7 +103,7 @@ Only compare two benchmark results when these conditions are held as constant as
 - same confidence/ground-truth methodology;
 - no unrelated heavy workload running in the background.
 
-Cloud-provider results include network latency. A future local vision adapter can use the same benchmark infrastructure, but cloud and local results should be labeled separately.
+Cloud-provider results include network latency. The generated report records the engine's connectivity probes so unusually slow or unstable network conditions are visible instead of being hidden inside a headline timing number. A future local vision adapter can use the same benchmark infrastructure, but cloud and local results should be labeled separately.
 
 ## Interpreting request counts
 
