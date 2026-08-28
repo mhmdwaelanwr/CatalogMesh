@@ -31,6 +31,9 @@ workflow whenever usable API credit is available.
 ## 3.2 — Quality and workflow
 
 - [x] Benchmark Center for isolated real-pipeline timing, provider/model metrics, machine-readable JSON history, Markdown reports, optional ground-truth accuracy, CLI mode, and desktop GUI workflow.
+- [x] Provider preflight and canonical provider selection before desktop/benchmark runs, including safe correction of the observed `gemeni` typo and explicit failure for unknown providers.
+- [x] In-app Environment Center for validated `.env` editing, masked API-key management, OS-keyring clearing, reload/save/delete actions, and persistent desktop settings.
+- [x] In-app Report Center with operation/benchmark artifact discovery, native GitHub-inspired Markdown preview, raw view, copy/open actions, and automatic refresh when output configuration changes.
 - [ ] Thumbnail-based manual review and correction workflow.
 - [ ] Configurable category profiles beyond electronics.
 - [ ] Richer operation statistics and provider cost estimates.
