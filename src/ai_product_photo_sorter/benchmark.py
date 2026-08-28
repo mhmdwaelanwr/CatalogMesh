@@ -109,7 +109,6 @@ def _peak_memory_bytes() -> int | None:
         import resource
 
         value = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-        # Linux reports KiB; macOS reports bytes.
         return value if sys.platform == "darwin" else value * 1024
     except Exception:
         return None
@@ -282,6 +281,7 @@ def build_result(session: BenchmarkSession) -> dict[str, Any]:
         "providers": sorted(providers.values(), key=lambda row: (row["provider"], row["model"])),
         "notes": [
             "The benchmark uses the real Product Sorter processing pipeline and an isolated output directory.",
+            "Smart Markdown reporting is disabled during benchmark mode so its optional final AI narrative call cannot skew timing or token totals.",
             "Logical provider calls count wrapper-level batch calls. Retries performed inside a provider call are included in elapsed time but are not counted separately.",
             "Image encode calls can exceed unique photo count because neighboring batches intentionally overlap by one image.",
             "Quality accuracy is only present when --ground-truth is supplied.",
@@ -474,6 +474,9 @@ def apply_benchmark(module: Any) -> None:
             stamp = datetime.now().strftime("run_%Y%m%d_%H%M%S_%f")
             run_output = base_output / "benchmarks" / stamp
             args.output = run_output
+            if hasattr(args, "md_report"):
+                args.md_report = False
+            os.environ["PRODUCT_SORTER_MD_REPORT"] = "false"
             _ACTIVE = BenchmarkSession(
                 source=source,
                 base_output=base_output,
