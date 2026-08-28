@@ -20,7 +20,7 @@ class ReportGuiSelectionTests(unittest.TestCase):
 
     def test_selecting_current_report_does_not_reload_it(self):
         app = self._app()
-        path = report_gui._select_report_for_test(app)
+        path = report_gui._selected_report_path(app)
         if path:
             app.show_report(path, select_tab=False)
         app.show_report.assert_not_called()
@@ -29,7 +29,7 @@ class ReportGuiSelectionTests(unittest.TestCase):
         app = self._app()
         app._report_refreshing = True
         app.current_report_path = None
-        path = report_gui._select_report_for_test(app)
+        path = report_gui._selected_report_path(app)
         if path:
             app.show_report(path, select_tab=False)
         app.show_report.assert_not_called()
