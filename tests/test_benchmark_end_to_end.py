@@ -62,17 +62,6 @@ class FakePool:
         return self._client
 
 
-class FakeLock:
-    def __init__(self, output):
-        self.output = output
-
-    def acquire(self):
-        return True
-
-    def release(self):
-        return None
-
-
 class BenchmarkEndToEndTests(unittest.TestCase):
     def test_real_pipeline_benchmark_is_isolated_and_reproducible(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -125,7 +114,6 @@ class BenchmarkEndToEndTests(unittest.TestCase):
                 patch.object(engine, "configured_rest_providers", return_value=[pool]),
                 patch.object(engine, "ensure_requirements", return_value=True),
                 patch.object(engine, "require_internet", side_effect=fake_internet),
-                patch.object(engine, "OperationLock", FakeLock),
                 redirect_stdout(io.StringIO()),
                 redirect_stderr(io.StringIO()),
             ):
