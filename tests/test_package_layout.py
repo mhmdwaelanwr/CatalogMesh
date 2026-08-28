@@ -12,7 +12,7 @@ class PackageLayoutTests(unittest.TestCase):
         for name in ("sorter_core.py", "providers.py", "professional.py", "i18n.py", "secrets_store.py", "model_catalog.py", "provider_models.json"):
             with self.subTest(name=name):
                 self.assertFalse((ROOT / name).exists(), name)
-        for name in ("core.py", "providers.py", "professional.py", "i18n.py", "secrets_store.py", "model_catalog.py", "provider_models.json", "benchmark.py", "benchmark_gui.py", "benchmark_reproducibility.py", "resource_lifecycle.py", "key_validation.py", "provider_selection.py", "provider_gui.py", "environment_gui.py", "report_preview.py", "report_gui.py"):
+        for name in ("core.py", "providers.py", "professional.py", "i18n.py", "secrets_store.py", "model_catalog.py", "provider_models.json", "benchmark.py", "benchmark_gui.py", "benchmark_reproducibility.py", "resource_lifecycle.py", "key_validation.py", "provider_selection.py", "provider_gui.py", "environment_gui.py", "report_preview.py", "report_gui.py", "report_autoload.py"):
             with self.subTest(name=name):
                 self.assertTrue((PACKAGE / name).is_file(), name)
 
