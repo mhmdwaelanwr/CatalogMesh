@@ -24,7 +24,7 @@ Desktop GUI + CLI · Multi-provider vision · Safe resume · Automatic key rotat
 
 </div>
 
-![Product Sorter Pro — complete light operation workspace](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/actual/hero-light-operation.jpg)
+![Product Sorter Pro — complete light operation workspace](https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/docs/screenshots/ci/windows/light-01-operation.png)
 
 AI Product Photo Sorter analyzes a continuous photo-shoot sequence, recognizes
 which front, back, side, packaging, and detail shots belong to the same product,
@@ -244,6 +244,26 @@ the code path users actually run.
 The GUI and CLI use the same processing engine and progress database. The current
 development GUI is organized into **seven workspaces** and supports persistent
 light and dark themes.
+
+### CI-verified packaged Windows interface
+
+These screenshots are captured automatically from the real PyInstaller-built
+`ProductSorterPro.exe` by the Windows GUI smoke workflow. They are release
+evidence rather than mockups or source-launched previews.
+
+| Workspace | Light | Dark |
+|---|---|---|
+| **Operation setup** | ![Packaged Windows operation workspace in light mode](docs/screenshots/ci/windows/light-01-operation.png) | ![Packaged Windows operation workspace in dark mode](docs/screenshots/ci/windows/dark-01-operation.png) |
+| **Models & API keys** | ![Packaged Windows models workspace in light mode](docs/screenshots/ci/windows/light-02-models.png) | ![Packaged Windows models workspace in dark mode](docs/screenshots/ci/windows/dark-02-models.png) |
+| **Results & activity** | ![Packaged Windows results workspace in light mode](docs/screenshots/ci/windows/light-03-results.png) | ![Packaged Windows results workspace in dark mode](docs/screenshots/ci/windows/dark-03-results.png) |
+| **Benchmark** | ![Packaged Windows benchmark workspace in light mode](docs/screenshots/ci/windows/light-04-benchmark.png) | ![Packaged Windows benchmark workspace in dark mode](docs/screenshots/ci/windows/dark-04-benchmark.png) |
+| **Environment** | ![Packaged Windows environment workspace in light mode](docs/screenshots/ci/windows/light-05-environment.png) | ![Packaged Windows environment workspace in dark mode](docs/screenshots/ci/windows/dark-05-environment.png) |
+| **Reports** | ![Packaged Windows reports workspace in light mode](docs/screenshots/ci/windows/light-06-reports.png) | ![Packaged Windows reports workspace in dark mode](docs/screenshots/ci/windows/dark-06-reports.png) |
+| **About** | ![Packaged Windows About workspace in light mode](docs/screenshots/ci/windows/light-07-about.png) | ![Packaged Windows About workspace in dark mode](docs/screenshots/ci/windows/dark-07-about.png) |
+
+The full workflow artifact also contains theme before/after/diff evidence,
+structured diagnostics, window-discovery data, and an HTML gallery. See
+[Windows GUI Automation](GUI_AUTOMATION.md) for the evidence contract.
 
 ### Operation workspace
 
