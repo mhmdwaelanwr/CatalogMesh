@@ -64,9 +64,15 @@ gui-artifacts/
 ├── dark-05-environment.png
 ├── dark-06-reports.png
 ├── dark-07-about.png
+├── before-theme.png
+├── after-theme.png
+├── theme-diff.png
+├── diagnostics.json
 ├── gallery.html
 └── gui-smoke-results.json
 ```
+
+Theme validation is currently advisory: the runner records brightness, image-delta, and sampled-background signals plus before/after/diff evidence, but a renderer-specific mismatch does not fail CI. The blocking smoke checks remain executable launch, window discovery, workspace navigation, and screenshot generation. A reviewed visual regression baseline will be added later.
 
 If startup/navigation fails, the job also attempts to preserve `failure.png` and a `control-identifiers.txt` dump for diagnosis.
 
