@@ -30,6 +30,7 @@ workflow whenever usable API credit is available.
 
 ## 3.2 — Quality and workflow
 
+- [x] Benchmark Center for isolated real-pipeline timing, provider/model metrics, machine-readable JSON history, Markdown reports, optional ground-truth accuracy, CLI mode, and desktop GUI workflow.
 - [ ] Thumbnail-based manual review and correction workflow.
 - [ ] Configurable category profiles beyond electronics.
 - [ ] Richer operation statistics and provider cost estimates.
@@ -39,7 +40,7 @@ workflow whenever usable API credit is available.
 ## 4.0 — Extensibility
 
 - [ ] Provider plugin interface and custom OpenAI-compatible endpoints.
-- [ ] Optional local vision-model adapter for fully offline processing.
+- [ ] Optional local vision-model adapter for fully offline processing. The Benchmark Center should be reused to compare local adapters with cloud providers on controlled datasets.
 - [ ] Catalog integrations and reusable export templates.
 - [ ] Extension API for custom grouping and naming policies.
 
