@@ -60,6 +60,22 @@ REQUIRED_MODULES = {
     "openpyxl": "openpyxl",
 }
 STOP_REQUESTED = threading.Event()
+RETIRED_GEMINI_MODELS = {
+    "gemini-2.5-flash": "gemini-3.6-flash",
+}
+
+
+def suggested_gemini_model(message: str, current: str) -> str:
+    """Return a provider-recommended replacement without trusting arbitrary text."""
+    candidates = re.findall(r"models/([A-Za-z0-9._-]+)", message)
+    for candidate in reversed(candidates):
+        if candidate != current and candidate.startswith("gemini-"):
+            return candidate
+    return ""
+
+
+def resolve_gemini_model(model: str) -> str:
+    return RETIRED_GEMINI_MODELS.get(model.strip(), model.strip())
 
 def request_stop(signum=None, frame=None) -> None:
     STOP_REQUESTED.set()
@@ -106,6 +122,8 @@ class GeminiClientPool:
         self.clients = [genai.Client(api_key=key) for key in keys]
         self.index = 0
         self.last_usage: dict[str,int] = {}
+        self.last_model = ""
+        self.model_aliases: dict[str, str] = {}
 
     @property
     def client(self) -> Any:
@@ -718,10 +736,23 @@ def call_gemini(pool: GeminiClientPool, model: str, photos: list[Photo], catalog
         contents.append(image_part(photo.path))
     quota_failures = 0
     other_failures = 0
+    model_aliases = getattr(pool, "model_aliases", None)
+    if model_aliases is None:
+        model_aliases = {}
+        pool.model_aliases = model_aliases
+    active_model = model_aliases.get(model, resolve_gemini_model(model))
+    model_fallback_attempted = False
+    if active_model != model:
+        model_aliases[model] = active_model
+        message = (
+            f"Gemini model '{model}' is retired; using '{active_model}'. "
+            "Update GEMINI_MODEL in .env."
+        )
+        live_progress.note(message) if live_progress else print(message)
     while True:
         try:
             response = pool.client.models.generate_content(
-                model=model,
+                model=active_model,
                 contents=contents,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json", temperature=0.1
@@ -729,6 +760,7 @@ def call_gemini(pool: GeminiClientPool, model: str, photos: list[Photo], catalog
             )
             usage=getattr(response,"usage_metadata",None)
             pool.last_usage={"input_tokens":int(getattr(usage,"prompt_token_count",0) or 0),"output_tokens":int(getattr(usage,"candidates_token_count",0) or 0)}
+            pool.last_model = active_model
             return normalize_response(response.text, photos)
         except Exception as exc:
             message = str(exc)
@@ -756,6 +788,18 @@ def call_gemini(pool: GeminiClientPool, model: str, photos: list[Photo], catalog
                 "PERMISSION_DENIED", "NOT_FOUND",
             ))
             if terminal:
+                suggested = suggested_gemini_model(message, active_model)
+                if suggested and suggested != active_model and not model_fallback_attempted:
+                    previous = active_model
+                    active_model = suggested
+                    model_aliases[model] = suggested
+                    model_fallback_attempted = True
+                    notice = (
+                        f"Gemini model '{previous}' is unavailable; retrying once with "
+                        f"provider-recommended '{suggested}'. Update GEMINI_MODEL in .env."
+                    )
+                    live_progress.note(notice) if live_progress else print(notice)
+                    continue
                 raise RuntimeError(f"Gemini request cannot be retried with this model/configuration: {exc}") from exc
             if other_failures >= max_retries:
                 raise RuntimeError(
@@ -995,7 +1039,7 @@ def main() -> int:
                     if result is not None: break
                     if provider_name=="gemini" and pool:
                         try:
-                            result=call_gemini(pool,args.model,batch,catalog,args.max_retries,live_progress); used_provider="gemini"; used_model=args.model; usage=pool.last_usage
+                            result=call_gemini(pool,args.model,batch,catalog,args.max_retries,live_progress); used_provider="gemini"; used_model=pool.last_model or args.model; usage=pool.last_usage
                         except RuntimeError as exc: errors.append(f"gemini: {exc}")
                     elif provider_name in rest_by_name:
                         provider=rest_by_name[provider_name]
@@ -1012,7 +1056,7 @@ def main() -> int:
                 return 1
             db.execute(
                 "INSERT INTO batches VALUES (?, ?, ?, ?, ?)",
-                (key, args.model, json.dumps([p.path.name for p in batch]),
+                (key, used_model or args.model, json.dumps([p.path.name for p in batch]),
                  json.dumps(result, ensure_ascii=False), datetime.now().isoformat()),
             )
             db.commit()
