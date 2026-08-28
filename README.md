@@ -242,7 +242,7 @@ the code path users actually run.
 ## Desktop GUI
 
 The GUI and CLI use the same processing engine and progress database. The current
-development GUI is organized into **five workspaces** and supports persistent
+development GUI is organized into **seven workspaces** and supports persistent
 light and dark themes.
 
 ### Operation workspace
