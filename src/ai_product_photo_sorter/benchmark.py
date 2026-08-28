@@ -374,7 +374,8 @@ def render_markdown(result: dict[str, Any]) -> str:
 
 
 def write_reports(session: BenchmarkSession) -> tuple[Path, Path, dict[str, Any]]:
-    session.run_output.mkdir(parents=True, exist_ok=True)
+    if not session.run_output.is_dir():
+        raise RuntimeError("benchmark output was not initialized by the processing engine")
     result = build_result(session)
     json_path = session.run_output / "benchmark.json"
     md_path = session.run_output / "BENCHMARK_REPORT.md"
@@ -535,16 +536,21 @@ def apply_benchmark(module: Any) -> None:
             if session is not None:
                 session.return_code = code
                 try:
-                    md_path, json_path, result = write_reports(session)
-                    print("\nBenchmark result")
-                    print(f"Photos: {result['photos_completed']}/{result['photos_selected']}")
-                    print(f"Wall time: {_fmt_duration(result['wall_seconds'])}")
-                    print(f"Average: {result['seconds_per_photo']:.3f} s/photo" if result['seconds_per_photo'] is not None else "Average: n/a")
-                    print(f"Provider calls: {result['logical_provider_calls']} ({result['failed_provider_calls']} failed)")
-                    print(f"Benchmark report: {md_path}")
-                    print(f"Benchmark JSON: {json_path}")
-                    if hasattr(module, "append_log"):
-                        module.append_log(session.run_output, "BENCHMARK_WRITTEN", f"path={md_path.name}")
+                    if not session.run_output.is_dir():
+                        continue_reporting = False
+                    else:
+                        continue_reporting = True
+                    if continue_reporting:
+                        md_path, json_path, result = write_reports(session)
+                        print("\nBenchmark result")
+                        print(f"Photos: {result['photos_completed']}/{result['photos_selected']}")
+                        print(f"Wall time: {_fmt_duration(result['wall_seconds'])}")
+                        print(f"Average: {result['seconds_per_photo']:.3f} s/photo" if result['seconds_per_photo'] is not None else "Average: n/a")
+                        print(f"Provider calls: {result['logical_provider_calls']} ({result['failed_provider_calls']} failed)")
+                        print(f"Benchmark report: {md_path}")
+                        print(f"Benchmark JSON: {json_path}")
+                        if hasattr(module, "append_log"):
+                            module.append_log(session.run_output, "BENCHMARK_WRITTEN", f"path={md_path.name}")
                 except Exception as exc:
                     print(f"Benchmark report could not be written: {exc}", file=sys.stderr)
                 finally:
