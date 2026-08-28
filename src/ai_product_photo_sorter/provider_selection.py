@@ -76,14 +76,18 @@ def apply_provider_selection(module: Any) -> None:
 
     def load_env_file(path):
         loaded = base_load_env_file(path)
+        # The engine's .env loader intentionally uses setdefault. Normalize only
+        # after that file has had a chance to populate AI_PROVIDERS/AI_PROVIDER.
         normalize_provider_environment()
         return loaded
 
     def main() -> int:
         try:
-            # Covers GUI/process environment. ``load_env_file`` repeats the
-            # normalization after .env is loaded for source/CLI launches.
-            normalize_provider_environment()
+            # GUI launches pass provider settings through the process environment,
+            # so normalize those immediately. Source/CLI launches that rely only
+            # on .env are normalized by the patched load_env_file instead.
+            if "AI_PROVIDERS" in os.environ or "AI_PROVIDER" in os.environ:
+                normalize_provider_environment()
             return base_main()
         except ProviderSelectionError as exc:
             print(f"Configuration error: {exc}", file=sys.stderr)
