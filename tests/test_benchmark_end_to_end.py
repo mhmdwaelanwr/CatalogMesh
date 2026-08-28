@@ -182,7 +182,8 @@ class BenchmarkEndToEndTests(unittest.TestCase):
             latest = Path(
                 (base_output / "benchmarks" / "latest.txt").read_text(encoding="utf-8").strip()
             )
-            self.assertEqual(latest.parent, runs[-1])
+            # macOS aliases /var to /private/var; resolve both before comparing.
+            self.assertEqual(latest.parent.resolve(), runs[-1].resolve())
             self.assertTrue(latest.is_file())
 
 
