@@ -6,6 +6,7 @@ from .hardening import apply_hardening
 from .dynamic_taxonomy import apply_dynamic_taxonomy
 from .smart_report import apply_smart_report
 from .cli_report_prompt import apply_interactive_report_prompt
+from .provider_selection import apply_provider_selection
 from .key_validation import apply_key_validation_hardening
 from .resource_lifecycle import apply_resource_lifecycle
 from .benchmark import apply_benchmark
@@ -17,6 +18,7 @@ apply_hardening(_impl)
 apply_dynamic_taxonomy(_impl)
 apply_smart_report(_impl)
 apply_interactive_report_prompt(_impl)
+apply_provider_selection(_impl)
 apply_key_validation_hardening(_impl)
 apply_resource_lifecycle(_impl)
 apply_benchmark(_impl)

@@ -8,6 +8,7 @@ from .paths import runtime_root
 from . import setup_wizard as _setup_wizard  # ensure patched configuration paths
 from . import _gui_impl as _impl
 from .benchmark_gui import apply_benchmark_gui
+from .provider_gui import apply_provider_gui
 
 _impl.ROOT = runtime_root()
 
@@ -129,6 +130,7 @@ _impl.App.collect = _collect
 _impl.App.command = _command
 _impl.App.set_running = _set_running
 apply_benchmark_gui(_impl)
+apply_provider_gui(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main
