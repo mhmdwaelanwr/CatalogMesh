@@ -2,7 +2,7 @@
 """Launch the packaged Windows app, navigate it, and capture GUI evidence.
 
 The smoke test deliberately targets ``ProductSorterPro.exe`` rather than the
-source Python launcher.  PyInstaller one-file executables can create a bootloader
+source Python launcher. PyInstaller one-file executables can create a bootloader
 parent plus a child process that owns the real Tk window, so window discovery is
 process-tree aware and does not bind automation to the launcher PID only.
 """
@@ -30,15 +30,21 @@ import win32process
 from pywinauto import Desktop
 
 
+# Tk/ttk exposes the notebook to Windows UI Automation mostly as anonymous
+# panes. These x offsets are the centers of the seven fixed-width notebook tabs
+# in Product Sorter Pro. Y is resolved separately from the window top.
 WORKSPACES = (
-    ("operation", ("Operation setup", "Setup"), 70),
-    ("models", ("Models & API keys", "API"), 205),
-    ("results", ("Results & activity", "Results"), 345),
-    ("benchmark", ("Benchmark",), 465),
-    ("environment", ("Environment",), 575),
-    ("reports", ("Reports",), 675),
-    ("about", ("About",), 760),
+    ("operation", ("Operation setup", "Setup"), 85),
+    ("models", ("Models & API keys", "API"), 202),
+    ("results", ("Results & activity", "Results"), 331),
+    ("benchmark", ("Benchmark",), 441),
+    ("environment", ("Environment",), 539),
+    ("reports", ("Reports",), 627),
+    ("about", ("About",), 697),
 )
+TAB_CENTER_Y = 143
+THEME_CENTER_FROM_RIGHT = 194
+THEME_CENTER_Y = 79
 
 
 def _brightness(image: Image.Image) -> float:
@@ -46,14 +52,28 @@ def _brightness(image: Image.Image) -> float:
     return sum(ImageStat.Stat(sample).mean) / 3.0
 
 
+def _image_delta(left: Image.Image, right: Image.Image) -> float:
+    first = left.convert("RGB")
+    second = right.convert("RGB")
+    if first.size != second.size:
+        return 1.0
+    diff = ImageChops.difference(first, second)
+    rms = ImageStat.Stat(diff).rms
+    return math.sqrt(sum(channel * channel for channel in rms) / len(rms)) / 255.0
+
+
 def _window_image(window) -> Image.Image:
+    # Prefer a window capture so taskbar/notifications cannot cover evidence.
+    try:
+        image = window.capture_as_image().convert("RGB")
+        if image.width > 100 and image.height > 100:
+            return image
+    except Exception:
+        pass
     rect = window.rectangle()
     width = max(1, rect.right - rect.left)
     height = max(1, rect.bottom - rect.top)
-    try:
-        return pyautogui.screenshot(region=(rect.left, rect.top, width, height)).convert("RGB")
-    except Exception:
-        return window.capture_as_image().convert("RGB")
+    return pyautogui.screenshot(region=(rect.left, rect.top, width, height)).convert("RGB")
 
 
 def _save_window(window, path: Path) -> dict[str, Any]:
@@ -99,42 +119,44 @@ def _matching_descendant(
     return None
 
 
+def _focus(window) -> None:
+    try:
+        window.set_focus()
+    except Exception:
+        pass
+
+
 def _select_workspace(window, titles: tuple[str, ...], fallback_x: int) -> str:
     control = _matching_descendant(window, titles, ("TabItem",))
     if control is not None:
         try:
             control.click_input()
-            time.sleep(0.45)
+            time.sleep(0.5)
             return "uia"
         except Exception:
             pass
 
-    # Tk/ttk controls are not exposed consistently through UI Automation on all
-    # Windows/Python combinations. The release window has a fixed header/tab
-    # layout, so keep a deterministic relative-coordinate fallback.
+    _focus(window)
     rect = window.rectangle()
-    pyautogui.click(rect.left + fallback_x, rect.top + 118)
-    time.sleep(0.45)
+    pyautogui.click(rect.left + fallback_x, rect.top + TAB_CENTER_Y)
+    time.sleep(0.55)
     return "coordinate-fallback"
 
 
-def _theme_button(window):
-    return _matching_descendant(window, ("Light mode", "Dark mode"), ("Button",))
-
-
 def _click_theme(window) -> str:
-    button = _theme_button(window)
+    button = _matching_descendant(window, ("Light mode", "Dark mode"), ("Button",))
     if button is not None:
         try:
             button.click_input()
-            time.sleep(0.7)
+            time.sleep(0.8)
             return "uia"
         except Exception:
             pass
+
+    _focus(window)
     rect = window.rectangle()
-    # Theme button sits immediately to the left of the language selector.
-    pyautogui.click(rect.right - 245, rect.top + 70)
-    time.sleep(0.7)
+    pyautogui.click(rect.right - THEME_CENTER_FROM_RIGHT, rect.top + THEME_CENTER_Y)
+    time.sleep(0.9)
     return "coordinate-fallback"
 
 
@@ -150,26 +172,36 @@ def _ensure_theme(window, desired: str) -> str:
     after_dark = _brightness(after) < 128
     ok = (desired == "dark" and after_dark) or (desired == "light" and not after_dark)
     if not ok:
-        raise RuntimeError(f"theme switch to {desired!r} did not change the rendered window as expected")
+        raise RuntimeError(
+            f"theme switch to {desired!r} did not change the rendered window as expected "
+            f"(before={_brightness(before):.1f}, after={_brightness(after):.1f}, delta={_image_delta(before, after):.4f})"
+        )
     return method
 
 
 def _fit_window(window) -> dict[str, int]:
     screen = pyautogui.size()
-    width = max(980, min(1240, screen.width - 30))
-    height = max(700, min(860, screen.height - 60))
-    width = min(width, max(980, screen.width - 10))
-    height = min(height, max(700, screen.height - 35))
+    # A maximized window stays inside the Windows work area, keeping the hosted
+    # runner taskbar out of captured release evidence.
     try:
-        window.move_window(x=8, y=8, width=width, height=height, repaint=True)
-        time.sleep(0.5)
+        window.maximize()
+        time.sleep(0.7)
     except Exception:
-        pass
+        width = max(980, min(1240, screen.width - 30))
+        height = max(700, min(860, screen.height - 60))
+        try:
+            window.move_window(x=0, y=0, width=width, height=height, repaint=True)
+            time.sleep(0.5)
+        except Exception:
+            pass
+    rect = window.rectangle()
     return {
         "screen_width": screen.width,
         "screen_height": screen.height,
-        "target_width": width,
-        "target_height": height,
+        "window_left": rect.left,
+        "window_top": rect.top,
+        "window_width": rect.right - rect.left,
+        "window_height": rect.bottom - rect.top,
     }
 
 
@@ -181,9 +213,6 @@ def _candidate_pids(launcher_pid: int, exe: Path, launched_epoch: float) -> list
     except (psutil.NoSuchProcess, psutil.AccessDenied):
         pass
 
-    # A PyInstaller child can briefly outlive/re-parent from its bootloader.
-    # Include freshly created processes with the same executable/name as a safe
-    # fallback, while excluding older unrelated processes on a reused machine.
     expected_name = exe.name.casefold()
     expected_path = str(exe.resolve()).casefold()
     for process in psutil.process_iter(["pid", "name", "exe", "create_time"]):
@@ -243,8 +272,6 @@ def _window_score(record: dict[str, Any]) -> tuple[int, int, int]:
 
 
 def _wrapper_for_handle(handle: int):
-    # Prefer UIA for semantic control lookup. If Tk doesn't expose the handle to
-    # UIA, Win32 is still enough for focus, sizing, capture and coordinate input.
     for backend in ("uia", "win32"):
         try:
             window = Desktop(backend=backend).window(handle=handle)
@@ -355,13 +382,7 @@ def _terminate_process_tree(launcher_pid: int) -> None:
 
 
 def _visual_score(actual: Path, baseline: Path) -> float:
-    left = Image.open(actual).convert("RGB")
-    right = Image.open(baseline).convert("RGB")
-    if left.size != right.size:
-        return 1.0
-    diff = ImageChops.difference(left, right)
-    rms = ImageStat.Stat(diff).rms
-    return math.sqrt(sum(channel * channel for channel in rms) / len(rms)) / 255.0
+    return _image_delta(Image.open(actual), Image.open(baseline))
 
 
 def _compare_baselines(output: Path, baseline_dir: Path, threshold: float) -> dict[str, Any]:
@@ -433,6 +454,7 @@ def run(
     backend = ""
     screenshots: list[dict[str, Any]] = []
     interaction_methods: dict[str, str] = {}
+    navigation_deltas: dict[str, float] = {}
     candidate_pids: list[int] = [launcher.pid]
     try:
         window, backend, candidate_pids, _records = _discover_window(
@@ -440,22 +462,41 @@ def run(
         )
 
         title = window.window_text().strip()
-        try:
-            window.set_focus()
-        except Exception:
-            pass
+        _focus(window)
         display = _fit_window(window)
 
-        # Start with Light for review consistency, then repeat every workspace in Dark.
         for theme in ("light", "dark"):
             interaction_methods[f"theme:{theme}"] = _ensure_theme(window, theme)
+            previous = None
             for index, (slug, titles, fallback_x) in enumerate(WORKSPACES, 1):
+                before = _window_image(window)
                 method = _select_workspace(window, titles, fallback_x)
+                after = _window_image(window)
+                delta = _image_delta(before, after)
+                navigation_deltas[f"{theme}:{slug}"] = round(delta, 6)
+                # Operation can already be selected at launch. Every other tab
+                # must visibly change the rendered workspace.
+                if index > 1 and delta < 0.002:
+                    raise RuntimeError(
+                        f"workspace {slug!r} did not visibly activate (delta={delta:.6f})"
+                    )
+                if previous is not None and _image_delta(previous, after) < 0.002:
+                    raise RuntimeError(f"workspace {slug!r} rendered the same image as the previous tab")
                 interaction_methods[f"tab:{theme}:{slug}"] = method
                 path = output / f"{theme}-{index:02d}-{slug}.png"
-                meta = _save_window(window, path)
-                meta.update({"theme": theme, "workspace": slug, "navigation": method})
+                after.save(path)
+                meta = {
+                    "file": path.name,
+                    "width": after.width,
+                    "height": after.height,
+                    "brightness": round(_brightness(after), 2),
+                    "theme": theme,
+                    "workspace": slug,
+                    "navigation": method,
+                    "activation_delta": round(delta, 6),
+                }
                 screenshots.append(meta)
+                previous = after
 
         _write_gallery(output, screenshots)
         result: dict[str, Any] = {
@@ -469,6 +510,7 @@ def run(
             "display": display,
             "screenshots": screenshots,
             "interaction_methods": interaction_methods,
+            "navigation_deltas": navigation_deltas,
         }
         if baseline_dir is not None and baseline_dir.is_dir():
             result["visual_regression"] = _compare_baselines(output, baseline_dir, threshold)
