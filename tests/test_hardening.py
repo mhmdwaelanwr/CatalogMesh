@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import shutil
@@ -15,6 +16,28 @@ from sorter_core import CATEGORIES, build_outputs, compressed_image_bytes
 
 
 class LargeCatalogHardeningTests(unittest.TestCase):
+    def test_truncated_jpeg_is_recovered_for_api_payload(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "truncated.jpg"
+            image = Image.new("RGB", (800, 600), "navy")
+            image.save(source, format="JPEG", quality=90)
+            payload = source.read_bytes()
+            source.write_bytes(payload[:-47])
+
+            encoded = compressed_image_bytes(source)
+
+            self.assertTrue(encoded.startswith(b"\xff\xd8"))
+            with Image.open(io.BytesIO(encoded)) as recovered:
+                recovered.load()
+                self.assertLessEqual(max(recovered.size), 1600)
+
+    def test_unreadable_jpeg_reports_its_filename(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "broken-product.jpg"
+            source.write_bytes(b"not a jpeg")
+            with self.assertRaisesRegex(OSError, "broken-product.jpg"):
+                compressed_image_bytes(source)
+
     def _item(self, source: Path, category: str = "mouse"):
         return {
             "path": source,
