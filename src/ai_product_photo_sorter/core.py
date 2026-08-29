@@ -20,6 +20,7 @@ from .hybrid_routing_lab import apply_hybrid_routing_lab
 from .local_evidence import apply_local_evidence
 from .review_center import apply_review_center
 from .sku_matching import apply_sku_matching
+from .catalog_exports import apply_catalog_exports
 
 _impl.DEFAULT_ENV_FILE = env_file()
 _impl.REQUIREMENTS_FILE = requirements_file()
@@ -47,9 +48,11 @@ apply_hybrid_routing_lab(_impl)
 apply_local_evidence(_impl)
 # Review Center human corrections mutate only review metadata and audit state.
 apply_review_center(_impl)
-# SKU matching is the outermost catalog layer: it consumes approved review groups,
-# ranks catalog candidates, and still requires explicit human confirmation.
+# SKU matching consumes approved review groups and requires explicit human confirmation.
 apply_sku_matching(_impl)
+# Catalog exports are the outermost offline layer. They consume only fully confirmed
+# SKU state and never publish, mutate inventory, or invent public image URLs.
+apply_catalog_exports(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main
