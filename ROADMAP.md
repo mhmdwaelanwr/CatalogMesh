@@ -63,7 +63,8 @@ The strategic order is **Ollama / Local Vision → Hybrid visual clustering → 
 - [x] Deterministic SKU/catalog candidate matching in CLI + GUI, consuming approved groups plus optional local OCR/barcode evidence, with ranked reasons, append-only decision audit, and mandatory human confirmation before a catalog row becomes confirmed. See [`docs/SKU_MATCHING.md`](docs/SKU_MATCHING.md).
 - [ ] Real-catalog SKU matching evaluation with representative labeled store data, including top-1/top-k candidate accuracy and ambiguity analysis.
 - [x] Safe offline Shopify draft + neutral PIM export profiles in CLI + GUI, built only from fully human-confirmed matches, with fail-closed validation, local image upload manifest, no inventory/shipping/tax invention, and zero publishing/network calls. See [`docs/CATALOG_EXPORTS.md`](docs/CATALOG_EXPORTS.md).
-- [ ] Live Shopify publishing with explicit credentials, preview/dry-run, image upload, idempotency, remote audit, and rollback-safe behavior.
+- [x] Guarded Shopify Admin GraphQL workflow with zero-network local plan, query-only remote preview, explicit draft staging, staged local image upload for new products, exact-SKU collision protection, local idempotency state, append-only remote audit, separately confirmed publication, and rollback to unpublished `DRAFT`. See [`docs/SHOPIFY_PUBLISHING.md`](docs/SHOPIFY_PUBLISHING.md).
+- [ ] Validate the guarded Shopify workflow against a development store using a non-sensitive mock catalog before treating remote publishing as production-verified.
 - [ ] PIM/ERP connector profiles with explicit field mapping, validation, and authenticated write boundaries.
 
 ## 4.0 — Extensibility
