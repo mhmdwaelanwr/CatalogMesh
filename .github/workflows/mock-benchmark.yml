@@ -27,7 +27,7 @@ jobs:
         run: python -m pip install -e .
       - name: Generate mock product benchmark
         run: python scripts/generate_mock_product_benchmark.py --output mock-benchmark-output
-      - name: Verify safety and calibration evidence
+      - name: Verify safety, calibration and routing evidence
         run: |
           python - <<'PY'
           import json
@@ -36,6 +36,7 @@ jobs:
           summary = json.loads(Path("mock-benchmark-output/mock_benchmark_summary.json").read_text(encoding="utf-8"))
           assert summary["dataset_type"] == "synthetic_mock"
           assert summary["production_evidence"] is False
+
           calibration = summary["calibration"]
           assert calibration["routing_enabled"] is False
           assert calibration["recommendation_available"] is True
@@ -43,14 +44,27 @@ jobs:
           assert calibration["same_precision"] >= 0.98
           assert calibration["different_precision"] >= 0.98
           assert calibration["ambiguous_boundaries"] > 0
+
+          routing = summary["routing_simulation"]
+          assert routing["mode"] == "simulation"
+          assert routing["production_routing_enabled"] is False
+          assert routing["actual_provider_calls_skipped"] == 0
+          assert routing["unsafe_local_misroutes"] == 0
+          assert routing["local_routing_accuracy"] == 1.0
+          assert 0.0 < routing["local_routing_coverage"] < 1.0
+          assert routing["vision_boundaries_remaining"] > 0
+
           print(json.dumps({
               "photos": summary["photos"],
               "products": summary["products"],
               "same_threshold": calibration["same_threshold"],
               "different_threshold": calibration["different_threshold"],
-              "coverage": calibration["confident_coverage"],
-              "accuracy": calibration["confident_accuracy"],
-              "ambiguous_boundaries": calibration["ambiguous_boundaries"],
+              "calibration_coverage": calibration["confident_coverage"],
+              "routing_local_coverage": routing["local_routing_coverage"],
+              "routing_local_accuracy": routing["local_routing_accuracy"],
+              "routing_vision_remaining": routing["vision_boundaries_remaining"],
+              "unsafe_local_misroutes": routing["unsafe_local_misroutes"],
+              "actual_provider_calls_skipped": routing["actual_provider_calls_skipped"],
               "production_evidence": summary["production_evidence"],
           }, indent=2))
           PY

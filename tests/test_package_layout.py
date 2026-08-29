@@ -19,6 +19,7 @@ class PackageLayoutTests(unittest.TestCase):
             "provider_selection.py", "provider_gui.py", "ollama_local.py", "ollama_gui.py",
             "hybrid_embeddings.py", "hybrid_gui.py", "performance_pipeline.py", "performance_gui.py",
             "threshold_calibration.py", "threshold_calibration_gui.py",
+            "hybrid_routing_lab.py", "hybrid_routing_gui.py",
             "environment_gui.py", "report_preview.py", "report_gui.py", "report_autoload.py",
         ):
             with self.subTest(name=name):

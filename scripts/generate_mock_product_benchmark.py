@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Generate a deterministic mock product-shoot dataset and calibration evidence.
+"""Generate deterministic mock product-shoot calibration and routing evidence.
 
-This utility validates Product Sorter's dataset/calibration workflow without
-claiming real-world embedding quality. Similarity values are synthetic by design
-and include deliberately ambiguous boundary cases.
+This utility validates Product Sorter's dataset/calibration/routing-simulation
+workflow without claiming real-world embedding quality. Similarity values are
+synthetic by design and include deliberately ambiguous boundary cases.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from ai_product_photo_sorter.hybrid_routing_lab import simulate_from_files
 from ai_product_photo_sorter.threshold_calibration import calibrate_from_files
 
 VIEWS = ("front", "back", "left", "right", "detail", "box")
@@ -92,9 +93,11 @@ def _similarity_for_boundary(index: int, same_product: bool) -> float:
 def generate(root: Path) -> dict[str, object]:
     root = root.resolve()
     photos_dir = root / "photos"
-    report_dir = root / "calibration"
+    calibration_dir = root / "calibration"
+    routing_dir = root / "routing-lab"
     photos_dir.mkdir(parents=True, exist_ok=True)
-    report_dir.mkdir(parents=True, exist_ok=True)
+    calibration_dir.mkdir(parents=True, exist_ok=True)
+    routing_dir.mkdir(parents=True, exist_ok=True)
 
     rows: list[dict[str, str]] = []
     for product_index, (category, brand, model, color) in enumerate(PRODUCTS, 1):
@@ -153,13 +156,20 @@ def generate(root: Path) -> dict[str, object]:
         writer.writeheader()
         writer.writerows(shadow_rows)
 
-    calibration, json_path, markdown_path = calibrate_from_files(
+    calibration, calibration_json, calibration_markdown = calibrate_from_files(
         shadow_csv,
         ground_truth=ground_truth,
-        output_dir=report_dir,
+        output_dir=calibration_dir,
     )
+    routing, routing_json, routing_markdown, routing_csv = simulate_from_files(
+        shadow_csv,
+        calibration_json,
+        ground_truth=ground_truth,
+        output_dir=routing_dir,
+    )
+
     summary = {
-        "schema_version": 1,
+        "schema_version": 2,
         "dataset_type": "synthetic_mock",
         "production_evidence": False,
         "photos": len(rows),
@@ -167,10 +177,14 @@ def generate(root: Path) -> dict[str, object]:
         "adjacent_boundaries": len(shadow_rows),
         "ground_truth": str(ground_truth),
         "shadow_csv": str(shadow_csv),
-        "calibration_json": str(json_path),
-        "calibration_markdown": str(markdown_path),
+        "calibration_json": str(calibration_json),
+        "calibration_markdown": str(calibration_markdown),
         "calibration": calibration,
-        "warning": "Mock similarities validate workflow behavior only. Do not use these thresholds for production routing.",
+        "routing_simulation_json": str(routing_json),
+        "routing_simulation_markdown": str(routing_markdown),
+        "routing_simulation_csv": str(routing_csv),
+        "routing_simulation": routing,
+        "warning": "Mock similarities validate workflow behavior only. Do not use these thresholds or routing results for production promotion.",
     }
     (root / "mock_benchmark_summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
@@ -192,7 +206,15 @@ def main() -> int:
         f"accuracy={float(calibration.get('confident_accuracy', 0.0)):.2%} "
         f"promotion_ready={calibration.get('promotion_ready')}"
     )
-    print("WARNING: mock evidence is not valid for production threshold promotion.")
+    routing = summary["routing_simulation"]
+    print(
+        "Routing simulation: "
+        f"local={routing['local_routed_boundaries']}/{routing['adjacent_boundaries']} "
+        f"({float(routing['local_routing_coverage']):.2%}) "
+        f"vision={routing['vision_boundaries_remaining']} "
+        f"unsafe_misroutes={routing['unsafe_local_misroutes']}"
+    )
+    print("WARNING: mock evidence is not valid for production threshold or routing promotion.")
     return 0
 
 
