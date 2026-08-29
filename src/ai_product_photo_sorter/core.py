@@ -22,6 +22,7 @@ from .review_center import apply_review_center
 from .sku_matching import apply_sku_matching
 from .catalog_exports import apply_catalog_exports
 from .shopify_publishing import apply_shopify_publishing
+from .shopify_safety import apply_shopify_safety
 
 _impl.DEFAULT_ENV_FILE = env_file()
 _impl.REQUIREMENTS_FILE = requirements_file()
@@ -56,6 +57,7 @@ apply_catalog_exports(_impl)
 # Shopify publishing is the outermost guarded remote layer: preview first, draft
 # staging only on explicit apply, and publication only after a second confirmation.
 apply_shopify_publishing(_impl)
+apply_shopify_safety(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main
