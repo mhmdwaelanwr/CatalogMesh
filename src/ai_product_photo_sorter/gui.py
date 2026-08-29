@@ -21,6 +21,7 @@ from .threshold_calibration_gui import apply_threshold_calibration_gui
 from .hybrid_routing_gui import apply_hybrid_routing_gui
 from .local_evidence_gui import apply_local_evidence_gui
 from .review_center_gui import apply_review_center_gui
+from .sku_matching_gui import apply_sku_matching_gui
 from .report_gui import apply_report_gui
 from .report_autoload import apply_report_autoload
 
@@ -156,6 +157,7 @@ apply_threshold_calibration_gui(_impl)
 apply_hybrid_routing_gui(_impl)
 apply_local_evidence_gui(_impl)
 apply_review_center_gui(_impl)
+apply_sku_matching_gui(_impl)
 apply_report_gui(_impl)
 apply_report_autoload(_impl)
 
