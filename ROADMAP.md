@@ -40,10 +40,34 @@ workflow whenever usable API credit is available.
 - [ ] Export/import operation profiles without secrets.
 - [ ] Improved accessibility, keyboard navigation, and high-DPI validation.
 
-## 4.0 — Extensibility
+## 3.3 — Local-first AI, performance, and desktop UX
+
+Local execution is now a primary product direction rather than a future plugin
+experiment. New local capabilities must use the same engine in CLI, desktop GUI,
+resume, reports, and Benchmark Center.
+
+- [x] First-class Ollama vision provider with no API key requirement.
+- [x] Local-only and local-first-with-cloud-fallback provider chains.
+- [x] CLI shortcuts for Ollama endpoint, model, keep-alive, and timeout settings.
+- [x] Dedicated Ollama controls inside the Models & API keys desktop workspace.
+- [x] Discover installed Ollama models and filter to models advertising vision capability.
+- [x] Preserve Ollama configuration through the desktop Environment Center and setup wizard.
+- [x] Skip public-internet preflight for operations that include Ollama.
+- [x] Keep local models warm between batches with configurable Ollama `keep_alive`.
+- [x] Add a bounded encoded-image LRU cache to avoid reprocessing overlap/fallback images.
+- [ ] Hardware-aware local model recommendations based on available RAM/VRAM and measured benchmark throughput.
+- [ ] Adaptive batch sizing for local models based on memory pressure and recent latency.
+- [ ] Optional local visual-embedding pre-clustering so expensive multimodal inference is reserved for ambiguous groups.
+- [ ] Local OCR/barcode pre-pass for SKU and packaging evidence.
+- [ ] Surface local load time, prompt-eval time, token generation rate, and cache hit rate directly in Benchmark Center.
+- [ ] Continue desktop visual refinement around clearer provider state, local/cloud privacy indicators, and operation health.
+
+See [`LOCAL_AI.md`](LOCAL_AI.md) for the local runtime and CLI/GUI workflow.
+
+## 4.0 — Extensibility and commerce integrations
 
 - [ ] Provider plugin interface and custom OpenAI-compatible endpoints.
-- [ ] Optional local vision-model adapter for fully offline processing. The Benchmark Center should be reused to compare local adapters with cloud providers on controlled datasets.
+- [ ] Additional local runtime adapters beyond Ollama while preserving the 3.3 local-provider contract.
 - [ ] Catalog integrations and reusable export templates.
 - [ ] Extension API for custom grouping and naming policies.
 

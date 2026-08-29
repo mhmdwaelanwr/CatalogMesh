@@ -8,7 +8,8 @@ definitively invalid before any product image is sent to a provider.
 Transient validation failures (timeouts, connectivity failures, rate limits,
 server errors) are deliberately *not* treated as proof that a key is invalid.
 Those keys stay available so the normal connectivity/retry path can decide what
-to do.
+to do. Local providers such as Ollama are endpoint/model validated but are never
+subjected to credential rejection because they do not use API keys.
 """
 
 from __future__ import annotations
@@ -135,6 +136,16 @@ def apply_key_validation_hardening(module: Any) -> None:
         for pool in pools:
             original_clients = list(pool.clients)
             results = pool.validate_all()
+
+            # Local runtimes have no credentials to reject. Cache their endpoint
+            # / model validation result so the compatibility engine can print it
+            # without issuing a second local request, but always keep the pool.
+            if getattr(pool, "name", "").lower() == "ollama":
+                pool.validate_all = lambda results=tuple(results): list(results)
+                if original_clients:
+                    usable_pools.append(pool)
+                continue
+
             kept_clients: list[Any] = []
             kept_results: list[tuple[bool, str]] = []
 

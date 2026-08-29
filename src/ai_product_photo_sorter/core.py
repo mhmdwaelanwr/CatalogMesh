@@ -3,6 +3,7 @@
 from .paths import env_file, requirements_file
 from . import _core_impl as _impl
 from .hardening import apply_hardening
+from .ollama_local import apply_ollama_local
 from .dynamic_taxonomy import apply_dynamic_taxonomy
 from .smart_report import apply_smart_report
 from .cli_report_prompt import apply_interactive_report_prompt
@@ -16,6 +17,7 @@ from .benchmark_reproducibility import apply_benchmark_reproducibility
 _impl.DEFAULT_ENV_FILE = env_file()
 _impl.REQUIREMENTS_FILE = requirements_file()
 apply_hardening(_impl)
+apply_ollama_local(_impl)
 apply_dynamic_taxonomy(_impl)
 apply_smart_report(_impl)
 apply_interactive_report_prompt(_impl)
