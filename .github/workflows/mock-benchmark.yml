@@ -1,0 +1,62 @@
+name: mock-benchmark
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mock-benchmark-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  mock-benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: python -m pip install -e .
+      - name: Generate mock product benchmark
+        run: python scripts/generate_mock_product_benchmark.py --output mock-benchmark-output
+      - name: Verify safety and calibration evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          summary = json.loads(Path("mock-benchmark-output/mock_benchmark_summary.json").read_text(encoding="utf-8"))
+          assert summary["dataset_type"] == "synthetic_mock"
+          assert summary["production_evidence"] is False
+          calibration = summary["calibration"]
+          assert calibration["routing_enabled"] is False
+          assert calibration["recommendation_available"] is True
+          assert calibration["promotion_ready"] is True
+          assert calibration["same_precision"] >= 0.98
+          assert calibration["different_precision"] >= 0.98
+          assert calibration["ambiguous_boundaries"] > 0
+          print(json.dumps({
+              "photos": summary["photos"],
+              "products": summary["products"],
+              "same_threshold": calibration["same_threshold"],
+              "different_threshold": calibration["different_threshold"],
+              "coverage": calibration["confident_coverage"],
+              "accuracy": calibration["confident_accuracy"],
+              "ambiguous_boundaries": calibration["ambiguous_boundaries"],
+              "production_evidence": summary["production_evidence"],
+          }, indent=2))
+          PY
+      - name: Upload mock benchmark evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: product-sorter-mock-benchmark
+          path: mock-benchmark-output/
+          if-no-files-found: error
