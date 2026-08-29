@@ -54,7 +54,8 @@ The strategic order is **Ollama / Local Vision → Hybrid visual clustering → 
 - [x] Dedicated local **image** embedding Shadow Mode using an optional ONNX/FastEmbed backend, with CLI + GUI controls, conservative ambiguity thresholds, Benchmark Center metrics, and optional `product_group` boundary ground truth. See [`docs/HYBRID_EMBEDDINGS.md`](docs/HYBRID_EMBEDDINGS.md).
 - [ ] Promote visual embeddings from Shadow Mode to production routing only after labeled benchmarks establish acceptable confident coverage and boundary accuracy.
 - [ ] OCR and barcode extraction as local SKU/model evidence.
-- [ ] Safe parallel preprocessing/inference scheduling with deterministic SQLite commit ordering and memory limits.
+- [x] Memory-aware parallel image preprocessing with bounded cache reuse, CLI + GUI controls, and Benchmark Center metrics while keeping provider inference, SQLite commits, and output mutation ordered. See [`docs/PERFORMANCE_PIPELINE.md`](docs/PERFORMANCE_PIPELINE.md).
+- [ ] Adaptive batch sizing and hardware-aware inference scheduling based on measured RAM/VRAM pressure and recent latency.
 - [ ] Thumbnail Review Center with merge/split/move/correct/approve actions and auditable corrections.
 - [ ] SKU/catalog candidate matching with confidence-aware human confirmation.
 - [ ] Shopify, PIM/ERP, and reusable catalog export profiles built only from approved product groups.
