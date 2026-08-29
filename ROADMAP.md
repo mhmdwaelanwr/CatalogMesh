@@ -60,8 +60,9 @@ The strategic order is **Ollama / Local Vision → Hybrid visual clustering → 
 - [ ] Adaptive batch sizing and hardware-aware inference scheduling based on measured RAM/VRAM pressure and recent latency.
 - [x] Non-destructive visual Review Center with photo preview, merge/split/move, metadata/view correction, approval state, append-only audit log, CLI review plans, and approved-group export. Review mutations never move source or materialized photos. See [`docs/REVIEW_CENTER.md`](docs/REVIEW_CENTER.md).
 - [ ] Review UX polish: thumbnail grid, multi-select, drag-and-drop grouping, keyboard-first editing, and larger-set navigation.
-- [ ] SKU/catalog candidate matching with confidence-aware human confirmation.
-- [ ] Shopify, PIM/ERP, and reusable catalog export profiles built only from approved product groups.
+- [x] Deterministic SKU/catalog candidate matching in CLI + GUI, consuming approved groups plus optional local OCR/barcode evidence, with ranked reasons, append-only decision audit, and mandatory human confirmation before a catalog row becomes confirmed. See [`docs/SKU_MATCHING.md`](docs/SKU_MATCHING.md).
+- [ ] Real-catalog SKU matching evaluation with representative labeled store data, including top-1/top-k candidate accuracy and ambiguity analysis.
+- [ ] Shopify, PIM/ERP, and reusable catalog export profiles built only from approved groups with human-confirmed catalog matches.
 
 ## 4.0 — Extensibility
 
