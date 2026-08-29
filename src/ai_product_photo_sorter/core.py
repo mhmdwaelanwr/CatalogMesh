@@ -13,6 +13,7 @@ from .gemini_key_resilience import apply_gemini_key_resilience
 from .resource_lifecycle import apply_resource_lifecycle
 from .benchmark import apply_benchmark
 from .benchmark_reproducibility import apply_benchmark_reproducibility
+from .hybrid_embeddings import apply_hybrid_embeddings
 
 _impl.DEFAULT_ENV_FILE = env_file()
 _impl.REQUIREMENTS_FILE = requirements_file()
@@ -27,6 +28,10 @@ apply_gemini_key_resilience(_impl)
 apply_resource_lifecycle(_impl)
 apply_benchmark(_impl)
 apply_benchmark_reproducibility(_impl)
+# Shadow embeddings are applied last so their Benchmark Center extension wraps
+# the complete reproducibility report and their CLI flags compose with Ollama and
+# benchmark flags without maintaining a second parser/engine.
+apply_hybrid_embeddings(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main
