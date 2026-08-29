@@ -1,0 +1,96 @@
+name: local-evidence-smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: local-evidence-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  local-evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install package with local evidence runtime
+        run: python -m pip install -e ".[local-evidence]"
+      - name: Generate deterministic SKU and EAN-13 fixture
+        run: python scripts/generate_local_evidence_fixture.py --output local-evidence-fixture --count 4
+      - name: Run real local evidence CLI
+        run: |
+          product-sorter \
+            --local-evidence local-evidence-fixture \
+            --local-evidence-output local-evidence-output
+      - name: Verify real OCR and barcode evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("local-evidence-output/local_catalog_evidence.json")
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          summary = payload["summary"]
+          photos = payload["photos"]
+
+          assert summary["mode"] == "local_evidence"
+          assert summary["production_matching_enabled"] is False
+          assert summary["production_routing_enabled"] is False
+          assert summary["photos"] == 4
+          assert summary["backend_status"]["rapidocr"] is True
+          assert summary["backend_status"]["onnxruntime"] is True
+          assert summary["backend_status"]["zxingcpp"] is True
+          assert summary["ocr_photo_hits"] >= 3, summary
+          assert summary["barcode_photo_hits"] >= 3, summary
+          assert summary["candidate_photo_hits"] >= 3, summary
+          assert summary["photos_with_backend_errors"] == 0, summary
+
+          barcode_values = {
+              item["text"]
+              for photo in photos
+              for item in photo["barcodes"]
+          }
+          ocr_text = " ".join(
+              item["text"]
+              for photo in photos
+              for item in photo["ocr"]
+          ).upper()
+          candidate_values = {
+              item["value"].upper()
+              for photo in photos
+              for item in photo["identifier_candidates"]
+          }
+
+          assert len(barcode_values) >= 3, barcode_values
+          assert "MOCK" in ocr_text or any(value.startswith("MOCK-") for value in candidate_values)
+          assert summary["candidate_photo_coverage"] >= 0.75
+
+          print(json.dumps({
+              "photos": summary["photos"],
+              "ocr_photo_hits": summary["ocr_photo_hits"],
+              "barcode_photo_hits": summary["barcode_photo_hits"],
+              "candidate_photo_hits": summary["candidate_photo_hits"],
+              "ocr_regions": summary["ocr_regions"],
+              "barcodes": summary["barcodes"],
+              "photos_per_second": summary["photos_per_second"],
+              "production_matching_enabled": summary["production_matching_enabled"],
+          }, indent=2))
+          PY
+      - name: Upload local evidence smoke artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: product-sorter-local-evidence-smoke
+          path: |
+            local-evidence-fixture/
+            local-evidence-output/
+          if-no-files-found: error
