@@ -14,6 +14,7 @@ from .resource_lifecycle import apply_resource_lifecycle
 from .benchmark import apply_benchmark
 from .benchmark_reproducibility import apply_benchmark_reproducibility
 from .hybrid_embeddings import apply_hybrid_embeddings
+from .performance_pipeline import apply_performance_pipeline
 
 _impl.DEFAULT_ENV_FILE = env_file()
 _impl.REQUIREMENTS_FILE = requirements_file()
@@ -28,10 +29,12 @@ apply_gemini_key_resilience(_impl)
 apply_resource_lifecycle(_impl)
 apply_benchmark(_impl)
 apply_benchmark_reproducibility(_impl)
-# Shadow embeddings are applied last so their Benchmark Center extension wraps
-# the complete reproducibility report and their CLI flags compose with Ollama and
-# benchmark flags without maintaining a second parser/engine.
+# Shadow embeddings extend the complete benchmark/reproducibility layer.
 apply_hybrid_embeddings(_impl)
+# Safe preprocessing is applied last so it can warm the final shared image cache
+# before any provider path while also appending its measured metrics to Benchmark
+# Center. Provider inference and operation-state mutation remain ordered.
+apply_performance_pipeline(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main
