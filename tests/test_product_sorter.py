@@ -253,6 +253,41 @@ class RequirementsTests(unittest.TestCase):
                 {"items": []},
             )
 
+    def test_disabled_service_account_rotates_to_next_key(self):
+        response = SimpleNamespace(text='{"items":[]}', usage_metadata=None)
+        disabled = MagicMock()
+        disabled.models.generate_content.side_effect = RuntimeError(
+            "401 UNAUTHENTICATED reason: ACCOUNT_STATE_INVALID; "
+            "the bound service account is deleted or disabled"
+        )
+        working = MagicMock()
+        working.models.generate_content.return_value = response
+
+        class Pool:
+            clients = [disabled, working]
+            index = 0
+            last_usage = {}
+            last_model = ""
+            model_aliases = {}
+
+            @property
+            def client(self):
+                return self.clients[self.index]
+
+            def rotate(self):
+                self.index = (self.index + 1) % len(self.clients)
+                return True
+
+        fake_types = SimpleNamespace(GenerateContentConfig=lambda **kwargs: kwargs)
+        output = io.StringIO()
+        with patch("sorter_core.types", fake_types), redirect_stdout(output):
+            self.assertEqual(
+                call_gemini(Pool(), "test-model", [], "", max_retries=0),
+                {"items": []},
+            )
+        self.assertIn("service account is disabled", output.getvalue())
+        self.assertEqual(working.models.generate_content.call_count, 1)
+
 
 class ProgressTests(unittest.TestCase):
     def test_completed_batch_remains_cached_after_model_change(self):
