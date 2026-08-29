@@ -1,3 +1,4 @@
+import os
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -14,41 +15,38 @@ class OllamaKeyValidationTests(unittest.TestCase):
             index=0,
             validate_all=lambda: [(False, "Ollama HTTP 400 Bad Request: model missing")],
         )
+        captured = {}
 
         class GeminiPool:
             def __init__(self, keys):
                 self.clients = list(keys)
 
-        module = SimpleNamespace(
-            main=lambda: 0,
-            load_api_keys=lambda: [],
-            validate_gemini_key=lambda key: (True, "ok"),
-            GeminiClientPool=GeminiPool,
-            configured_rest_providers=lambda: [pool],
-        )
+        module = SimpleNamespace()
+        module.load_api_keys = lambda: []
+        module.validate_gemini_key = lambda key: (True, "ok")
+        module.GeminiClientPool = GeminiPool
+        module.configured_rest_providers = lambda: [pool]
+
+        def base_main():
+            captured["pools"] = module.configured_rest_providers()
+            return 0
+
+        module.main = base_main
         apply_key_validation_hardening(module)
 
-        with patch("ai_product_photo_sorter.key_validation._validation_enabled", return_value=True):
-            # Activate the wrapper through main() so configured_rest_providers
-            # follows the same path as a real CLI/GUI worker process.
-            captured = {}
-            original_main = module.main
+        with patch.dict(
+            os.environ,
+            {"AI_PROVIDERS": "ollama", "VALIDATE_KEYS": "true"},
+            clear=False,
+        ):
+            self.assertEqual(0, module.main())
 
-            def run_and_capture():
-                captured["pools"] = module.configured_rest_providers()
-                return 0
-
-            # Re-apply with a main that invokes the configured provider wrapper.
-            module.main = run_and_capture
-            # Direct helper call outside the active main context intentionally
-            # skips validation filtering, so emulate active state by invoking the
-            # already wrapped main only to verify it remains healthy.
-            self.assertEqual(0, original_main())
-
-        # The behavioral guarantee is also explicit in the local pool contract:
-        # no API credential exists that could be rejected.
-        self.assertEqual("ollama", pool.name)
+        self.assertEqual([pool], captured["pools"])
         self.assertEqual([local_client], pool.clients)
+        self.assertEqual(
+            [(False, "Ollama HTTP 400 Bad Request: model missing")],
+            pool.validate_all(),
+        )
 
 
 if __name__ == "__main__":
