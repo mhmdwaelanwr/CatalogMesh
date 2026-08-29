@@ -150,7 +150,119 @@ jobs:
               "production_evidence": fixture["production_evidence"],
           }, indent=2))
           PY
-      - name: Upload mock benchmark and review evidence
+      - name: Generate mock SKU catalog and local evidence
+        run: python scripts/generate_mock_sku_fixture.py --review-output mock-review-output
+      - name: Generate ranked SKU candidates without automatic matches
+        run: |
+          product-sorter \
+            --sku-match mock-review-output/approved_product_groups.csv \
+            --sku-catalog mock-review-output/mock_catalog.xlsx \
+            --sku-evidence mock-review-output/mock_local_catalog_evidence.json \
+            --sku-output mock-review-output/sku_matching \
+            --sku-top-k 3
+      - name: Verify ranked candidates are still pending human confirmation
+        run: |
+          python - <<'PY'
+          import csv
+          import json
+          from pathlib import Path
+
+          root = Path("mock-review-output")
+          fixture = json.loads((root / "mock_sku_fixture.json").read_text(encoding="utf-8"))
+          manifest = json.loads((root / "sku_matching" / "sku_match_manifest.json").read_text(encoding="utf-8"))
+          expected = fixture["expected_top_rows"]
+
+          assert fixture["dataset_type"] == "synthetic_mock_sku"
+          assert fixture["production_evidence"] is False
+          assert manifest["mode"] == "sku_candidate_matching"
+          assert manifest["summary"]["automatic_matching_enabled"] is False
+          assert manifest["summary"]["human_confirmation_required"] is True
+          assert manifest["summary"]["publishing_enabled"] is False
+          assert manifest["summary"]["confirmed_groups"] == 0
+          assert manifest["summary"]["pending_groups"] == 4
+          assert manifest["summary"]["catalog_ready_for_export"] is False
+
+          for group in manifest["groups"]:
+              assert group["decision"]["status"] == "pending"
+              assert group["candidates"], group["group_id"]
+              top = group["candidates"][0]
+              assert top["row_id"] == expected[group["group_id"]], (group["group_id"], top)
+              assert top["tier"] == "exact_barcode"
+              assert top["ranking_score"] == 1.0
+
+          with (root / "sku_matching" / "confirmed_catalog_matches.csv").open(encoding="utf-8-sig", newline="") as handle:
+              confirmed = list(csv.DictReader(handle))
+          assert confirmed == []
+          print(json.dumps({
+              "groups": manifest["summary"]["groups"],
+              "top_exact_barcode_suggestions": manifest["summary"]["top_exact_barcode_suggestions"],
+              "confirmed_before_human_action": manifest["summary"]["confirmed_groups"],
+              "automatic_matching_enabled": manifest["summary"]["automatic_matching_enabled"],
+              "publishing_enabled": manifest["summary"]["publishing_enabled"],
+          }, indent=2))
+          PY
+      - name: Apply explicit mock human SKU confirmations
+        run: |
+          MANIFEST=mock-review-output/sku_matching/sku_match_manifest.json
+          product-sorter --sku-confirm "$MANIFEST" --sku-group Product_0001_MockLab_M100 --sku-row 'MockCatalog!R2'
+          product-sorter --sku-confirm "$MANIFEST" --sku-group Product_0002_MockLab_M110 --sku-row 'MockCatalog!R3'
+          product-sorter --sku-confirm "$MANIFEST" --sku-group Product_0003_MockLab_K200 --sku-row 'MockCatalog!R4'
+          product-sorter --sku-confirm "$MANIFEST" --sku-group Product_0003B_MockLab_K200_Detail --sku-row 'MockCatalog!R4'
+      - name: Verify confirmed catalog readiness and photo immutability
+        run: |
+          python - <<'PY'
+          import csv
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path("mock-review-output")
+          manifest = json.loads((root / "sku_matching" / "sku_match_manifest.json").read_text(encoding="utf-8"))
+          fixture = json.loads((root / "mock_sku_fixture.json").read_text(encoding="utf-8"))
+          summary = manifest["summary"]
+          assert summary["groups"] == 4
+          assert summary["confirmed_groups"] == 4
+          assert summary["pending_groups"] == 0
+          assert summary["catalog_ready_for_export"] is True
+          assert summary["automatic_matching_enabled"] is False
+          assert summary["human_confirmation_required"] is True
+          assert summary["publishing_enabled"] is False
+          assert manifest["revision"] == fixture["expected_confirmations"] == 4
+
+          audit = [
+              json.loads(line)
+              for line in (root / "sku_matching" / "sku_match_audit.jsonl").read_text(encoding="utf-8").splitlines()
+          ]
+          assert len(audit) == 4
+          assert [event["revision"] for event in audit] == [1, 2, 3, 4]
+          assert all(event["action"] == "confirm" for event in audit)
+          assert all(event["automatic"] is False for event in audit)
+
+          with (root / "sku_matching" / "confirmed_catalog_matches.csv").open(encoding="utf-8-sig", newline="") as handle:
+              confirmed = list(csv.DictReader(handle))
+          assert len(confirmed) == 4
+          assert {row["group_id"] for row in confirmed} == set(fixture["expected_top_rows"])
+          for row in confirmed:
+              assert row["row_id"] == fixture["expected_top_rows"][row["group_id"]]
+
+          before = json.loads(Path("mock-review-before.json").read_text(encoding="utf-8"))
+          after = {
+              path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+              for path in sorted(root.rglob("*.jpg"))
+          }
+          assert before == after, "SKU matching must never move, rename, or modify product photos"
+
+          print(json.dumps({
+              "confirmed_groups": summary["confirmed_groups"],
+              "catalog_ready_for_export": summary["catalog_ready_for_export"],
+              "automatic_matching_enabled": summary["automatic_matching_enabled"],
+              "publishing_enabled": summary["publishing_enabled"],
+              "sku_audit_events": len(audit),
+              "photos_unchanged": before == after,
+              "production_evidence": fixture["production_evidence"],
+          }, indent=2))
+          PY
+      - name: Upload mock benchmark, review and SKU evidence
         uses: actions/upload-artifact@v7
         with:
           name: product-sorter-mock-benchmark
