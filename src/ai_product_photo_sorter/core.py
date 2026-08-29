@@ -15,6 +15,7 @@ from .benchmark import apply_benchmark
 from .benchmark_reproducibility import apply_benchmark_reproducibility
 from .hybrid_embeddings import apply_hybrid_embeddings
 from .performance_pipeline import apply_performance_pipeline
+from .threshold_calibration import apply_threshold_calibration
 
 _impl.DEFAULT_ENV_FILE = env_file()
 _impl.REQUIREMENTS_FILE = requirements_file()
@@ -31,10 +32,13 @@ apply_benchmark(_impl)
 apply_benchmark_reproducibility(_impl)
 # Shadow embeddings extend the complete benchmark/reproducibility layer.
 apply_hybrid_embeddings(_impl)
-# Safe preprocessing is applied last so it can warm the final shared image cache
-# before any provider path while also appending its measured metrics to Benchmark
-# Center. Provider inference and operation-state mutation remain ordered.
+# Safe preprocessing warms the final shared image cache while preserving ordered
+# provider inference and operation-state mutation.
 apply_performance_pipeline(_impl)
+# Dataset preparation/calibration is a standalone CLI action layer. It is applied
+# last so these commands compose with all normal CLI/help extensions without
+# changing production sorting behavior.
+apply_threshold_calibration(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main

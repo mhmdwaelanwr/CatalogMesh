@@ -17,6 +17,7 @@ from .performance_gui import (
     apply_performance_gui,
     prepare_performance_environment_fields,
 )
+from .threshold_calibration_gui import apply_threshold_calibration_gui
 from .report_gui import apply_report_gui
 from .report_autoload import apply_report_autoload
 
@@ -148,6 +149,7 @@ apply_environment_gui(_impl)
 apply_ollama_gui(_impl)
 apply_hybrid_gui(_impl)
 apply_performance_gui(_impl)
+apply_threshold_calibration_gui(_impl)
 apply_report_gui(_impl)
 apply_report_autoload(_impl)
 
