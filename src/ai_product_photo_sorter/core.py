@@ -19,6 +19,7 @@ from .threshold_calibration import apply_threshold_calibration
 from .hybrid_routing_lab import apply_hybrid_routing_lab
 from .local_evidence import apply_local_evidence
 from .review_center import apply_review_center
+from .sku_matching import apply_sku_matching
 
 _impl.DEFAULT_ENV_FILE = env_file()
 _impl.REQUIREMENTS_FILE = requirements_file()
@@ -44,9 +45,11 @@ apply_threshold_calibration(_impl)
 apply_hybrid_routing_lab(_impl)
 # Local OCR/barcode evidence never matches catalog rows or mutates grouping.
 apply_local_evidence(_impl)
-# Review Center is the outermost standalone workflow. Human corrections mutate
-# only its manifest/audit state and never move source or materialized photos.
+# Review Center human corrections mutate only review metadata and audit state.
 apply_review_center(_impl)
+# SKU matching is the outermost catalog layer: it consumes approved review groups,
+# ranks catalog candidates, and still requires explicit human confirmation.
+apply_sku_matching(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main
