@@ -13,6 +13,7 @@ from .ollama_local import (
     DEFAULT_TIMEOUT,
     discover_ollama_models,
 )
+from .secrets_store import save as save_secrets
 
 _ROOT = runtime_root()
 _impl.ROOT = _ROOT
@@ -36,6 +37,9 @@ _DESKTOP_ENV_KEYS = (
     "OLLAMA_KEEP_ALIVE",
     "OLLAMA_TIMEOUT",
     "PRODUCT_SORTER_IMAGE_CACHE_ENTRIES",
+    "SHOPIFY_STORE_DOMAIN",
+    "SHOPIFY_API_VERSION",
+    "SHOPIFY_PUBLICATION_ID",
 )
 
 
@@ -49,7 +53,7 @@ def _build_env_text(values: dict[str, str]) -> str:
     }
     extras = [name for name in _DESKTOP_ENV_KEYS if name not in existing]
     if extras:
-        text += "\n\n# Desktop and local-AI settings\n"
+        text += "\n\n# Desktop, local-AI and guarded commerce settings\n"
         text += "\n".join(
             f"{name}={_impl.clean(str(values.get(name, '')))}" for name in extras
         )
@@ -57,6 +61,18 @@ def _build_env_text(values: dict[str, str]) -> str:
 
 
 def _save_env(values: dict[str, str], path: Path | None = None) -> None:
+    values = dict(values)
+    shopify_token = str(values.get("SHOPIFY_ADMIN_ACCESS_TOKEN", "")).strip()
+    if shopify_token:
+        # Shopify remote credentials are never persisted as plaintext, even when the
+        # legacy AI-key USE_KEYRING switch is off. External environment injection is
+        # still supported for headless/CI usage.
+        if not save_secrets({"SHOPIFY_ADMIN_ACCESS_TOKEN": shopify_token}):
+            raise ValueError(
+                "Could not store SHOPIFY_ADMIN_ACCESS_TOKEN in the OS keyring. "
+                "Configure a working keyring or inject the token through the process environment."
+            )
+        values["SHOPIFY_ADMIN_ACCESS_TOKEN"] = ""
     _impl._ORIGINAL_SAVE_ENV(values, _impl.ENV_FILE if path is None else path)
 
 

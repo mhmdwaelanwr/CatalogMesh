@@ -23,6 +23,9 @@ from .local_evidence_gui import apply_local_evidence_gui
 from .review_center_gui import apply_review_center_gui
 from .sku_matching_gui import apply_sku_matching_gui
 from .catalog_exports_gui import apply_catalog_exports_gui
+from .shopify_environment import prepare_shopify_environment_fields
+from .shopify_publishing_gui import apply_shopify_publishing_gui
+from .shopify_safety import install_shopify_export_guards
 from .report_gui import apply_report_gui
 from .report_autoload import apply_report_autoload
 
@@ -30,6 +33,8 @@ _impl.ROOT = runtime_root()
 prepare_ollama_environment_fields(_environment_gui)
 prepare_hybrid_environment_fields(_environment_gui)
 prepare_performance_environment_fields(_environment_gui)
+prepare_shopify_environment_fields(_environment_gui)
+install_shopify_export_guards()
 
 _REPORT_TEXT = {
     "en": (
@@ -160,6 +165,7 @@ apply_local_evidence_gui(_impl)
 apply_review_center_gui(_impl)
 apply_sku_matching_gui(_impl)
 apply_catalog_exports_gui(_impl)
+apply_shopify_publishing_gui(_impl)
 apply_report_gui(_impl)
 apply_report_autoload(_impl)
 
