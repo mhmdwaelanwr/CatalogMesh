@@ -7,9 +7,10 @@ import sys
 from .paths import runtime_root
 from . import setup_wizard as _setup_wizard  # ensure patched configuration paths
 from . import _gui_impl as _impl
+from . import environment_gui as _environment_gui
 from .benchmark_gui import apply_benchmark_gui
 from .provider_gui import apply_provider_gui
-from .environment_gui import apply_environment_gui
+from .ollama_gui import apply_ollama_gui, prepare_ollama_environment_fields
 from .report_gui import apply_report_gui
 from .report_autoload import apply_report_autoload
 
@@ -132,9 +133,14 @@ _impl.App.load_values = _load_values
 _impl.App.collect = _collect
 _impl.App.command = _command
 _impl.App.set_running = _set_running
+
+# Build all desktop extensions on top of the same shared App class. Ollama fields
+# are registered before Environment Center snapshots its editable field list.
+prepare_ollama_environment_fields(_environment_gui)
 apply_benchmark_gui(_impl)
 apply_provider_gui(_impl)
-apply_environment_gui(_impl)
+_environment_gui.apply_environment_gui(_impl)
+apply_ollama_gui(_impl)
 apply_report_gui(_impl)
 apply_report_autoload(_impl)
 
