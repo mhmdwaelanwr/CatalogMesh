@@ -262,7 +262,110 @@ jobs:
               "production_evidence": fixture["production_evidence"],
           }, indent=2))
           PY
-      - name: Upload mock benchmark, review and SKU evidence
+      - name: Snapshot confirmed export inputs
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path("mock-review-output")
+          tracked = [
+              root / "sku_matching" / "sku_match_manifest.json",
+              root / "approved_product_groups.csv",
+              root / "mock_catalog.xlsx",
+          ]
+          snapshot = {
+              path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+              for path in tracked
+          }
+          Path("mock-export-inputs-before.json").write_text(
+              json.dumps(snapshot, indent=2), encoding="utf-8"
+          )
+          PY
+      - name: Generate safe offline Shopify and PIM export profiles
+        run: |
+          product-sorter \
+            --export-catalog mock-review-output/sku_matching/sku_match_manifest.json \
+            --export-output mock-review-output/catalog_exports \
+            --export-profile all
+      - name: Verify draft-only export contract and immutable inputs
+        run: |
+          python - <<'PY'
+          import csv
+          import hashlib
+          import json
+          import re
+          from pathlib import Path
+
+          root = Path("mock-review-output")
+          exports = root / "catalog_exports"
+          manifest = json.loads((exports / "catalog_export_manifest.json").read_text(encoding="utf-8"))
+          assert manifest["mode"] == "catalog_export_profiles"
+          assert manifest["profile"] == "all"
+          assert manifest["products"] == 4
+          assert manifest["confirmed_groups"] == 4
+          assert manifest["pending_groups"] == 0
+          assert manifest["shopify_status"] == "draft"
+          assert manifest["shopify_published_on_online_store"] is False
+          assert manifest["public_image_urls_invented"] == 0
+          assert manifest["publishing_enabled"] is False
+          assert manifest["network_calls_performed"] == 0
+          assert manifest["source_files_modified"] is False
+          assert manifest["blocking_errors"] == 0
+
+          with (exports / "shopify_products_draft.csv").open(encoding="utf-8", newline="") as handle:
+              shopify = list(csv.DictReader(handle))
+          assert len(shopify) == 4
+          assert all(row["Status"] == "draft" for row in shopify)
+          assert all(row["Published on online store"] == "false" for row in shopify)
+          assert all(row["Option1 name"] == "Default Title" for row in shopify)
+          assert all(row["Option1 value"] == "Default Title" for row in shopify)
+          assert all(re.fullmatch(r"\d+(?:\.\d+)?", row["Price"]) for row in shopify)
+          assert "Product image URL" not in shopify[0]
+
+          with (exports / "catalog_confirmed_products.csv").open(encoding="utf-8", newline="") as handle:
+              pim = list(csv.DictReader(handle))
+          assert len(pim) == 4
+          assert all(row["catalog_fields_json"] for row in pim)
+
+          with (exports / "image_upload_manifest.csv").open(encoding="utf-8", newline="") as handle:
+              images = list(csv.DictReader(handle))
+          assert len(images) == 12
+          assert all(row["public_image_url"] == "" for row in images)
+          assert all(row["status"] == "requires_upload" for row in images)
+          assert all(row["local_relative_path"] for row in images)
+
+          with (exports / "export_validation_issues.csv").open(encoding="utf-8", newline="") as handle:
+              issues = list(csv.DictReader(handle))
+          assert not any(row["severity"] == "error" for row in issues)
+
+          before = json.loads(Path("mock-export-inputs-before.json").read_text(encoding="utf-8"))
+          after = {
+              relative: hashlib.sha256((root / relative).read_bytes()).hexdigest()
+              for relative in before
+          }
+          assert before == after, "Catalog export must not mutate SKU state, approved groups, or catalog"
+
+          photos_before = json.loads(Path("mock-review-before.json").read_text(encoding="utf-8"))
+          photos_after = {
+              path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+              for path in sorted(root.rglob("*.jpg"))
+          }
+          assert photos_before == photos_after, "Catalog export must never modify product photos"
+
+          print(json.dumps({
+              "exported_products": manifest["products"],
+              "shopify_status": manifest["shopify_status"],
+              "published": manifest["shopify_published_on_online_store"],
+              "network_calls": manifest["network_calls_performed"],
+              "local_images_requiring_upload": manifest["local_images_requiring_upload"],
+              "public_image_urls_invented": manifest["public_image_urls_invented"],
+              "inputs_unchanged": before == after,
+              "photos_unchanged": photos_before == photos_after,
+          }, indent=2))
+          PY
+      - name: Upload mock benchmark, review, SKU and export evidence
         uses: actions/upload-artifact@v7
         with:
           name: product-sorter-mock-benchmark
