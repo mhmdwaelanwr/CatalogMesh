@@ -45,7 +45,7 @@ class PackageLayoutTests(unittest.TestCase):
         self.assertRegex(text, r'product-sorter-setup\s*=\s*"ai_product_photo_sorter\.setup_wizard:main"')
         self.assertRegex(text, r'product-sorter-gui\s*=\s*"ai_product_photo_sorter\.gui:main"')
         self.assertIn('local-embeddings = ["fastembed>=0.5,<1"]', text)
-        self.assertIn('local-evidence = ["rapidocr>=3.9,<4", "onnxruntime>=1.27,<2", "zxing-cpp>=3.1,<4"]', text)
+        self.assertIn('local-evidence = ["numpy>=1.26,<3", "rapidocr>=3.9,<4", "onnxruntime>=1.27,<2", "zxing-cpp>=3.1,<4"]', text)
 
     def test_package_catalog_is_bundled_next_to_model_catalog(self):
         from ai_product_photo_sorter import model_catalog
