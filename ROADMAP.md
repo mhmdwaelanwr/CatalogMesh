@@ -55,7 +55,7 @@ The strategic order is **Ollama / Local Vision → Hybrid visual clustering → 
 - [x] Labeled-dataset preparation, structural validation, and conservative Hybrid Shadow threshold calibration in CLI + Benchmark GUI, optimizing confident coverage only after precision gates are met. See [`docs/THRESHOLD_CALIBRATION.md`](docs/THRESHOLD_CALIBRATION.md).
 - [x] Hybrid Routing Lab simulation in CLI + Benchmark GUI, replaying calibrated local decisions, measuring estimated Vision boundary-work reduction, and surfacing every unsafe confident misroute while keeping actual provider calls unchanged. See [`docs/HYBRID_ROUTING_LAB.md`](docs/HYBRID_ROUTING_LAB.md).
 - [ ] Promote visual embeddings from Shadow Mode to production routing only after representative labeled benchmarks establish acceptable confident coverage, boundary precision, and review evidence.
-- [ ] OCR and barcode extraction as local SKU/model evidence.
+- [x] Optional local OCR + barcode evidence extraction in CLI + Benchmark GUI with RapidOCR/ONNX and ZXing-C++, candidate identifier reporting, per-photo error isolation, and no automatic catalog match. See [`docs/LOCAL_EVIDENCE.md`](docs/LOCAL_EVIDENCE.md).
 - [x] Memory-aware parallel image preprocessing with bounded cache reuse, CLI + GUI controls, and Benchmark Center metrics while keeping provider inference, SQLite commits, and output mutation ordered. See [`docs/PERFORMANCE_PIPELINE.md`](docs/PERFORMANCE_PIPELINE.md).
 - [ ] Adaptive batch sizing and hardware-aware inference scheduling based on measured RAM/VRAM pressure and recent latency.
 - [ ] Thumbnail Review Center with merge/split/move/correct/approve actions and auditable corrections.

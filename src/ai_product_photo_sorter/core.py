@@ -17,6 +17,7 @@ from .hybrid_embeddings import apply_hybrid_embeddings
 from .performance_pipeline import apply_performance_pipeline
 from .threshold_calibration import apply_threshold_calibration
 from .hybrid_routing_lab import apply_hybrid_routing_lab
+from .local_evidence import apply_local_evidence
 
 _impl.DEFAULT_ENV_FILE = env_file()
 _impl.REQUIREMENTS_FILE = requirements_file()
@@ -38,9 +39,11 @@ apply_hybrid_embeddings(_impl)
 apply_performance_pipeline(_impl)
 # Dataset preparation/calibration is a standalone CLI action layer.
 apply_threshold_calibration(_impl)
-# Routing Lab is intentionally the outermost CLI layer: it replays evidence only
-# and never intercepts production provider calls.
+# Routing Lab replays evidence only and never intercepts production provider calls.
 apply_hybrid_routing_lab(_impl)
+# Local OCR/barcode evidence is the outer standalone evidence layer; it never
+# matches catalog rows or mutates production grouping.
+apply_local_evidence(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main
