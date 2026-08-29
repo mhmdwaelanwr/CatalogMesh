@@ -51,8 +51,8 @@ The strategic order is **Ollama / Local Vision → Hybrid visual clustering → 
 - [x] Shared compressed-image LRU cache across overlapping batches/provider fallbacks.
 - [x] Benchmark reporting for Ollama provider timing, token counts, requested local model, and image-cache hit rate.
 - [ ] Validate representative local vision models on labeled real product-shoot datasets and publish measured results rather than guessed claims.
-- [ ] Dedicated local **image** embedding adapter for visual similarity and candidate product clustering. Ollama text embeddings are not treated as image embeddings.
-- [ ] Ambiguity scoring and hybrid routing so Vision LLM calls are reserved for uncertain boundaries/semantic labeling.
+- [x] Dedicated local **image** embedding Shadow Mode using an optional ONNX/FastEmbed backend, with CLI + GUI controls, conservative ambiguity thresholds, Benchmark Center metrics, and optional `product_group` boundary ground truth. See [`docs/HYBRID_EMBEDDINGS.md`](docs/HYBRID_EMBEDDINGS.md).
+- [ ] Promote visual embeddings from Shadow Mode to production routing only after labeled benchmarks establish acceptable confident coverage and boundary accuracy.
 - [ ] OCR and barcode extraction as local SKU/model evidence.
 - [ ] Safe parallel preprocessing/inference scheduling with deterministic SQLite commit ordering and memory limits.
 - [ ] Thumbnail Review Center with merge/split/move/correct/approve actions and auditable corrections.

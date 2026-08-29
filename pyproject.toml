@@ -23,6 +23,12 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = ["Pillow>=10,<13", "google-genai>=1,<2", "openpyxl>=3.1,<4", "keyring>=25,<27"]
 
+[project.optional-dependencies]
+# ONNX-based visual embeddings are deliberately optional: the normal sorter and
+# packaged desktop builds stay lightweight until measured hybrid routing proves
+# that the extra runtime/model footprint is justified.
+local-embeddings = ["fastembed>=0.5,<1"]
+
 [project.urls]
 Homepage = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter"
 Repository = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter"

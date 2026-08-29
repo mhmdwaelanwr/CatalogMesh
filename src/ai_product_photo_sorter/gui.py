@@ -12,11 +12,13 @@ from .benchmark_gui import apply_benchmark_gui
 from .provider_gui import apply_provider_gui
 from .environment_gui import apply_environment_gui
 from .ollama_gui import apply_ollama_gui, prepare_ollama_environment_fields
+from .hybrid_gui import apply_hybrid_gui, prepare_hybrid_environment_fields
 from .report_gui import apply_report_gui
 from .report_autoload import apply_report_autoload
 
 _impl.ROOT = runtime_root()
 prepare_ollama_environment_fields(_environment_gui)
+prepare_hybrid_environment_fields(_environment_gui)
 
 _REPORT_TEXT = {
     "en": (
@@ -139,6 +141,7 @@ apply_benchmark_gui(_impl)
 apply_provider_gui(_impl)
 apply_environment_gui(_impl)
 apply_ollama_gui(_impl)
+apply_hybrid_gui(_impl)
 apply_report_gui(_impl)
 apply_report_autoload(_impl)
 

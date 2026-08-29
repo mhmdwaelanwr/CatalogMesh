@@ -9,8 +9,9 @@ latency/cost only where it adds value.
 1. **Ollama Local Vision** — run the existing production classification prompt against an installed
    Ollama vision model with no API key, no internet requirement, provider fallback compatibility,
    and the same CLI/GUI/Benchmark engine.
-2. **Hybrid visual clustering** — add a dedicated image-embedding adapter (not Ollama text
-   embeddings) for inexpensive pre-clustering and ambiguity scoring before Vision LLM calls.
+2. **Hybrid visual clustering** — use a dedicated image-embedding adapter (not Ollama text
+   embeddings) for inexpensive similarity evidence. It starts in Shadow Mode and can become a
+   routing layer only after labeled benchmarks validate its thresholds.
 3. **Performance / parallel pipeline** — cache image preprocessing, prefetch non-overlapping work,
    parallelize safe CPU/I/O stages, and keep deterministic commit ordering.
 4. **Review Center** — thumbnail groups with merge/split/move/correct/approve actions backed by an
@@ -56,7 +57,7 @@ accepts `--local`, `--ollama-model`, `--ollama-url`, `--ollama-keep-alive`, and
 
 ## Hybrid routing target
 
-The planned hybrid path is:
+The target path is:
 
 ```text
 photos
@@ -69,9 +70,30 @@ photos
   -> approved SKU/catalog export
 ```
 
-Ollama's `/api/embed` endpoint produces text embeddings, so Product Sorter will not pretend it is a
-visual-embedding backend. Image embeddings will use a dedicated local vision embedding adapter and
-share the Benchmark Center for fair comparison with cloud-only and Ollama-only runs.
+Ollama's `/api/embed` endpoint produces text embeddings, so Product Sorter does not treat it as a
+visual-embedding backend. Image embeddings use a dedicated local vision embedding adapter. The
+current implementation is **Shadow Mode only**: it computes adjacent-boundary similarity and
+Benchmark Center evidence without changing production grouping. See
+[`HYBRID_EMBEDDINGS.md`](HYBRID_EMBEDDINGS.md).
+
+When a ground-truth CSV includes an optional `product_group` column, Shadow Mode reports confident
+boundary accuracy against those labels. Without `product_group`, it reports only diagnostic
+agreement with the normal sorter and does not call that accuracy.
+
+## Promotion gate for real routing
+
+Embedding decisions must not skip Vision LLM work until a representative labeled dataset establishes
+acceptable behavior. The promotion decision should consider at least:
+
+- confident boundary coverage;
+- ground-truth confident boundary accuracy;
+- ambiguous-case concentration;
+- embedding throughput and memory footprint;
+- simulated Vision LLM call reduction;
+- end-to-end time and cloud-cost reduction;
+- failure cases involving near-identical variants, packaging-only shots, reflections, and reordered captures.
+
+Thresholds remain model- and dataset-specific; they are measured, not hard-coded as marketing claims.
 
 ## Benchmark scenarios
 
@@ -79,8 +101,11 @@ Every local-first milestone should be measurable with the same labeled dataset:
 
 - Cloud-only Vision LLM
 - Ollama-only Vision LLM
-- Hybrid local clustering + Ollama
-- Hybrid local clustering + cloud fallback
+- Hybrid Shadow Mode + Ollama
+- Hybrid Shadow Mode + cloud provider
+- Future routed hybrid + Ollama
+- Future routed hybrid + cloud fallback
 
-Track grouping accuracy, view accuracy, wall time, photos/minute, peak memory, provider calls, token
-usage, and estimated cloud cost. Local inference is reported as zero API cost, not zero compute cost.
+Track grouping accuracy, view accuracy, boundary accuracy, wall time, photos/minute, peak memory,
+provider calls, token usage, and estimated cloud cost. Local inference is reported as zero API cost,
+not zero compute cost.
