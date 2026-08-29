@@ -18,6 +18,7 @@ from .performance_pipeline import apply_performance_pipeline
 from .threshold_calibration import apply_threshold_calibration
 from .hybrid_routing_lab import apply_hybrid_routing_lab
 from .local_evidence import apply_local_evidence
+from .review_center import apply_review_center
 
 _impl.DEFAULT_ENV_FILE = env_file()
 _impl.REQUIREMENTS_FILE = requirements_file()
@@ -41,9 +42,11 @@ apply_performance_pipeline(_impl)
 apply_threshold_calibration(_impl)
 # Routing Lab replays evidence only and never intercepts production provider calls.
 apply_hybrid_routing_lab(_impl)
-# Local OCR/barcode evidence is the outer standalone evidence layer; it never
-# matches catalog rows or mutates production grouping.
+# Local OCR/barcode evidence never matches catalog rows or mutates grouping.
 apply_local_evidence(_impl)
+# Review Center is the outermost standalone workflow. Human corrections mutate
+# only its manifest/audit state and never move source or materialized photos.
+apply_review_center(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main
