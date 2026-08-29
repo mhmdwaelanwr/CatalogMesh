@@ -16,6 +16,18 @@ class ProviderSelectionTests(unittest.TestCase):
         self.assertEqual(["gemini"], providers)
         self.assertEqual([("gemeni", "gemini")], corrections)
 
+    def test_local_alias_maps_explicitly_to_ollama(self):
+        providers, corrections = normalize_provider_sequence("local")
+        self.assertEqual(["ollama"], providers)
+        self.assertEqual([("local", "ollama")], corrections)
+
+    def test_ollama_can_be_first_in_fallback_chain(self):
+        providers, corrections = normalize_provider_sequence(
+            " Ollama, GEMINI, openai, anthropic "
+        )
+        self.assertEqual(["ollama", "gemini", "openai", "anthropic"], providers)
+        self.assertEqual([], corrections)
+
     def test_names_are_case_insensitive_deduplicated_and_ordered(self):
         providers, corrections = normalize_provider_sequence(
             " OpenAI, GEMINI, openai, anthropic "
@@ -31,16 +43,16 @@ class ProviderSelectionTests(unittest.TestCase):
             normalize_provider_sequence("gemnii")
 
     def test_canonical_string_is_safe_for_env(self):
-        canonical, corrections = canonical_provider_string("gemeni,openai")
-        self.assertEqual("gemini,openai", canonical)
-        self.assertEqual([("gemeni", "gemini")], corrections)
+        canonical, corrections = canonical_provider_string("local,gemeni,openai")
+        self.assertEqual("ollama,gemini,openai", canonical)
+        self.assertEqual([("local", "ollama"), ("gemeni", "gemini")], corrections)
 
     def test_environment_is_rewritten_to_canonical_values(self):
-        with patch.dict(os.environ, {"AI_PROVIDERS": "gemeni,openai"}, clear=False):
+        with patch.dict(os.environ, {"AI_PROVIDERS": "local,gemeni,openai"}, clear=False):
             canonical = normalize_provider_environment(announce=False)
-            self.assertEqual("gemini,openai", canonical)
-            self.assertEqual("gemini,openai", os.environ["AI_PROVIDERS"])
-            self.assertEqual("gemini", os.environ["AI_PROVIDER"])
+            self.assertEqual("ollama,gemini,openai", canonical)
+            self.assertEqual("ollama,gemini,openai", os.environ["AI_PROVIDERS"])
+            self.assertEqual("ollama", os.environ["AI_PROVIDER"])
 
 
 if __name__ == "__main__":
