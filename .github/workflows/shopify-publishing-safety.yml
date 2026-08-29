@@ -1,0 +1,131 @@
+name: shopify-publishing-safety
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shopify-publishing-safety-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: python -m pip install -e .
+      - name: Run Shopify publishing unit safety tests
+        run: python -m unittest tests.test_shopify_publishing -v
+      - name: Generate zero-network local Shopify plan fixture
+        run: |
+          python - <<'PY'
+          import csv
+          import json
+          from pathlib import Path
+
+          root = Path("shopify-safety-fixture")
+          exports = root / "exports"
+          exports.mkdir(parents=True)
+          with (exports / "shopify_products_draft.csv").open("w", newline="", encoding="utf-8") as handle:
+              fields = [
+                  "Title", "URL handle", "Description", "Vendor", "Type",
+                  "Published on online store", "Status", "SKU", "Barcode", "Price",
+                  "Option1 name", "Option1 value",
+              ]
+              writer = csv.DictWriter(handle, fieldnames=fields)
+              writer.writeheader()
+              writer.writerow({
+                  "Title": "Mock Mouse",
+                  "URL handle": "mock-mouse",
+                  "Description": "Engineering fixture",
+                  "Vendor": "MockLab",
+                  "Type": "mouse",
+                  "Published on online store": "false",
+                  "Status": "draft",
+                  "SKU": "SKU-M100",
+                  "Barcode": "6221111000017",
+                  "Price": "399",
+                  "Option1 name": "Default Title",
+                  "Option1 value": "Default Title",
+              })
+          with (exports / "image_upload_manifest.csv").open("w", newline="", encoding="utf-8") as handle:
+              fields = ["group_id", "sku", "position", "view", "filename", "local_relative_path", "public_image_url", "status"]
+              writer = csv.DictWriter(handle, fieldnames=fields)
+              writer.writeheader()
+          manifest = {
+              "schema_version": 1,
+              "mode": "catalog_export_profiles",
+              "products": 1,
+              "local_images_requiring_upload": 0,
+              "publishing_enabled": False,
+              "network_calls_performed": 0,
+              "outputs": {
+                  "shopify_draft_csv": str((exports / "shopify_products_draft.csv").resolve()),
+                  "image_upload_manifest": str((exports / "image_upload_manifest.csv").resolve()),
+              },
+          }
+          (exports / "catalog_export_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+          PY
+          env -u SHOPIFY_ADMIN_ACCESS_TOKEN -u SHOPIFY_STORE_DOMAIN \
+            product-sorter \
+              --shopify-plan shopify-safety-fixture/exports/catalog_export_manifest.json \
+              --shopify-output shopify-safety-fixture/shopify_remote
+      - name: Verify local plan cannot publish or mutate inventory
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("shopify-safety-fixture/shopify_remote/shopify_publish_plan.json")
+          plan = json.loads(path.read_text(encoding="utf-8"))
+          assert plan["mode"] == "shopify_publish_plan"
+          assert plan["source_products"] == 1
+          assert plan["default_remote_product_status"] == "DRAFT"
+          assert plan["automatic_publishing_enabled"] is False
+          assert plan["inventory_writes_enabled"] is False
+          assert plan["products"][0]["sku"] == "SKU-M100"
+          print(json.dumps({
+              "products": plan["source_products"],
+              "remote_status": plan["default_remote_product_status"],
+              "automatic_publish": plan["automatic_publishing_enabled"],
+              "inventory_writes": plan["inventory_writes_enabled"],
+          }, indent=2))
+          PY
+      - name: Verify remote writes require explicit apply
+        shell: bash
+        run: |
+          set +e
+          output=$(product-sorter --shopify-stage does-not-matter.json 2>&1)
+          code=$?
+          set -e
+          test "$code" -ne 0
+          echo "$output" | grep -- "--shopify-apply"
+      - name: Verify Shopify token is rejected on command line
+        shell: bash
+        run: |
+          set +e
+          output=$(product-sorter --shopify-preview does-not-matter.json --shopify-token secret-value 2>&1)
+          code=$?
+          set -e
+          test "$code" -ne 0
+          echo "$output" | grep "Do not pass Shopify tokens"
+          if echo "$output" | grep -q "secret-value"; then
+            echo "Secret leaked into CLI output"
+            exit 1
+          fi
+      - name: Upload Shopify safety evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: product-sorter-shopify-publishing-safety
+          path: shopify-safety-fixture/
+          if-no-files-found: error
