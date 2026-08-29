@@ -145,6 +145,36 @@ def _stats_snapshot(stats: dict[str, Any]) -> dict[str, Any]:
     return snapshot
 
 
+def _benchmark_counters() -> tuple[Any, tuple[int, int, float] | None]:
+    """Snapshot legacy benchmark encode counters before optimization-only prewarm.
+
+    Benchmark Center historically counts image-byte requests made by the provider
+    path. Prewarming intentionally performs those encodes earlier, so allowing the
+    instrumentation wrapper to count both prewarm and later cache consumption
+    would make before/after benchmark history incomparable. Dedicated
+    ``preprocess_pipeline`` metrics record the physical prewarm work instead.
+    """
+    session = getattr(benchmark_module, "_ACTIVE", None)
+    if session is None:
+        return None, None
+    return session, (
+        int(getattr(session, "encoded_images", 0)),
+        int(getattr(session, "encoded_bytes", 0)),
+        float(getattr(session, "encode_seconds", 0.0)),
+    )
+
+
+def _restore_benchmark_counters(
+    session: Any,
+    counters: tuple[int, int, float] | None,
+) -> None:
+    if session is None or counters is None:
+        return
+    if getattr(benchmark_module, "_ACTIVE", None) is not session:
+        return
+    session.encoded_images, session.encoded_bytes, session.encode_seconds = counters
+
+
 class BatchPreprocessor:
     """Warm the shared encoded-image cache once per logical provider batch."""
 
@@ -201,6 +231,7 @@ class BatchPreprocessor:
                 return
 
         workers = _memory_safe_workers(self.module, photos, desired)
+        benchmark_session, benchmark_before = _benchmark_counters()
         started = time.perf_counter()
         try:
             if workers <= 1:
@@ -229,6 +260,8 @@ class BatchPreprocessor:
             with self._lock:
                 self.stats["failures"] += 1
             raise
+        finally:
+            _restore_benchmark_counters(benchmark_session, benchmark_before)
 
         elapsed = max(0.0, time.perf_counter() - started)
         self._remember(signature)
@@ -319,7 +352,7 @@ def _benchmark_markdown_section(stats: dict[str, Any]) -> str:
             f"- Resolved worker limit: `{stats.get('resolved_workers', 0)}`",
             f"- Maximum workers actually used: `{stats.get('max_workers_used', 0)}`",
             f"- Memory safety budget: `{stats.get('memory_budget_mb', 0)} MiB`",
-            f"- Image-cache capacity: `{stats.get('image_cache_entries', 0)}` entries",
+            f"- Image-cache capacity: `{stats.get('image_cache_entries', 0)} entries`",
             f"- Preprocessed images: `{stats.get('images', 0)}`",
             f"- Preprocessing time: `{float(stats.get('seconds', 0.0)):.3f}s`",
             f"- Measured preprocessing throughput: `{throughput_text}`",
