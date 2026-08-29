@@ -24,6 +24,7 @@ class PackageLayoutTests(unittest.TestCase):
             "review_center.py", "review_center_gui.py",
             "sku_matching.py", "sku_matching_gui.py",
             "catalog_exports.py", "catalog_exports_gui.py",
+            "shopify_publishing.py", "shopify_publishing_gui.py", "shopify_environment.py", "shopify_safety.py",
             "environment_gui.py", "report_preview.py", "report_gui.py", "report_autoload.py",
         ):
             with self.subTest(name=name):
