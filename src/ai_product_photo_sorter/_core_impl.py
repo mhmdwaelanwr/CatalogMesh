@@ -734,7 +734,7 @@ def call_gemini(pool: GeminiClientPool, model: str, photos: list[Photo], catalog
     for index, photo in enumerate(photos, 1):
         contents.append(f"Image {index}: {photo.path.name}")
         contents.append(image_part(photo.path))
-    key_failures = 0
+    quota_failures = 0
     other_failures = 0
     model_aliases = getattr(pool, "model_aliases", None)
     if model_aliases is None:
@@ -766,33 +766,21 @@ def call_gemini(pool: GeminiClientPool, model: str, photos: list[Photo], catalog
             message = str(exc)
             upper_message = message.upper()
             quota = "429" in message or "RESOURCE_EXHAUSTED" in message.upper()
-            unusable_key = any(marker in upper_message for marker in (
-                "ACCOUNT_STATE_INVALID", "SERVICE_DISABLED", "API_KEY_INVALID",
-                "INVALID_API_KEY", "API KEY NOT VALID",
-            ))
-            if quota or unusable_key:
-                key_failures += 1
-                if key_failures >= len(pool.clients):
+            if quota:
+                quota_failures += 1
+                if quota_failures >= len(pool.clients):
                     new_key = request_new_api_key(live_progress,"Gemini")
                     if not new_key:
                         raise RuntimeError(
-                            "All configured Gemini keys are exhausted, disabled, or invalid. "
                             "No new API key was entered. Progress is saved; run the same "
                             "command later to continue."
                         ) from exc
                     pool.add_key(new_key)
-                    key_failures = 0
                     message = tr("new_key_ok")
                     live_progress.note(message) if live_progress else print(message)
                     continue
                 pool.rotate()
-                if unusable_key:
-                    message = (
-                        "Gemini key is invalid or its project/service account is disabled; "
-                        f"switching to {pool.index + 1}/{len(pool.clients)}."
-                    )
-                else:
-                    message = tr("switch_key", current=pool.index + 1, total=len(pool.clients))
+                message = tr("switch_key", current=pool.index + 1, total=len(pool.clients))
                 live_progress.note(message) if live_progress else print(message)
                 continue
             terminal = any(marker in upper_message for marker in (
