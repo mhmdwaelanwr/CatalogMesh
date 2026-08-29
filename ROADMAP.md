@@ -58,7 +58,8 @@ The strategic order is **Ollama / Local Vision → Hybrid visual clustering → 
 - [x] Optional local OCR + barcode evidence extraction in CLI + Benchmark GUI with RapidOCR/ONNX and ZXing-C++, candidate identifier reporting, per-photo error isolation, and no automatic catalog match. See [`docs/LOCAL_EVIDENCE.md`](docs/LOCAL_EVIDENCE.md).
 - [x] Memory-aware parallel image preprocessing with bounded cache reuse, CLI + GUI controls, and Benchmark Center metrics while keeping provider inference, SQLite commits, and output mutation ordered. See [`docs/PERFORMANCE_PIPELINE.md`](docs/PERFORMANCE_PIPELINE.md).
 - [ ] Adaptive batch sizing and hardware-aware inference scheduling based on measured RAM/VRAM pressure and recent latency.
-- [ ] Thumbnail Review Center with merge/split/move/correct/approve actions and auditable corrections.
+- [x] Non-destructive visual Review Center with photo preview, merge/split/move, metadata/view correction, approval state, append-only audit log, CLI review plans, and approved-group export. Review mutations never move source or materialized photos. See [`docs/REVIEW_CENTER.md`](docs/REVIEW_CENTER.md).
+- [ ] Review UX polish: thumbnail grid, multi-select, drag-and-drop grouping, keyboard-first editing, and larger-set navigation.
 - [ ] SKU/catalog candidate matching with confidence-aware human confirmation.
 - [ ] Shopify, PIM/ERP, and reusable catalog export profiles built only from approved product groups.
 
