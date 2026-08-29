@@ -21,6 +21,7 @@ class PackageLayoutTests(unittest.TestCase):
             "threshold_calibration.py", "threshold_calibration_gui.py",
             "hybrid_routing_lab.py", "hybrid_routing_gui.py",
             "local_evidence.py", "local_evidence_gui.py",
+            "review_center.py", "review_center_gui.py",
             "environment_gui.py", "report_preview.py", "report_gui.py", "report_autoload.py",
         ):
             with self.subTest(name=name):

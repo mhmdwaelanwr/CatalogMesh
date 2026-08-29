@@ -68,9 +68,93 @@ jobs:
               "production_evidence": summary["production_evidence"],
           }, indent=2))
           PY
-      - name: Upload mock benchmark evidence
+      - name: Generate mock Review Center output
+        run: python scripts/generate_mock_review_fixture.py --output mock-review-output
+      - name: Snapshot mock review photos before corrections
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path("mock-review-output")
+          snapshot = {
+              path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+              for path in sorted(root.rglob("*.jpg"))
+          }
+          assert len(snapshot) == 12
+          Path("mock-review-before.json").write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
+          PY
+      - name: Run Review Center CLI workflow
+        run: |
+          product-sorter --review-init mock-review-output
+          product-sorter \
+            --review-apply mock-review-output/product_review_manifest.json \
+            --review-plan mock-review-output/mock_review_plan.json
+          product-sorter \
+            --review-export-approved mock-review-output/product_review_manifest.json
+      - name: Verify non-destructive approved Review Center evidence
+        run: |
+          python - <<'PY'
+          import csv
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path("mock-review-output")
+          fixture = json.loads((root / "mock_review_fixture.json").read_text(encoding="utf-8"))
+          assert fixture["dataset_type"] == "synthetic_mock_review"
+          assert fixture["production_evidence"] is False
+
+          manifest = json.loads((root / "product_review_manifest.json").read_text(encoding="utf-8"))
+          assert manifest["mode"] == "review_manifest"
+          assert manifest["photo_count"] == 12
+          assert manifest["group_count"] == 4
+          assert manifest["approved_groups"] == 4
+          assert manifest["pending_groups"] == 0
+          assert manifest["catalog_ready"] is True
+          assert manifest["revision"] == fixture["expected_audit_events"]
+          assert manifest["audit_events"] == fixture["expected_audit_events"]
+
+          audit = (root / "product_review_audit.jsonl").read_text(encoding="utf-8").splitlines()
+          assert len(audit) == fixture["expected_audit_events"]
+          revisions = [json.loads(line)["revision"] for line in audit]
+          assert revisions == list(range(1, fixture["expected_audit_events"] + 1))
+
+          with (root / "approved_product_groups.csv").open(encoding="utf-8-sig", newline="") as handle:
+              approved = list(csv.DictReader(handle))
+          assert len(approved) == 4
+          assert {row["group_id"] for row in approved} == {
+              "Product_0001_MockLab_M100",
+              "Product_0002_MockLab_M110",
+              "Product_0003_MockLab_K200",
+              "Product_0003B_MockLab_K200_Detail",
+          }
+          corrected = next(row for row in approved if row["group_id"] == "Product_0002_MockLab_M110")
+          assert corrected["model"] == "M110-R"
+
+          before = json.loads(Path("mock-review-before.json").read_text(encoding="utf-8"))
+          after = {
+              path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+              for path in sorted(root.rglob("*.jpg"))
+          }
+          assert before == after, "Review operations must never move, rename, or modify photos"
+
+          print(json.dumps({
+              "review_photos": manifest["photo_count"],
+              "review_groups": manifest["group_count"],
+              "approved_groups": manifest["approved_groups"],
+              "catalog_ready": manifest["catalog_ready"],
+              "audit_events": manifest["audit_events"],
+              "photos_unchanged": before == after,
+              "production_evidence": fixture["production_evidence"],
+          }, indent=2))
+          PY
+      - name: Upload mock benchmark and review evidence
         uses: actions/upload-artifact@v7
         with:
           name: product-sorter-mock-benchmark
-          path: mock-benchmark-output/
+          path: |
+            mock-benchmark-output/
+            mock-review-output/
           if-no-files-found: error
