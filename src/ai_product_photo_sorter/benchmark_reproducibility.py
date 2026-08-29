@@ -79,6 +79,15 @@ def _provider_priority() -> list[str]:
     return [item.strip().lower() for item in raw.split(",") if item.strip()]
 
 
+def _requested_models(args: Any) -> dict[str, str]:
+    return {
+        "ollama": os.getenv("OLLAMA_MODEL", "gemma4").strip(),
+        "gemini": str(getattr(args, "model", "") or os.getenv("GEMINI_MODEL", "")).strip(),
+        "openai": os.getenv("OPENAI_MODEL", "").strip(),
+        "anthropic": os.getenv("ANTHROPIC_MODEL", "").strip(),
+    }
+
+
 def _validate_keys_enabled(args: Any) -> bool:
     configured = os.getenv("VALIDATE_KEYS", "true").strip().lower() in {
         "1",
@@ -90,17 +99,22 @@ def _validate_keys_enabled(args: Any) -> bool:
 
 
 def _configuration_snapshot(module: Any, args: Any) -> dict[str, Any]:
+    priorities = _provider_priority()
+    models = _requested_models(args)
+    first = priorities[0] if priorities else "gemini"
     return {
         "product_sorter_version": str(getattr(module, "VERSION", "unknown")),
         "code_revision": _code_revision(),
-        "provider_priority": _provider_priority(),
-        "requested_model": str(getattr(args, "model", "")),
+        "provider_priority": priorities,
+        "requested_model": models.get(first, ""),
+        "requested_models": {name: models.get(name, "") for name in priorities},
         "batch_size": int(getattr(args, "batch_size", 0) or 0),
         "confidence": float(getattr(args, "confidence", 0.0) or 0.0),
         "max_retries": int(getattr(args, "max_retries", 0) or 0),
         "photo_limit": getattr(args, "limit", None),
         "ground_truth_enabled": bool(getattr(args, "ground_truth", None)),
         "key_validation_enabled": _validate_keys_enabled(args),
+        "image_cache_entries": int(os.getenv("PRODUCT_SORTER_IMAGE_CACHE_ENTRIES", "24") or 24),
     }
 
 
@@ -127,13 +141,23 @@ def apply_benchmark_reproducibility(module: Any) -> None:
             getattr(session, "reproducibility", {}) or {}
         )
         result["network_latency_ms"] = _network_latency_facts(session.run_output)
+        cache = dict(getattr(module, "IMAGE_CACHE_STATS", {}) or {})
+        requests = int(cache.get("requests", 0) or 0)
+        hits = int(cache.get("hits", 0) or 0)
+        cache["hit_rate"] = hits / requests if requests else 0.0
+        result["image_cache"] = cache
         return result
 
     def render_markdown(result: dict[str, Any]) -> str:
         text = base_render_markdown(result)
         config = result.get("benchmark_config") or {}
         network = result.get("network_latency_ms") or {}
+        cache = result.get("image_cache") or {}
         providers = ", ".join(config.get("provider_priority") or []) or "unknown"
+        requested_models = config.get("requested_models") or {}
+        model_text = ", ".join(
+            f"{provider}={model or 'default'}" for provider, model in requested_models.items()
+        ) or str(config.get("requested_model", "unknown"))
         revision = config.get("code_revision") or "unavailable"
         latency_samples = int(network.get("sample_count") or 0)
         if latency_samples:
@@ -144,7 +168,15 @@ def apply_benchmark_reproducibility(module: Any) -> None:
                 f"{latency_samples} probes"
             )
         else:
-            latency_text = "Not measured"
+            latency_text = "Not measured (expected for local-only runs)"
+        cache_requests = int(cache.get("requests", 0) or 0)
+        cache_hits = int(cache.get("hits", 0) or 0)
+        cache_misses = int(cache.get("misses", 0) or 0)
+        cache_rate = float(cache.get("hit_rate", 0.0) or 0.0)
+        cache_text = (
+            f"{cache_hits}/{cache_requests} hits ({cache_rate:.1%}) · {cache_misses} misses"
+            if cache_requests else "No image-cache requests recorded"
+        )
 
         section = "\n".join(
             [
@@ -154,13 +186,15 @@ def apply_benchmark_reproducibility(module: Any) -> None:
                 f"- Product Sorter version: `{config.get('product_sorter_version', 'unknown')}`",
                 f"- Code revision: `{revision}`",
                 f"- Provider priority: `{providers}`",
-                f"- Requested model: `{config.get('requested_model', 'unknown')}`",
+                f"- Requested models: `{model_text}`",
                 f"- Batch size: `{config.get('batch_size', 'unknown')}`",
                 f"- Confidence threshold: `{config.get('confidence', 'unknown')}`",
                 f"- Maximum retries: `{config.get('max_retries', 'unknown')}`",
                 f"- Photo limit: `{config.get('photo_limit') if config.get('photo_limit') is not None else 'all'}`",
                 f"- Ground-truth scoring: `{'enabled' if config.get('ground_truth_enabled') else 'disabled'}`",
                 f"- Key validation: `{'enabled' if config.get('key_validation_enabled') else 'disabled'}`",
+                f"- Image cache capacity: `{config.get('image_cache_entries', 'unknown')}` entries",
+                f"- Image cache result: {cache_text}",
                 f"- Connectivity probe latency: {latency_text}",
                 "",
             ]
