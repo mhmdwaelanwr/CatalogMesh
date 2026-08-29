@@ -129,7 +129,7 @@ class ReviewCenterTests(unittest.TestCase):
             manifest, path = initialize_review(output)
             summary = review_summary(manifest)
 
-            self.assertEqual(path, output / MANIFEST_NAME)
+            self.assertEqual(path.resolve(), (output / MANIFEST_NAME).resolve())
             self.assertTrue(path.is_file())
             self.assertTrue((output / SUMMARY_NAME).is_file())
             self.assertEqual(summary["groups"], 2)
@@ -275,7 +275,7 @@ class ReviewCenterTests(unittest.TestCase):
             apply_review_plan(manifest_path, plan)
 
             summary, approved_path = export_approved(manifest_path)
-            self.assertEqual(approved_path, output / APPROVED_NAME)
+            self.assertEqual(approved_path.resolve(), (output / APPROVED_NAME).resolve())
             self.assertEqual(summary["approved_groups"], 1)
             self.assertEqual(summary["pending_groups"], 1)
             self.assertFalse(summary["catalog_ready"])
