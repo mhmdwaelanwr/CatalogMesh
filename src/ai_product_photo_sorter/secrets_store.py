@@ -3,11 +3,12 @@ from __future__ import annotations
 import os
 
 SERVICE = "product-sorter-pro"
-SECRET_NAMES = tuple(
+AI_SECRET_NAMES = tuple(
     f"{provider}_API_KEY_{i}"
     for provider in ("GEMINI", "OPENAI", "ANTHROPIC")
     for i in range(1, 5)
 )
+SECRET_NAMES = (*AI_SECRET_NAMES, "SHOPIFY_ADMIN_ACCESS_TOKEN")
 
 
 def save(values: dict[str, str]) -> bool:
