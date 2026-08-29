@@ -17,6 +17,7 @@ class PackageLayoutTests(unittest.TestCase):
             "model_catalog.py", "provider_models.json", "benchmark.py", "benchmark_gui.py",
             "benchmark_reproducibility.py", "resource_lifecycle.py", "key_validation.py",
             "provider_selection.py", "provider_gui.py", "ollama_local.py", "ollama_gui.py",
+            "hybrid_embeddings.py", "hybrid_gui.py",
             "environment_gui.py", "report_preview.py", "report_gui.py", "report_autoload.py",
         ):
             with self.subTest(name=name):
@@ -40,6 +41,7 @@ class PackageLayoutTests(unittest.TestCase):
         self.assertRegex(text, r'product-sorter\s*=\s*"ai_product_photo_sorter\.cli:main"')
         self.assertRegex(text, r'product-sorter-setup\s*=\s*"ai_product_photo_sorter\.setup_wizard:main"')
         self.assertRegex(text, r'product-sorter-gui\s*=\s*"ai_product_photo_sorter\.gui:main"')
+        self.assertIn('local-embeddings = ["fastembed>=0.5,<1"]', text)
 
     def test_package_catalog_is_bundled_next_to_model_catalog(self):
         from ai_product_photo_sorter import model_catalog
