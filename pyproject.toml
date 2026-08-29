@@ -28,6 +28,10 @@ dependencies = ["Pillow>=10,<13", "google-genai>=1,<2", "openpyxl>=3.1,<4", "key
 # packaged desktop builds stay lightweight until measured hybrid routing proves
 # that the extra runtime/model footprint is justified.
 local-embeddings = ["fastembed>=0.5,<1"]
+# Local catalog evidence is also opt-in. RapidOCR carries compact OCR models and
+# uses ONNX Runtime locally; ZXing-C++ supplies cross-platform product/QR barcode
+# decoding. Neither dependency is added to the normal desktop/PyPI install.
+local-evidence = ["rapidocr>=3.9,<4", "onnxruntime>=1.27,<2", "zxing-cpp>=3.1,<4"]
 
 [project.urls]
 Homepage = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter"
