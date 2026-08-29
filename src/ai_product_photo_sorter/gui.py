@@ -25,6 +25,7 @@ from .sku_matching_gui import apply_sku_matching_gui
 from .catalog_exports_gui import apply_catalog_exports_gui
 from .shopify_environment import prepare_shopify_environment_fields
 from .shopify_publishing_gui import apply_shopify_publishing_gui
+from .shopify_safety import install_shopify_export_guards
 from .report_gui import apply_report_gui
 from .report_autoload import apply_report_autoload
 
@@ -33,6 +34,7 @@ prepare_ollama_environment_fields(_environment_gui)
 prepare_hybrid_environment_fields(_environment_gui)
 prepare_performance_environment_fields(_environment_gui)
 prepare_shopify_environment_fields(_environment_gui)
+install_shopify_export_guards()
 
 _REPORT_TEXT = {
     "en": (
