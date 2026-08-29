@@ -62,7 +62,9 @@ The strategic order is **Ollama / Local Vision → Hybrid visual clustering → 
 - [ ] Review UX polish: thumbnail grid, multi-select, drag-and-drop grouping, keyboard-first editing, and larger-set navigation.
 - [x] Deterministic SKU/catalog candidate matching in CLI + GUI, consuming approved groups plus optional local OCR/barcode evidence, with ranked reasons, append-only decision audit, and mandatory human confirmation before a catalog row becomes confirmed. See [`docs/SKU_MATCHING.md`](docs/SKU_MATCHING.md).
 - [ ] Real-catalog SKU matching evaluation with representative labeled store data, including top-1/top-k candidate accuracy and ambiguity analysis.
-- [ ] Shopify, PIM/ERP, and reusable catalog export profiles built only from approved groups with human-confirmed catalog matches.
+- [x] Safe offline Shopify draft + neutral PIM export profiles in CLI + GUI, built only from fully human-confirmed matches, with fail-closed validation, local image upload manifest, no inventory/shipping/tax invention, and zero publishing/network calls. See [`docs/CATALOG_EXPORTS.md`](docs/CATALOG_EXPORTS.md).
+- [ ] Live Shopify publishing with explicit credentials, preview/dry-run, image upload, idempotency, remote audit, and rollback-safe behavior.
+- [ ] PIM/ERP connector profiles with explicit field mapping, validation, and authenticated write boundaries.
 
 ## 4.0 — Extensibility
 
