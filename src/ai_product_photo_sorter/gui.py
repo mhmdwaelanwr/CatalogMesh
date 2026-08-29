@@ -19,6 +19,7 @@ from .performance_gui import (
 )
 from .threshold_calibration_gui import apply_threshold_calibration_gui
 from .hybrid_routing_gui import apply_hybrid_routing_gui
+from .local_evidence_gui import apply_local_evidence_gui
 from .report_gui import apply_report_gui
 from .report_autoload import apply_report_autoload
 
@@ -152,6 +153,7 @@ apply_hybrid_gui(_impl)
 apply_performance_gui(_impl)
 apply_threshold_calibration_gui(_impl)
 apply_hybrid_routing_gui(_impl)
+apply_local_evidence_gui(_impl)
 apply_report_gui(_impl)
 apply_report_autoload(_impl)
 
