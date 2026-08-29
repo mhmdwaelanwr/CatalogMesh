@@ -1,4 +1,4 @@
-"""Extra CLI safety gates around the remote Shopify layer."""
+"""Extra safety gates around the remote Shopify layer."""
 
 from __future__ import annotations
 
@@ -7,9 +7,36 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from .shopify_publishing import build_plan
+from . import shopify_publishing as _publishing
 
 PLAN_NAME = "shopify_publish_plan.json"
+
+
+def install_shopify_export_guards() -> None:
+    """Make live Shopify identity fail-closed when an export repeats a SKU."""
+    if getattr(_publishing, "_DUPLICATE_SKU_GUARD_INSTALLED", False):
+        return
+    base_load = _publishing._load_export_package
+
+    def guarded_load(export_manifest: Path):
+        payload, products, images, source = base_load(export_manifest)
+        seen: set[str] = set()
+        duplicates: set[str] = set()
+        for row in products:
+            sku = str(row.get("SKU", "")).strip()
+            if sku in seen:
+                duplicates.add(sku)
+            seen.add(sku)
+        if duplicates:
+            preview = ", ".join(sorted(duplicates)[:10])
+            raise ValueError(
+                "Live Shopify staging requires one unique confirmed product per SKU; "
+                f"duplicate SKU values are blocked before network access: {preview}"
+            )
+        return payload, products, images, source
+
+    _publishing._load_export_package = guarded_load
+    _publishing._DUPLICATE_SKU_GUARD_INSTALLED = True
 
 
 def _value_after(argv: list[str], flag: str) -> str | None:
@@ -23,6 +50,7 @@ def _value_after(argv: list[str], flag: str) -> str | None:
 
 
 def apply_shopify_safety(module: Any) -> None:
+    install_shopify_export_guards()
     base_parse_args = module.parse_args
 
     def parse_args(env_file: Path):
@@ -42,7 +70,7 @@ def apply_shopify_safety(module: Any) -> None:
                     else source.parent / "shopify_remote"
                 )
                 destination.mkdir(parents=True, exist_ok=True)
-                plan = build_plan(source)
+                plan = _publishing.build_plan(source)
                 path = destination / PLAN_NAME
                 path.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
                 print(f"Shopify local plan: {path}")
