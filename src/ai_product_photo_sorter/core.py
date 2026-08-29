@@ -16,6 +16,7 @@ from .benchmark_reproducibility import apply_benchmark_reproducibility
 from .hybrid_embeddings import apply_hybrid_embeddings
 from .performance_pipeline import apply_performance_pipeline
 from .threshold_calibration import apply_threshold_calibration
+from .hybrid_routing_lab import apply_hybrid_routing_lab
 
 _impl.DEFAULT_ENV_FILE = env_file()
 _impl.REQUIREMENTS_FILE = requirements_file()
@@ -35,10 +36,11 @@ apply_hybrid_embeddings(_impl)
 # Safe preprocessing warms the final shared image cache while preserving ordered
 # provider inference and operation-state mutation.
 apply_performance_pipeline(_impl)
-# Dataset preparation/calibration is a standalone CLI action layer. It is applied
-# last so these commands compose with all normal CLI/help extensions without
-# changing production sorting behavior.
+# Dataset preparation/calibration is a standalone CLI action layer.
 apply_threshold_calibration(_impl)
+# Routing Lab is intentionally the outermost CLI layer: it replays evidence only
+# and never intercepts production provider calls.
+apply_hybrid_routing_lab(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main
