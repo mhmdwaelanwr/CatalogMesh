@@ -7,9 +7,10 @@ import os
 import sys
 from typing import Any
 
-SUPPORTED_PROVIDERS = ("gemini", "openai", "anthropic")
+SUPPORTED_PROVIDERS = ("ollama", "gemini", "openai", "anthropic")
 _PROVIDER_ALIASES = {
     "gemeni": "gemini",
+    "local": "ollama",
 }
 
 
@@ -21,9 +22,9 @@ def normalize_provider_sequence(raw: str | None) -> tuple[list[str], list[tuple[
     """Return canonical provider names and any safe typo corrections.
 
     Provider names are case-insensitive, duplicates are removed while preserving
-    order, and the historically observed ``gemeni`` typo is corrected to
-    ``gemini``. Other unknown names fail with a close-match suggestion instead of
-    silently leaving the sorter with no usable provider.
+    order, and a small set of explicit aliases is normalized. Other unknown names
+    fail with a close-match suggestion instead of silently leaving the sorter with
+    no usable provider.
     """
 
     text = (raw or "").strip()
