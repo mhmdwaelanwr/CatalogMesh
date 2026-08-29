@@ -1,7 +1,7 @@
 """Local-first Ollama vision integration and shared runtime performance tuning.
 
 The adapter deliberately uses Ollama's HTTP API directly so Product Sorter does
-not need an additional Python dependency.  It plugs into the existing provider
+not need an additional Python dependency. It plugs into the existing provider
 pool contract used by the CLI, GUI worker, benchmark instrumentation, and usage
 reporting.
 """
@@ -18,8 +18,11 @@ import time
 import urllib.error
 import urllib.request
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Callable
+
+from .provider_selection import canonical_provider_string
 
 DEFAULT_BASE_URL = "http://127.0.0.1:11434"
 DEFAULT_MODEL = "gemma4"
@@ -99,29 +102,87 @@ def ollama_model_details(model: str, base_url: str | None = None) -> dict[str, A
     )
 
 
+def _model_supports_vision(name: str, base_url: str | None) -> tuple[str, bool]:
+    try:
+        details = ollama_model_details(name, base_url)
+    except RuntimeError:
+        return name, False
+    capabilities = {str(value).lower() for value in details.get("capabilities", [])}
+    return name, "vision" in capabilities
+
+
 def discover_ollama_models(base_url: str | None = None, *, vision_only: bool = True) -> list[str]:
-    """Return locally installed models, optionally filtering to vision-capable ones."""
+    """Return locally installed models, optionally filtering to vision-capable ones.
+
+    Capability checks are independent HTTP requests, so a small thread pool keeps
+    the GUI refresh responsive on machines with many installed models.
+    """
     data = _request_json("/api/tags", base_url=base_url, timeout=20)
-    names = []
+    names: list[str] = []
     for item in data.get("models", []):
         if not isinstance(item, dict):
             continue
         name = str(item.get("name") or item.get("model") or "").strip()
         if name and name not in names:
             names.append(name)
-    if not vision_only:
+    if not vision_only or not names:
         return sorted(names)
 
     vision_models: list[str] = []
-    for name in names:
-        try:
-            details = ollama_model_details(name, base_url)
-        except RuntimeError:
-            continue
-        capabilities = {str(value).lower() for value in details.get("capabilities", [])}
-        if "vision" in capabilities:
-            vision_models.append(name)
+    workers = min(4, len(names))
+    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="ollama-model-check") as pool:
+        futures = [pool.submit(_model_supports_vision, name, base_url) for name in names]
+        for future in as_completed(futures):
+            name, supported = future.result()
+            if supported:
+                vision_models.append(name)
     return sorted(vision_models)
+
+
+def _classification_schema(photo_count: int) -> dict[str, Any]:
+    """Schema matching Product Sorter's shared normalization contract."""
+    item = {
+        "type": "object",
+        "properties": {
+            "filename": {"type": "string"},
+            "same_product_as_previous": {"type": "boolean"},
+            "category": {"type": "string"},
+            "view": {
+                "type": "string",
+                "enum": ["front", "back", "side", "detail", "unknown"],
+            },
+            "brand": {"type": "string"},
+            "model": {"type": "string"},
+            "catalog_match": {"type": "string"},
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+            "reason": {"type": "string"},
+        },
+        "required": [
+            "filename",
+            "same_product_as_previous",
+            "category",
+            "view",
+            "brand",
+            "model",
+            "catalog_match",
+            "confidence",
+            "reason",
+        ],
+        "additionalProperties": False,
+    }
+    return {
+        "type": "object",
+        "properties": {
+            "items": {
+                "type": "array",
+                "items": item,
+                "minItems": photo_count,
+                "maxItems": photo_count,
+            }
+        },
+        "required": ["items"],
+        "additionalProperties": False,
+    }
 
 
 class OllamaVisionProvider:
@@ -171,7 +232,7 @@ class OllamaVisionProvider:
                 "model": self.model,
                 "messages": [{"role": "user", "content": prompt, "images": images}],
                 "stream": False,
-                "format": "json",
+                "format": _classification_schema(len(photos)),
                 "keep_alive": self.keep_alive,
                 "options": {"temperature": 0},
             },
@@ -203,6 +264,7 @@ class OllamaProviderPool:
         self.base_url = base_url
         self.index = 0
         self.last_usage: dict[str, int] = {}
+        self.last_metrics: dict[str, int] = {}
         self.clients = [OllamaVisionProvider(model, base_url, keep_alive, timeout)]
 
     @property
@@ -230,7 +292,8 @@ def configured_ollama_provider() -> OllamaProviderPool:
 
 def _requested_providers() -> list[str]:
     raw = os.getenv("AI_PROVIDERS", os.getenv("AI_PROVIDER", "gemini"))
-    return [item.strip().lower() for item in raw.split(",") if item.strip()]
+    canonical, _ = canonical_provider_string(raw)
+    return [item for item in canonical.split(",") if item]
 
 
 def _install_image_cache(module: Any) -> None:
@@ -238,36 +301,60 @@ def _install_image_cache(module: Any) -> None:
     base_compress = module.compressed_image_bytes
     cache: OrderedDict[tuple[str, int, int], bytes] = OrderedDict()
     lock = threading.Lock()
+    stats = {"requests": 0, "hits": 0, "misses": 0, "evictions": 0}
+    module.IMAGE_CACHE_STATS = stats
 
     def compressed_image_bytes(path: Path) -> bytes:
         try:
             entries = int(os.getenv("PRODUCT_SORTER_IMAGE_CACHE_ENTRIES", str(DEFAULT_IMAGE_CACHE_ENTRIES)))
         except ValueError:
             entries = DEFAULT_IMAGE_CACHE_ENTRIES
+        with lock:
+            stats["requests"] += 1
         if entries <= 0:
+            with lock:
+                stats["misses"] += 1
             return base_compress(path)
         stat = path.stat()
         key = (str(path.resolve()), int(stat.st_size), int(stat.st_mtime_ns))
         with lock:
             cached = cache.get(key)
             if cached is not None:
+                stats["hits"] += 1
                 cache.move_to_end(key)
                 return cached
+            stats["misses"] += 1
         encoded = base_compress(path)
         with lock:
             cache[key] = encoded
             cache.move_to_end(key)
             while len(cache) > entries:
                 cache.popitem(last=False)
+                stats["evictions"] += 1
         return encoded
 
     module.compressed_image_bytes = compressed_image_bytes
+
+
+def _print_local_help() -> None:
+    print(
+        "\nLocal AI / Ollama:\n"
+        "  --local                    Use Ollama only; no cloud API key required\n"
+        "  --provider NAME            Select one provider (ollama/gemini/openai/anthropic)\n"
+        "  --providers A,B            Ordered provider fallback chain\n"
+        "  --ollama-model NAME        Installed Ollama vision model\n"
+        "  --ollama-url URL           Ollama endpoint (default http://127.0.0.1:11434)\n"
+        "  --ollama-keep-alive VALUE  Keep model loaded between batches (default 10m)\n"
+        "  --ollama-timeout SECONDS   Local inference timeout\n"
+        "  --ollama-list-models       List installed vision-capable models and exit"
+    )
 
 
 def _install_cli_flags(module: Any) -> None:
     base_parse_args = module.parse_args
 
     def parse_args(env_file: Path):
+        original_argv = list(sys.argv)
         parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument("--local", action="store_true")
         parser.add_argument("--provider")
@@ -276,16 +363,20 @@ def _install_cli_flags(module: Any) -> None:
         parser.add_argument("--ollama-url")
         parser.add_argument("--ollama-keep-alive")
         parser.add_argument("--ollama-timeout", type=int)
-        known, remaining = parser.parse_known_args()
+        parser.add_argument("--ollama-list-models", action="store_true")
+        known, remaining = parser.parse_known_args(original_argv[1:])
+
         if known.local:
-            os.environ["AI_PROVIDERS"] = "ollama"
-            os.environ["AI_PROVIDER"] = "ollama"
+            canonical = "ollama"
         elif known.providers:
-            os.environ["AI_PROVIDERS"] = known.providers
-            os.environ["AI_PROVIDER"] = known.providers.split(",", 1)[0].strip()
+            canonical, _ = canonical_provider_string(known.providers)
         elif known.provider:
-            os.environ["AI_PROVIDERS"] = known.provider
-            os.environ["AI_PROVIDER"] = known.provider
+            canonical, _ = canonical_provider_string(known.provider)
+        else:
+            canonical = ""
+        if canonical:
+            os.environ["AI_PROVIDERS"] = canonical
+            os.environ["AI_PROVIDER"] = canonical.split(",", 1)[0]
         if known.ollama_model:
             os.environ["OLLAMA_MODEL"] = known.ollama_model
         if known.ollama_url:
@@ -295,10 +386,23 @@ def _install_cli_flags(module: Any) -> None:
         if known.ollama_timeout is not None:
             os.environ["OLLAMA_TIMEOUT"] = str(max(5, known.ollama_timeout))
 
-        original_argv = sys.argv
+        if known.ollama_list_models:
+            models = discover_ollama_models(os.getenv("OLLAMA_BASE_URL", DEFAULT_BASE_URL))
+            if not models:
+                print("No installed Ollama vision models found.")
+            else:
+                print("Installed Ollama vision models:")
+                for model in models:
+                    print(f"- {model}")
+            raise SystemExit(0)
+
         try:
             sys.argv = [original_argv[0], *remaining]
             return base_parse_args(env_file)
+        except SystemExit as exc:
+            if exc.code == 0 and any(flag in original_argv for flag in ("-h", "--help")):
+                _print_local_help()
+            raise
         finally:
             sys.argv = original_argv
 
@@ -319,8 +423,8 @@ def apply_ollama_local(module: Any) -> None:
 
     def require_internet(output: Path) -> bool:
         # A local-first operation must remain usable with Wi-Fi disconnected.
-        # Cloud fallbacks will report their own connection error only if Ollama
-        # itself cannot complete the batch.
+        # Cloud providers still report their own connection errors if they are
+        # explicitly ordered before Ollama or selected as fallbacks.
         if "ollama" in _requested_providers():
             return True
         return base_require_internet(output)
@@ -330,11 +434,15 @@ def apply_ollama_local(module: Any) -> None:
         if getattr(pool, "name", "") != "ollama":
             return base_call_rest_pool(pool, photos, catalog, max_retries, live_progress)
 
+        providers = _requested_providers()
+        local_only = providers == ["ollama"]
+        retry_limit = max_retries if local_only else min(max_retries, 1)
         failures = 0
         while True:
             try:
                 result = module.call_rest_provider(pool.client, photos, catalog)
                 pool.last_usage = dict(pool.client.last_usage)
+                pool.last_metrics = dict(pool.client.last_metrics)
                 return result
             except Exception as exc:
                 message = str(exc)
@@ -343,15 +451,15 @@ def apply_ollama_local(module: Any) -> None:
                     "404", "NOT FOUND", "DOES NOT ADVERTISE VISION", "DOES NOT SUPPORT VISION",
                     "UNKNOWN MODEL", "MODEL IS REQUIRED",
                 ))
-                if terminal or failures >= max_retries:
+                if terminal or failures >= retry_limit:
                     hint = (
                         f" Check `ollama list` and run `ollama pull {pool.model}` if the model "
                         "is not installed."
                     )
                     raise RuntimeError(f"Ollama local inference failed: {message}.{hint}") from exc
                 failures += 1
-                delay = min(15, 2 ** failures)
-                note = f"Ollama local error; retrying in {delay}s ({failures}/{max_retries})"
+                delay = min(10, 2 ** failures)
+                note = f"Ollama local error; retrying in {delay}s ({failures}/{retry_limit})"
                 live_progress.note(note) if live_progress else print(note)
                 time.sleep(delay)
 
