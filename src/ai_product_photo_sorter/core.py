@@ -7,6 +7,7 @@ from .dynamic_taxonomy import apply_dynamic_taxonomy
 from .smart_report import apply_smart_report
 from .cli_report_prompt import apply_interactive_report_prompt
 from .provider_selection import apply_provider_selection
+from .ollama_local import apply_ollama_local
 from .key_validation import apply_key_validation_hardening
 from .gemini_key_resilience import apply_gemini_key_resilience
 from .resource_lifecycle import apply_resource_lifecycle
@@ -20,6 +21,9 @@ apply_dynamic_taxonomy(_impl)
 apply_smart_report(_impl)
 apply_interactive_report_prompt(_impl)
 apply_provider_selection(_impl)
+# Ollama must be installed before startup key validation so the validator sees
+# the local provider pool and treats endpoint/model checks as non-credential checks.
+apply_ollama_local(_impl)
 apply_key_validation_hardening(_impl)
 apply_gemini_key_resilience(_impl)
 apply_resource_lifecycle(_impl)
