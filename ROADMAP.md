@@ -34,42 +34,37 @@ workflow whenever usable API credit is available.
 - [x] Provider preflight and canonical provider selection before desktop/benchmark runs, including safe correction of the observed `gemeni` typo and explicit failure for unknown providers.
 - [x] In-app Environment Center for validated `.env` editing, masked API-key management, OS-keyring clearing, reload/save/delete actions, and persistent desktop settings.
 - [x] In-app Report Center with operation/benchmark artifact discovery, native GitHub-inspired Markdown preview, raw view, copy/open actions, and automatic refresh when output configuration changes.
-- [ ] Thumbnail-based manual review and correction workflow.
 - [ ] Configurable category profiles beyond electronics.
 - [ ] Richer operation statistics and provider cost estimates.
 - [ ] Export/import operation profiles without secrets.
 - [ ] Improved accessibility, keyboard navigation, and high-DPI validation.
 
-## 3.3 — Local-first AI, performance, and desktop UX
+## 3.3 — Local-first catalog pipeline
 
-Local execution is now a primary product direction rather than a future plugin
-experiment. New local capabilities must use the same engine in CLI, desktop GUI,
-resume, reports, and Benchmark Center.
+The strategic order is **Ollama / Local Vision → Hybrid visual clustering → Performance / parallel pipeline → Review Center → SKU matching → Shopify/PIM exports**. See [`docs/LOCAL_FIRST_ARCHITECTURE.md`](docs/LOCAL_FIRST_ARCHITECTURE.md) for the design contract.
 
-- [x] First-class Ollama vision provider with no API key requirement.
-- [x] Local-only and local-first-with-cloud-fallback provider chains.
-- [x] CLI shortcuts for Ollama endpoint, model, keep-alive, and timeout settings.
-- [x] Dedicated Ollama controls inside the Models & API keys desktop workspace.
-- [x] Discover installed Ollama models and filter to models advertising vision capability.
-- [x] Preserve Ollama configuration through the desktop Environment Center and setup wizard.
-- [x] Skip public-internet preflight for operations that include Ollama.
-- [x] Keep local models warm between batches with configurable Ollama `keep_alive`.
-- [x] Add a bounded encoded-image LRU cache to avoid reprocessing overlap/fallback images.
-- [ ] Hardware-aware local model recommendations based on available RAM/VRAM and measured benchmark throughput.
-- [ ] Adaptive batch sizing for local models based on memory pressure and recent latency.
-- [ ] Optional local visual-embedding pre-clustering so expensive multimodal inference is reserved for ambiguous groups.
-- [ ] Local OCR/barcode pre-pass for SKU and packaging evidence.
-- [ ] Surface local load time, prompt-eval time, token generation rate, and cache hit rate directly in Benchmark Center.
-- [ ] Continue desktop visual refinement around clearer provider state, local/cloud privacy indicators, and operation health.
+- [x] First-class Ollama local vision provider in the shared CLI/GUI engine with no API key requirement.
+- [x] Local-only and Ollama-first cloud-fallback modes.
+- [x] Local vision-model discovery from the Ollama endpoint with vision-capability filtering.
+- [x] Structured JSON-schema responses for the Ollama classification path.
+- [x] Offline operation when Ollama is selected.
+- [x] Shared compressed-image LRU cache across overlapping batches/provider fallbacks.
+- [x] Benchmark reporting for Ollama provider timing, token counts, requested local model, and image-cache hit rate.
+- [ ] Validate representative local vision models on labeled real product-shoot datasets and publish measured results rather than guessed claims.
+- [ ] Dedicated local **image** embedding adapter for visual similarity and candidate product clustering. Ollama text embeddings are not treated as image embeddings.
+- [ ] Ambiguity scoring and hybrid routing so Vision LLM calls are reserved for uncertain boundaries/semantic labeling.
+- [ ] OCR and barcode extraction as local SKU/model evidence.
+- [ ] Safe parallel preprocessing/inference scheduling with deterministic SQLite commit ordering and memory limits.
+- [ ] Thumbnail Review Center with merge/split/move/correct/approve actions and auditable corrections.
+- [ ] SKU/catalog candidate matching with confidence-aware human confirmation.
+- [ ] Shopify, PIM/ERP, and reusable catalog export profiles built only from approved product groups.
 
-See [`LOCAL_AI.md`](LOCAL_AI.md) for the local runtime and CLI/GUI workflow.
-
-## 4.0 — Extensibility and commerce integrations
+## 4.0 — Extensibility
 
 - [ ] Provider plugin interface and custom OpenAI-compatible endpoints.
-- [ ] Additional local runtime adapters beyond Ollama while preserving the 3.3 local-provider contract.
-- [ ] Catalog integrations and reusable export templates.
-- [ ] Extension API for custom grouping and naming policies.
+- [ ] Pluggable local visual-embedding, OCR, and barcode backends.
+- [ ] Extension API for custom grouping, naming, review, and export policies.
+- [ ] Team/automation interfaces for connecting Product Sorter to larger catalog workflows.
 
 Contributions should start with an issue describing the user problem, expected
 behavior, privacy impact, and a practical verification plan.
