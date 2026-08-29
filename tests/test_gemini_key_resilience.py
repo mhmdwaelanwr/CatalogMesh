@@ -44,6 +44,39 @@ class GeminiKeyResilienceTests(unittest.TestCase):
         self.assertEqual(pool.clients, [good_client])
         self.assertIs(pool.client, good_client)
 
+    def test_disabled_service_account_is_removed_and_next_key_retries_batch(self):
+        bad_models = MagicMock()
+        bad_models.generate_content.side_effect = RuntimeError(
+            "401 UNAUTHENTICATED: the bound service account is deleted or disabled; "
+            "reason: ACCOUNT_STATE_INVALID"
+        )
+        good_models = MagicMock()
+        good_models.generate_content.return_value = SimpleNamespace(
+            text='{"items": []}', usage_metadata=None
+        )
+        bad_client = SimpleNamespace(models=bad_models)
+        good_client = SimpleNamespace(models=good_models)
+
+        class Pool:
+            def __init__(self):
+                self.clients = [bad_client, good_client]
+                self.index = 0
+                self.last_usage = {}
+                self.last_model = ""
+                self.model_aliases = {}
+
+            @property
+            def client(self):
+                return self.clients[self.index]
+
+        pool = Pool()
+        with patch("sorter_core.types", self.fake_types):
+            result = call_gemini(pool, "test-model", [], "", max_retries=0)
+
+        self.assertEqual(result, {"items": []})
+        self.assertEqual(pool.clients, [good_client])
+        self.assertEqual(good_models.generate_content.call_count, 1)
+
     def test_generic_permission_denied_is_not_blindly_rotated(self):
         denied_models = MagicMock()
         denied_models.generate_content.side_effect = RuntimeError(

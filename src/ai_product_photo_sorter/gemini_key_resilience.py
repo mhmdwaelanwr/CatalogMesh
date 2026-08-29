@@ -17,6 +17,7 @@ from typing import Any
 
 
 _KEY_FAILURE_MARKERS = (
+    "ACCOUNT_STATE_INVALID",
     "SERVICE_DISABLED",
     "API_KEY_INVALID",
     "API KEY NOT VALID",
