@@ -23,6 +23,7 @@ class PackageLayoutTests(unittest.TestCase):
             "local_evidence.py", "local_evidence_gui.py",
             "review_center.py", "review_center_gui.py",
             "sku_matching.py", "sku_matching_gui.py",
+            "catalog_exports.py", "catalog_exports_gui.py",
             "environment_gui.py", "report_preview.py", "report_gui.py", "report_autoload.py",
         ):
             with self.subTest(name=name):
