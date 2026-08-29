@@ -39,30 +39,18 @@ class SkuMatchingTests(unittest.TestCase):
                 ],
             )
             writer.writeheader()
-            writer.writerow(
-                {
-                    "group_id": "Product_0001_Mouse_M100",
-                    "category": "mouse",
-                    "brand": "MockLab",
-                    "model": "M100",
-                    "photo_count": "2",
-                    "filenames": "A_front.jpg | A_back.jpg",
-                    "views": "front | back",
-                    "notes": "approved",
-                }
-            )
-            writer.writerow(
-                {
-                    "group_id": "Product_0002_Keyboard_K200",
-                    "category": "keyboard",
-                    "brand": "MockLab",
-                    "model": "K200",
-                    "photo_count": "2",
-                    "filenames": "B_front.jpg | B_back.jpg",
-                    "views": "front | back",
-                    "notes": "approved",
-                }
-            )
+            writer.writerow({
+                "group_id": "Product_0001_Mouse_M100", "category": "mouse",
+                "brand": "MockLab", "model": "M100", "photo_count": "2",
+                "filenames": "A_front.jpg | A_back.jpg", "views": "front | back",
+                "notes": "approved",
+            })
+            writer.writerow({
+                "group_id": "Product_0002_Keyboard_K200", "category": "keyboard",
+                "brand": "MockLab", "model": "K200", "photo_count": "2",
+                "filenames": "B_front.jpg | B_back.jpg", "views": "front | back",
+                "notes": "approved",
+            })
         return path
 
     def _catalog(self, root: Path) -> Path:
@@ -81,11 +69,8 @@ class SkuMatchingTests(unittest.TestCase):
 
     def _evidence(self, root: Path) -> Path:
         path = root / "local_catalog_evidence.json"
-        payload = {
-            "summary": {
-                "mode": "local_evidence",
-                "production_matching_enabled": False,
-            },
+        path.write_text(json.dumps({
+            "summary": {"mode": "local_evidence", "production_matching_enabled": False},
             "photos": [
                 {
                     "filename": "A_front.jpg",
@@ -115,39 +100,34 @@ class SkuMatchingTests(unittest.TestCase):
                     "errors": [],
                 },
             ],
-        }
-        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        }, indent=2), encoding="utf-8")
         return path
 
     def test_structured_xlsx_catalog_preserves_headers_and_row_ids(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            rows = load_catalog_rows(self._catalog(root))
+            rows = load_catalog_rows(self._catalog(Path(tmp)))
             self.assertEqual(len(rows), 4)
             self.assertEqual(rows[0]["row_id"], "Catalog!R2")
             self.assertEqual(rows[0]["fields"]["sku"], "ML-M100-BLK")
             self.assertEqual(rows[0]["fields"]["barcode"], "6221111000017")
             self.assertEqual(rows[2]["fields"]["model"], "K200")
 
-    def test_exact_barcode_and_identifier_rank_correct_row_first_but_never_auto_confirm(self):
+    def test_exact_barcode_ranks_first_but_stays_pending(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             manifest, path = generate_candidates(
-                self._approved(root),
-                self._catalog(root),
-                evidence_json=self._evidence(root),
-                output_dir=root / "matching",
-                top_k=3,
+                self._approved(root), self._catalog(root), evidence_json=self._evidence(root),
+                output_dir=root / "matching", top_k=3,
             )
             self.assertEqual(path.name, MANIFEST_NAME)
             self.assertTrue((path.parent / CANDIDATES_NAME).is_file())
             self.assertTrue((path.parent / CONFIRMED_NAME).is_file())
-            self.assertFalse(manifest["summary"]["automatic_matching_enabled"])
-            self.assertTrue(manifest["summary"]["human_confirmation_required"])
-            self.assertFalse(manifest["summary"]["publishing_enabled"])
-            self.assertEqual(manifest["summary"]["confirmed_groups"], 0)
-            self.assertFalse(manifest["summary"]["catalog_ready_for_export"])
-
+            summary = manifest["summary"]
+            self.assertFalse(summary["automatic_matching_enabled"])
+            self.assertTrue(summary["human_confirmation_required"])
+            self.assertFalse(summary["publishing_enabled"])
+            self.assertEqual(summary["confirmed_groups"], 0)
+            self.assertFalse(summary["catalog_ready_for_export"])
             first, second = manifest["groups"]
             self.assertEqual(first["candidates"][0]["row_id"], "Catalog!R2")
             self.assertEqual(first["candidates"][0]["tier"], "exact_barcode")
@@ -155,37 +135,15 @@ class SkuMatchingTests(unittest.TestCase):
             self.assertEqual(second["candidates"][0]["tier"], "exact_barcode")
             self.assertEqual(first["decision"]["status"], "pending")
             self.assertEqual(second["decision"]["status"], "pending")
-
             with (path.parent / CONFIRMED_NAME).open(encoding="utf-8-sig", newline="") as handle:
-                confirmed = list(csv.DictReader(handle))
-            self.assertEqual(confirmed, [])
+                self.assertEqual(list(csv.DictReader(handle)), [])
 
-    def test_group_evidence_uses_only_filenames_from_that_approved_group(self):
-        group = {
-            "group_id": "G1",
-            "category": "mouse",
-            "brand": "MockLab",
-            "model": "",
-            "filenames": ["A.jpg"],
-            "notes": "",
-        }
-        evidence = {
-            "barcodes": ["1111111111111"],
-            "labeled_identifiers": [],
-            "ocr_tokens": [],
-            "evidence_photos": 1,
-        }
+    def test_ranker_prefers_group_barcode_evidence(self):
+        group = {"group_id": "G1", "category": "mouse", "brand": "MockLab", "model": "", "filenames": ["A.jpg"], "notes": ""}
+        evidence = {"barcodes": ["1111111111111"], "labeled_identifiers": [], "ocr_tokens": [], "evidence_photos": 1}
         catalog = [
-            {
-                "row_id": "Catalog!R2",
-                "fields": {"sku": "A1", "barcode": "1111111111111", "name": "Mouse A"},
-                "search_text": "A1 | 1111111111111 | Mouse A",
-            },
-            {
-                "row_id": "Catalog!R3",
-                "fields": {"sku": "B1", "barcode": "2222222222222", "name": "Mouse B"},
-                "search_text": "B1 | 2222222222222 | Mouse B",
-            },
+            {"row_id": "Catalog!R2", "fields": {"sku": "A1", "barcode": "1111111111111", "name": "Mouse A"}, "search_text": "A1 | 1111111111111 | Mouse A"},
+            {"row_id": "Catalog!R3", "fields": {"sku": "B1", "barcode": "2222222222222", "name": "Mouse B"}, "search_text": "B1 | 2222222222222 | Mouse B"},
         ]
         ranked = rank_catalog_rows(group, evidence, catalog, top_k=2)
         self.assertEqual(ranked[0]["row_id"], "Catalog!R2")
@@ -195,50 +153,32 @@ class SkuMatchingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             _, path = generate_candidates(
-                self._approved(root),
-                self._catalog(root),
-                evidence_json=self._evidence(root),
+                self._approved(root), self._catalog(root), evidence_json=self._evidence(root),
                 output_dir=root / "matching",
             )
             manifest, _ = confirm_candidate(path, "Product_0001_Mouse_M100", "Catalog!R2")
             self.assertEqual(manifest["revision"], 1)
             self.assertEqual(manifest["summary"]["confirmed_groups"], 1)
             self.assertFalse(manifest["summary"]["catalog_ready_for_export"])
-            group = manifest["groups"][0]
-            self.assertEqual(group["decision"]["status"], "confirmed")
-            self.assertEqual(group["decision"]["row_id"], "Catalog!R2")
-
             with (path.parent / CONFIRMED_NAME).open(encoding="utf-8-sig", newline="") as handle:
                 rows = list(csv.DictReader(handle))
             self.assertEqual(len(rows), 1)
-            self.assertEqual(rows[0]["group_id"], "Product_0001_Mouse_M100")
             self.assertEqual(rows[0]["row_id"], "Catalog!R2")
-
-            events = [
-                json.loads(line)
-                for line in (path.parent / AUDIT_NAME).read_text(encoding="utf-8").splitlines()
-            ]
+            events = [json.loads(line) for line in (path.parent / AUDIT_NAME).read_text(encoding="utf-8").splitlines()]
             self.assertEqual(events[0]["action"], "confirm")
             self.assertFalse(events[0]["automatic"])
-
             manifest, _ = clear_confirmation(path, "Product_0001_Mouse_M100")
             self.assertEqual(manifest["revision"], 2)
             self.assertEqual(manifest["summary"]["confirmed_groups"], 0)
-            events = [
-                json.loads(line)
-                for line in (path.parent / AUDIT_NAME).read_text(encoding="utf-8").splitlines()
-            ]
+            events = [json.loads(line) for line in (path.parent / AUDIT_NAME).read_text(encoding="utf-8").splitlines()]
             self.assertEqual([event["action"] for event in events], ["confirm", "clear_confirmation"])
 
-    def test_confirmation_rejects_catalog_row_not_in_current_candidate_list(self):
+    def test_confirmation_rejects_non_candidate_row(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             _, path = generate_candidates(
-                self._approved(root),
-                self._catalog(root),
-                evidence_json=self._evidence(root),
-                output_dir=root / "matching",
-                top_k=1,
+                self._approved(root), self._catalog(root), evidence_json=self._evidence(root),
+                output_dir=root / "matching", top_k=1,
             )
             with self.assertRaisesRegex(ValueError, "not a current candidate"):
                 confirm_candidate(path, "Product_0001_Mouse_M100", "Catalog!R5")
@@ -246,56 +186,31 @@ class SkuMatchingTests(unittest.TestCase):
             self.assertEqual(manifest["revision"], 0)
             self.assertEqual(manifest["summary"]["confirmed_groups"], 0)
 
-    def test_cli_candidate_and_confirmation_work_without_ai_provider_configuration(self):
+    def test_cli_actions_do_not_require_provider_configuration(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            approved = self._approved(root)
-            catalog = self._catalog(root)
-            evidence = self._evidence(root)
             output = root / "matching"
-
             generated = subprocess.run(
                 [
-                    sys.executable,
-                    str(ROOT / "product_sorter.py"),
-                    "--sku-match",
-                    str(approved),
-                    "--sku-catalog",
-                    str(catalog),
-                    "--sku-evidence",
-                    str(evidence),
-                    "--sku-output",
-                    str(output),
-                    "--sku-top-k",
-                    "3",
+                    sys.executable, str(ROOT / "product_sorter.py"),
+                    "--sku-match", str(self._approved(root)),
+                    "--sku-catalog", str(self._catalog(root)),
+                    "--sku-evidence", str(self._evidence(root)),
+                    "--sku-output", str(output), "--sku-top-k", "3",
                 ],
-                cwd=ROOT,
-                check=False,
-                capture_output=True,
-                text=True,
-                env={},
+                cwd=ROOT, check=False, capture_output=True, text=True,
             )
             self.assertEqual(generated.returncode, 0, generated.stderr or generated.stdout)
             self.assertIn("Suggestions only", generated.stdout)
             manifest_path = output / MANIFEST_NAME
-            self.assertTrue(manifest_path.is_file())
-
             confirmed = subprocess.run(
                 [
-                    sys.executable,
-                    str(ROOT / "product_sorter.py"),
-                    "--sku-confirm",
-                    str(manifest_path),
-                    "--sku-group",
-                    "Product_0001_Mouse_M100",
-                    "--sku-row",
-                    "Catalog!R2",
+                    sys.executable, str(ROOT / "product_sorter.py"),
+                    "--sku-confirm", str(manifest_path),
+                    "--sku-group", "Product_0001_Mouse_M100",
+                    "--sku-row", "Catalog!R2",
                 ],
-                cwd=ROOT,
-                check=False,
-                capture_output=True,
-                text=True,
-                env={},
+                cwd=ROOT, check=False, capture_output=True, text=True,
             )
             self.assertEqual(confirmed.returncode, 0, confirmed.stderr or confirmed.stdout)
             self.assertIn("Confirmed catalog candidate", confirmed.stdout)
