@@ -218,6 +218,16 @@ def apply_performance_gui(module: Any) -> None:
 
     def command(self):
         cmd = list(base_command(self))
+        required = (
+            "PRODUCT_SORTER_PREPROCESS_WORKERS",
+            "PRODUCT_SORTER_PREPROCESS_MEMORY_MB",
+            "PRODUCT_SORTER_IMAGE_CACHE_ENTRIES",
+        )
+        # Some tests/integrations intentionally construct a minimal App-like
+        # object without running the full desktop build. Preserve composability
+        # instead of assuming every extension-owned variable always exists.
+        if not all(name in self.vars for name in required):
+            return cmd
         cmd += [
             "--preprocess-workers",
             self.vars["PRODUCT_SORTER_PREPROCESS_WORKERS"].get().strip(),
@@ -229,6 +239,13 @@ def apply_performance_gui(module: Any) -> None:
         return cmd
 
     def start(self):
+        required = (
+            "PRODUCT_SORTER_PREPROCESS_WORKERS",
+            "PRODUCT_SORTER_PREPROCESS_MEMORY_MB",
+            "PRODUCT_SORTER_IMAGE_CACHE_ENTRIES",
+        )
+        if not all(name in self.vars for name in required):
+            return base_start(self)
         workers = self.vars["PRODUCT_SORTER_PREPROCESS_WORKERS"].get().strip().lower()
         if workers not in {"auto", "off"}:
             try:
