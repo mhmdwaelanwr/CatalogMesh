@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import threading
+import urllib.parse
 from typing import Any
 
 from .ollama_local import (
@@ -36,6 +38,8 @@ _TEXT = {
         "checking": "Checking local Ollama…",
         "connected": "Connected · {count} vision model(s)",
         "none": "Connected, but no installed vision model was found",
+        "first_enabled": "Ollama is first; cloud providers remain available as fallback",
+        "only_enabled": "Local-only mode enabled · no cloud provider will be used",
     },
     "ar": {
         "tab": "OLLAMA · محلي",
@@ -52,6 +56,8 @@ _TEXT = {
         "checking": "جاري فحص Ollama المحلي…",
         "connected": "متصل · {count} موديل رؤية",
         "none": "Ollama متصل لكن لا يوجد موديل رؤية مثبت",
+        "first_enabled": "Ollama أصبح الأول مع إبقاء مزودات السحابة كخطة احتياطية",
+        "only_enabled": "تم تفعيل الوضع المحلي فقط · لن يُستخدم أي مزود سحابي",
     },
     "zh": {
         "tab": "OLLAMA · 本地",
@@ -68,16 +74,44 @@ _TEXT = {
         "checking": "正在检查本地 Ollama…",
         "connected": "已连接 · {count} 个视觉模型",
         "none": "Ollama 已连接，但未找到已安装的视觉模型",
+        "first_enabled": "Ollama 已设为首选，云端提供商保留为后备",
+        "only_enabled": "已启用仅本地模式 · 不会使用云端提供商",
     },
 }
 
 
 def prepare_ollama_environment_fields(environment_module: Any) -> None:
-    """Expose local-AI tuning knobs in the existing Environment Center."""
+    """Expose and validate local-AI tuning knobs in Environment Center."""
     current = tuple(environment_module._ENV_FIELDS)
     environment_module._ENV_FIELDS = current + tuple(
         name for name in _ENV_FIELDS if name not in current
     )
+
+    if getattr(environment_module, "_OLLAMA_VALIDATION_INSTALLED", False):
+        return
+    base_validate = environment_module._validate_setting
+
+    def validate_setting(name: str, value: str) -> str:
+        value = base_validate(name, value)
+        if name == "OLLAMA_BASE_URL" and value:
+            parsed = urllib.parse.urlparse(value)
+            if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+                raise ValueError("OLLAMA_BASE_URL must be an http:// or https:// URL")
+            return value.rstrip("/")
+        if name == "OLLAMA_TIMEOUT" and value:
+            number = int(value)
+            if not 5 <= number <= 3600:
+                raise ValueError("OLLAMA_TIMEOUT must be between 5 and 3600 seconds")
+            return str(number)
+        if name == "PRODUCT_SORTER_IMAGE_CACHE_ENTRIES" and value:
+            number = int(value)
+            if not 0 <= number <= 512:
+                raise ValueError("PRODUCT_SORTER_IMAGE_CACHE_ENTRIES must be between 0 and 512")
+            return str(number)
+        return value
+
+    environment_module._validate_setting = validate_setting
+    environment_module._OLLAMA_VALIDATION_INSTALLED = True
 
 
 def apply_ollama_gui(module: Any) -> None:
@@ -104,6 +138,7 @@ def apply_ollama_gui(module: Any) -> None:
         key_book.add(page, text="OLLAMA · LOCAL")
         self.ollama_tab = page
         self.ollama_notebook = key_book
+        self.ollama_refreshing = False
 
         self.vars["OLLAMA_BASE_URL"] = module.tk.StringVar(value=DEFAULT_BASE_URL)
         self.vars["OLLAMA_MODEL"] = module.tk.StringVar(value=DEFAULT_MODEL)
@@ -212,23 +247,44 @@ def apply_ollama_gui(module: Any) -> None:
                 values[name] = self.vars[name].get().strip()
         return values
 
-    def refresh_ollama_models(self):
-        t = text(self)
-        self.ollama_status.set(t["checking"])
-        self.root.update_idletasks()
-        try:
-            models = discover_ollama_models(self.vars["OLLAMA_BASE_URL"].get(), vision_only=True)
-        except Exception as exc:
-            self.ollama_status.set(str(exc))
-            module.messagebox.showerror("Ollama", str(exc))
+    def _finish_ollama_refresh(self, models, error):
+        self.ollama_refreshing = False
+        running = bool(self.p and self.p.poll() is None)
+        self.ollama_refresh_button.config(state="disabled" if running else "normal")
+        if error:
+            self.ollama_status.set(error)
+            module.messagebox.showerror("Ollama", error)
             return
         self.ollama_model_box["values"] = models
         current = self.vars["OLLAMA_MODEL"].get().strip()
         if models and current not in models:
             self.vars["OLLAMA_MODEL"].set(models[0])
+        t = text(self)
         self.ollama_status.set(
             t["connected"].format(count=len(models)) if models else t["none"]
         )
+
+    def refresh_ollama_models(self):
+        if self.ollama_refreshing:
+            return
+        endpoint = self.vars["OLLAMA_BASE_URL"].get().strip() or DEFAULT_BASE_URL
+        self.ollama_refreshing = True
+        self.ollama_status.set(text(self)["checking"])
+        self.ollama_refresh_button.config(state="disabled")
+
+        def worker():
+            models = []
+            error = ""
+            try:
+                models = discover_ollama_models(endpoint, vision_only=True)
+            except Exception as exc:
+                error = str(exc)
+            try:
+                self.root.after(0, lambda: self._finish_ollama_refresh(models, error))
+            except module.tk.TclError:
+                pass
+
+        threading.Thread(target=worker, daemon=True, name="ollama-model-discovery").start()
 
     def use_ollama_first(self):
         raw = self.vars.get("providers").get() if "providers" in self.vars else ""
@@ -237,11 +293,11 @@ def apply_ollama_gui(module: Any) -> None:
         if not providers:
             providers = ["gemini", "openai", "anthropic"]
         self.vars["providers"].set(",".join(["ollama", *providers]))
-        self.ollama_status.set("Ollama is now first in provider priority")
+        self.ollama_status.set(text(self)["first_enabled"])
 
     def use_ollama_only(self):
         self.vars["providers"].set("ollama")
-        self.ollama_status.set("Local-only mode enabled")
+        self.ollama_status.set(text(self)["only_enabled"])
 
     def set_running(self, running):
         base_set_running(self, running)
@@ -253,16 +309,19 @@ def apply_ollama_gui(module: Any) -> None:
             self.ollama_model_box,
             self.ollama_keep_alive_entry,
             self.ollama_timeout_entry,
-            self.ollama_refresh_button,
             self.ollama_first_button,
             self.ollama_only_button,
         ):
             widget.config(state=state)
+        self.ollama_refresh_button.config(
+            state="disabled" if running or self.ollama_refreshing else "normal"
+        )
 
     module.App.build = build
     module.App.apply_language = apply_language
     module.App.load_values = load_values
     module.App.collect = collect
+    module.App._finish_ollama_refresh = _finish_ollama_refresh
     module.App.refresh_ollama_models = refresh_ollama_models
     module.App.use_ollama_first = use_ollama_first
     module.App.use_ollama_only = use_ollama_only
