@@ -1,3 +1,4 @@
-filename,category,view,brand,model
-IMG_0001.jpg,mouse,front,ExampleBrand,ExampleModel
-IMG_0002.jpg,mouse,back,ExampleBrand,ExampleModel
+filename,category,view,brand,model,product_group
+IMG_0001.jpg,mouse,front,ExampleBrand,ExampleModel,P001
+IMG_0002.jpg,mouse,back,ExampleBrand,ExampleModel,P001
+IMG_0003.jpg,keyboard,front,ExampleBrand,ExampleKeyboard,P002
