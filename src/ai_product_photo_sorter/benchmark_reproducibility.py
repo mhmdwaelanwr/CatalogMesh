@@ -101,12 +101,18 @@ def _validate_keys_enabled(args: Any) -> bool:
 def _configuration_snapshot(module: Any, args: Any) -> dict[str, Any]:
     priorities = _provider_priority()
     models = _requested_models(args)
+    legacy_requested_model = str(getattr(args, "model", "")).strip()
     first = priorities[0] if priorities else "gemini"
+    # Keep the long-standing scalar field backward compatible for existing JSON
+    # consumers/tests. The new provider-specific map is the authoritative view
+    # when multiple providers or Ollama are configured.
+    if first and not models.get(first) and legacy_requested_model:
+        models[first] = legacy_requested_model
     return {
         "product_sorter_version": str(getattr(module, "VERSION", "unknown")),
         "code_revision": _code_revision(),
         "provider_priority": priorities,
-        "requested_model": models.get(first, ""),
+        "requested_model": legacy_requested_model,
         "requested_models": {name: models.get(name, "") for name in priorities},
         "batch_size": int(getattr(args, "batch_size", 0) or 0),
         "confidence": float(getattr(args, "confidence", 0.0) or 0.0),
