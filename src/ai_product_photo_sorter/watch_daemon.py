@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Callable
@@ -13,14 +14,26 @@ SNAPSHOT_SCHEMA_VERSION = 1
 
 
 def _asset_from_dict(item: dict[str, Any]) -> IngestAsset:
-    return IngestAsset(path=str(item["path"]), size_bytes=int(item["size_bytes"]), modified_ns=int(item["modified_ns"]))
+    try:
+        return IngestAsset(
+            path=str(item["path"]),
+            size_bytes=int(item["size_bytes"]),
+            modified_ns=int(item["modified_ns"]),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("Invalid watched-folder snapshot asset entry") from exc
 
 
 def load_snapshot(path: str | Path) -> list[IngestAsset]:
     target = Path(path).expanduser().resolve()
-    if not target.is_file():
+    if target.exists() and not target.is_file():
+        raise ValueError(f"Watched-folder snapshot path is not a file: {target}")
+    if not target.exists():
         return []
-    payload = json.loads(target.read_text(encoding="utf-8"))
+    try:
+        payload = json.loads(target.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"Could not read watched-folder snapshot: {target}") from exc
     if not isinstance(payload, dict) or payload.get("schema_version") != SNAPSHOT_SCHEMA_VERSION:
         raise ValueError("Unsupported watched-folder snapshot format")
     assets = payload.get("assets", [])
@@ -31,15 +44,45 @@ def load_snapshot(path: str | Path) -> list[IngestAsset]:
 
 def save_snapshot(path: str | Path, assets: list[IngestAsset]) -> Path:
     target = Path(path).expanduser().resolve()
+    if target.exists() and not target.is_file():
+        raise ValueError(f"Watched-folder snapshot path is not a file: {target}")
     target.parent.mkdir(parents=True, exist_ok=True)
-    payload = {"schema_version": SNAPSHOT_SCHEMA_VERSION, "assets": [asset.to_dict() for asset in assets]}
-    temp = target.with_name(target.name + ".tmp")
-    temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    os.replace(temp, target)
+    payload = {
+        "schema_version": SNAPSHOT_SCHEMA_VERSION,
+        "assets": [asset.to_dict() for asset in assets],
+    }
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=target.parent,
+            prefix=f".{target.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temp_path = Path(handle.name)
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_path, target)
+        temp_path = None
+    finally:
+        if temp_path is not None:
+            try:
+                temp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
     return target
 
 
-def watch_once(root: str | Path, snapshot_path: str | Path, *, recursive: bool = True) -> dict[str, list[IngestAsset]]:
+def watch_once(
+    root: str | Path,
+    snapshot_path: str | Path,
+    *,
+    recursive: bool = True,
+) -> dict[str, list[IngestAsset]]:
     previous = load_snapshot(snapshot_path)
     current = scan_image_folder(root, recursive=recursive)
     diff = diff_snapshots(previous, current)
@@ -72,7 +115,13 @@ def run_watch_daemon(
 def _print_diff(diff: dict[str, list[IngestAsset]]) -> None:
     if not any(diff.values()):
         return
-    print(json.dumps({key: [asset.to_dict() for asset in values] for key, values in diff.items()}, ensure_ascii=False), flush=True)
+    print(
+        json.dumps(
+            {key: [asset.to_dict() for asset in values] for key, values in diff.items()},
+            ensure_ascii=False,
+        ),
+        flush=True,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -83,13 +132,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-recursive", action="store_true")
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args(argv)
-    if args.once:
-        _print_diff(watch_once(args.root, args.state, recursive=not args.no_recursive))
-        return 0
     try:
-        run_watch_daemon(args.root, args.state, interval_seconds=args.interval, recursive=not args.no_recursive, on_change=_print_diff)
+        if args.once:
+            _print_diff(watch_once(args.root, args.state, recursive=not args.no_recursive))
+            return 0
+        run_watch_daemon(
+            args.root,
+            args.state,
+            interval_seconds=args.interval,
+            recursive=not args.no_recursive,
+            on_change=_print_diff,
+        )
     except KeyboardInterrupt:
         return 0
+    except (ValueError, OSError) as exc:
+        raise SystemExit(str(exc)) from exc
     return 0
 
 
