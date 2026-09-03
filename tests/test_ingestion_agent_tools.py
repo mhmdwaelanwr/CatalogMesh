@@ -1,5 +1,3 @@
-from dataclasses import replace
-
 import pytest
 
 from ai_product_photo_sorter.agent_tools import AgentTool, AgentToolRegistry, build_default_agent_registry
