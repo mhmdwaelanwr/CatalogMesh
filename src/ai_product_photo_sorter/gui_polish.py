@@ -26,6 +26,11 @@ def wheel_units(delta: int = 0, button: int | None = None) -> int:
     return -magnitude if delta > 0 else magnitude
 
 
+def notebook_insert_position(index: int, remaining_count: int):
+    """Return a valid ttk.Notebook insertion position after forgetting a tab."""
+    return index if index < remaining_count else "end"
+
+
 def apply_gui_polish(module: Any) -> None:
     """Add responsive scrolling, compact navigation, and theme consistency.
 
@@ -152,7 +157,9 @@ def apply_gui_polish(module: Any) -> None:
         notebook.forget(content)
 
         host = module.ttk.Frame(notebook, style="Panel.TFrame")
-        notebook.insert(index, host, text=tab_text, state=tab_state)
+        remaining_tabs = notebook.tabs()
+        insert_at = notebook_insert_position(index, len(remaining_tabs))
+        notebook.insert(insert_at, host, text=tab_text, state=tab_state)
 
         canvas = module.tk.Canvas(
             host,
