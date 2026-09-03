@@ -18,7 +18,7 @@ GUI + CLI parity · Cloud & local vision · Human review · Shopify / Akeneo / O
 
 ![Product Sorter Pro desktop](docs/screenshots/ci/windows/light-01-operation.png)
 
-> **Release status:** `v3.2.0` is the current public stable release. `main` contains unreleased v3.3 work and safety hardening.
+> **Release status:** this is the stable `v3.2.0` release line; `main` contains unreleased v3.3 work and safety hardening.
 
 AI Product Photo Sorter turns a raw chronological product shoot into reviewed product groups, catalog/SKU matches, exports and controlled connector actions. The original photos stay untouched. Human review remains the authority for catalog identity and externally visible publication.
 
