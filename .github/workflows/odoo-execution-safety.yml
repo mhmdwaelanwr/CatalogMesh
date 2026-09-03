@@ -1,0 +1,30 @@
+name: odoo-execution-safety
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install package
+        run: python -m pip install -e .
+      - name: Run Odoo execution tests
+        run: python -m unittest tests.test_odoo_execution
+      - name: Guard agent boundary
+        shell: bash
+        run: |
+          if grep -R "execute_odoo_products\|odoo.apply_products" src/ai_product_photo_sorter/mcp_server.py; then
+            echo "Odoo remote execution must never be exposed through MCP"
+            exit 1
+          fi
+          if grep -R "execute-erp\|execute-connector" src/ai_product_photo_sorter/automation_cli.py; then
+            echo "Generic ERP/connector execution commands are forbidden"
+            exit 1
+          fi

@@ -14,6 +14,7 @@ from .connector_profiles import build_connector_plan
 from .execution_control import record_execution_result, reserve_grant
 from .ingestion import scan_image_folder
 from .missing_assets import find_missing_assets, find_missing_local_images
+from .odoo_execution import OdooClient, execute_odoo_products, reconcile_odoo_execution
 from .review_automation import open_review_queue
 from .shopify_execution import execute_shopify_stage
 from .shopify_publication_gate import execute_shopify_publish, execute_shopify_rollback
@@ -66,6 +67,17 @@ def _akeneo_client_from_env(base_url: str | None = None) -> AkeneoClient:
     return AkeneoClient(resolved, required["AKENEO_CLIENT_ID"], required["AKENEO_CLIENT_SECRET"], required["AKENEO_USERNAME"], required["AKENEO_PASSWORD"])
 
 
+def _odoo_client_from_env(base_url: str | None = None, database: str | None = None) -> OdooClient:
+    resolved_url = (base_url or os.getenv("ODOO_BASE_URL", "")).strip()
+    resolved_db = (database or os.getenv("ODOO_DATABASE", "")).strip()
+    username = os.getenv("ODOO_USERNAME", "").strip()
+    api_key = os.getenv("ODOO_API_KEY", "")
+    missing = [name for name, value in {"ODOO_BASE_URL": resolved_url, "ODOO_DATABASE": resolved_db, "ODOO_USERNAME": username, "ODOO_API_KEY": api_key}.items() if not value]
+    if missing:
+        raise ValueError("Missing Odoo environment setting(s): " + ", ".join(missing))
+    return OdooClient(resolved_url, resolved_db, username, api_key)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="product-sorter-automation", description="Safe local catalog-image automation commands for Product Sorter")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -87,6 +99,8 @@ def build_parser() -> argparse.ArgumentParser:
         command = sub.add_parser(name); command.add_argument("request", type=Path); command.add_argument("reservation", type=Path); command.add_argument("--audit", type=Path); command.add_argument("--base-url")
         if name == "execute-akeneo-products": command.add_argument("--state", type=Path)
     reconcile = sub.add_parser("reconcile-akeneo-execution"); reconcile.add_argument("state", type=Path); reconcile.add_argument("--base-url")
+    odoo = sub.add_parser("execute-odoo-products"); odoo.add_argument("request", type=Path); odoo.add_argument("reservation", type=Path); odoo.add_argument("--audit", type=Path); odoo.add_argument("--state", type=Path); odoo.add_argument("--base-url"); odoo.add_argument("--database")
+    odoo_reconcile = sub.add_parser("reconcile-odoo-execution"); odoo_reconcile.add_argument("state", type=Path); odoo_reconcile.add_argument("--base-url"); odoo_reconcile.add_argument("--database")
     watch = sub.add_parser("watch"); watch.add_argument("root", type=Path); watch.add_argument("--state", type=Path, default=Path(".product-sorter-watch.json")); watch.add_argument("--interval", type=float, default=5.0); watch.add_argument("--no-recursive", action="store_true"); watch.add_argument("--once", action="store_true")
     return parser
 
@@ -126,6 +140,10 @@ def main(argv: list[str] | None = None) -> int:
             _emit(execute_akeneo_rollback(args.request, args.reservation, client, audit_path=args.audit)); return 0
         if args.command == "reconcile-akeneo-execution":
             client = _akeneo_client_from_env(args.base_url); _emit(reconcile_akeneo_execution(args.state, client)); return 0
+        if args.command == "execute-odoo-products":
+            client = _odoo_client_from_env(args.base_url, args.database); _emit(execute_odoo_products(args.request, args.reservation, client, audit_path=args.audit, state_path=args.state)); return 0
+        if args.command == "reconcile-odoo-execution":
+            client = _odoo_client_from_env(args.base_url, args.database); _emit(reconcile_odoo_execution(args.state, client)); return 0
         if args.command == "watch":
             watch_argv = [str(args.root), "--state", str(args.state), "--interval", str(args.interval)]
             if args.no_recursive: watch_argv.append("--no-recursive")
