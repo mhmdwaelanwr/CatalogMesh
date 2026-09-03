@@ -1,4 +1,4 @@
-"""Tkinter Automation Center backed by the canonical automation CLI parser.
+"""Scrollable Tkinter Automation Center backed by the canonical automation CLI parser.
 
 The GUI deliberately reuses :mod:`automation_cli` instead of duplicating remote
 execution logic. Approval, reservation, connector binding, idempotency and drift
@@ -59,7 +59,7 @@ def _is_append_action(action: argparse.Action) -> bool:
 
 
 def build_argv(command: str, values: dict[str, Any]) -> list[str]:
-    """Build CLI argv from GUI field values using the canonical parser metadata."""
+    """Build CLI argv from GUI field values using canonical parser metadata."""
     argv = [command]
     for action in parser_actions(command):
         value = values.get(action.dest)
@@ -88,13 +88,27 @@ def build_argv(command: str, values: dict[str, Any]) -> list[str]:
                 argv.extend([option, entry])
         else:
             argv.extend([option, text])
-    # Let argparse remain the final authority on shape/types/choices.
+    # argparse remains the final authority on types, choices and required fields.
     automation_cli.build_parser().parse_args(argv)
     return argv
 
 
 def cli_preview(argv: list[str]) -> str:
     return "product-sorter-automation " + " ".join(shlex.quote(part) for part in argv)
+
+
+def _wheel_units(event: Any) -> int:
+    """Normalize Windows/macOS wheel events and Linux Button-4/5 events."""
+    number = getattr(event, "num", None)
+    if number == 4:
+        return -3
+    if number == 5:
+        return 3
+    delta = int(getattr(event, "delta", 0) or 0)
+    if not delta:
+        return 0
+    # Windows commonly reports multiples of 120; macOS can report small deltas.
+    return -max(1, min(4, abs(delta) // 120 or 1)) if delta > 0 else max(1, min(4, abs(delta) // 120 or 1))
 
 
 def apply_automation_gui(module: Any) -> None:
@@ -109,26 +123,32 @@ def apply_automation_gui(module: Any) -> None:
         self.automation_status = module.tk.StringVar(value="Ready")
         self.automation_confirm = module.tk.StringVar(value="")
         self.automation_field_vars: dict[str, Any] = {}
-        self.automation_field_widgets: list[Any] = []
 
-        page = module.ttk.Frame(self.main_tabs, style="Panel.TFrame", padding=18)
+        page = module.ttk.Frame(self.main_tabs, style="Panel.TFrame", padding=(14, 12))
         self.main_tabs.add(page, text="Automation")
         self.automation_page = page
 
-        header = module.ttk.Frame(page, style="Card.TFrame", padding=18)
-        header.pack(fill="x")
-        self.automation_title = module.ttk.Label(header, text="Automation Center", style="Metric.TLabel")
-        self.automation_title.pack(anchor="w")
+        header = module.ttk.Frame(page, style="Card.TFrame", padding=(16, 14))
+        header.pack(fill="x", pady=(0, 10))
+        title_row = module.ttk.Frame(header, style="Card.TFrame")
+        title_row.pack(fill="x")
+        self.automation_title = module.ttk.Label(title_row, text="Automation Center", style="Metric.TLabel")
+        self.automation_title.pack(side="left", anchor="w")
+        module.ttk.Label(
+            title_row,
+            textvariable=self.automation_status,
+            style="MetricName.TLabel",
+        ).pack(side="right", anchor="e")
         self.automation_hint = module.ttk.Label(
             header,
             text=(
-                "GUI/CLI parity is generated from the same parser. Remote writes still require the exact "
-                "approval + single-use reservation workflow; this screen never bypasses those checks."
+                "Every automation CLI command is available here from the same parser. "
+                "Remote writes keep the exact approval + single-use reservation boundary."
             ),
             style="MetricName.TLabel",
-            wraplength=1050,
+            wraplength=980,
         )
-        self.automation_hint.pack(anchor="w", pady=(5, 12))
+        self.automation_hint.pack(anchor="w", pady=(3, 10))
 
         selector = module.ttk.Frame(header, style="Card.TFrame")
         selector.pack(fill="x")
@@ -141,47 +161,116 @@ def apply_automation_gui(module: Any) -> None:
             state="readonly",
             width=34,
         )
-        self.automation_command_box.pack(side="left", padx=(0, 10))
+        self.automation_command_box.pack(side="left", fill="x", expand=True)
         self.automation_command_box.bind("<<ComboboxSelected>>", lambda _event: self.rebuild_automation_form())
 
-        self.automation_form = module.ttk.Frame(page, style="Card.TFrame", padding=18)
-        self.automation_form.pack(fill="x", pady=(12, 0))
+        # The command form can be taller than a laptop display. Keep the header
+        # fixed and scroll the command body instead of forcing a larger window.
+        scroll_shell = module.ttk.Frame(page, style="Panel.TFrame")
+        scroll_shell.pack(fill="both", expand=True)
+        self.automation_canvas = module.tk.Canvas(
+            scroll_shell,
+            bg=self.colors["panel"],
+            highlightthickness=0,
+            borderwidth=0,
+        )
+        self.automation_scrollbar = module.ttk.Scrollbar(
+            scroll_shell, orient="vertical", command=self.automation_canvas.yview
+        )
+        self.automation_canvas.configure(yscrollcommand=self.automation_scrollbar.set)
+        self.automation_scrollbar.pack(side="right", fill="y")
+        self.automation_canvas.pack(side="left", fill="both", expand=True)
 
-        guard = module.ttk.Frame(page, style="Card.TFrame", padding=16)
-        guard.pack(fill="x", pady=(12, 0))
+        body = module.ttk.Frame(self.automation_canvas, style="Panel.TFrame", padding=(0, 0, 8, 14))
+        self.automation_body = body
+        self._automation_canvas_window = self.automation_canvas.create_window(
+            (0, 0), window=body, anchor="nw"
+        )
+        body.bind(
+            "<Configure>",
+            lambda _event: self.automation_canvas.configure(scrollregion=self.automation_canvas.bbox("all")),
+        )
+        self.automation_canvas.bind(
+            "<Configure>",
+            lambda event: self.automation_canvas.itemconfigure(self._automation_canvas_window, width=event.width),
+        )
+
+        self.automation_form = module.ttk.Frame(body, style="Card.TFrame", padding=(16, 12))
+        self.automation_form.pack(fill="x")
+
+        self.automation_guard = module.ttk.Frame(body, style="Card.TFrame", padding=(16, 12))
+        self.automation_guard.pack(fill="x", pady=(10, 0))
         self.automation_guard_label = module.ttk.Label(
-            guard,
+            self.automation_guard,
             style="MetricName.TLabel",
-            wraplength=1050,
-            text="Remote mutation commands require an extra GUI confirmation in addition to their approval artifacts.",
+            wraplength=980,
         )
         self.automation_guard_label.pack(anchor="w")
-        confirm_row = module.ttk.Frame(guard, style="Card.TFrame")
-        confirm_row.pack(fill="x", pady=(8, 0))
-        self.automation_confirm_label = module.ttk.Label(confirm_row, text="Confirmation", style="MetricName.TLabel", width=18)
+        self.automation_confirm_row = module.ttk.Frame(self.automation_guard, style="Card.TFrame")
+        self.automation_confirm_row.pack(fill="x", pady=(8, 0))
+        self.automation_confirm_label = module.ttk.Label(
+            self.automation_confirm_row,
+            text="Confirmation",
+            style="MetricName.TLabel",
+            width=16,
+        )
         self.automation_confirm_label.pack(side="left")
-        self.automation_confirm_entry = module.ttk.Entry(confirm_row, textvariable=self.automation_confirm)
+        self.automation_confirm_entry = module.ttk.Entry(
+            self.automation_confirm_row, textvariable=self.automation_confirm
+        )
         self.automation_confirm_entry.pack(side="left", fill="x", expand=True)
 
-        actions = module.ttk.Frame(page, style="Card.TFrame", padding=16)
-        actions.pack(fill="x", pady=(12, 0))
-        self.automation_run_button = module.ttk.Button(actions, text="Run", style="Accent.TButton", command=self.run_automation_command)
+        actions = module.ttk.Frame(body, style="Card.TFrame", padding=(16, 12))
+        actions.pack(fill="x", pady=(10, 0))
+        self.automation_run_button = module.ttk.Button(
+            actions, text="Run command", style="Accent.TButton", command=self.run_automation_command
+        )
         self.automation_run_button.pack(side="left", padx=(0, 8))
-        self.automation_clear_button = module.ttk.Button(actions, text="Clear output", style="Soft.TButton", command=self.clear_automation_output)
+        self.automation_clear_button = module.ttk.Button(
+            actions, text="Clear output", style="Soft.TButton", command=self.clear_automation_output
+        )
         self.automation_clear_button.pack(side="left")
-        module.ttk.Label(actions, textvariable=self.automation_status, style="MetricName.TLabel").pack(side="right")
 
-        preview_card = module.ttk.Frame(page, style="Card.TFrame", padding=14)
-        preview_card.pack(fill="both", expand=True, pady=(12, 0))
+        preview_card = module.ttk.Frame(body, style="Card.TFrame", padding=(16, 12))
+        preview_card.pack(fill="both", expand=True, pady=(10, 0))
+        module.ttk.Label(preview_card, text="COMMAND PREVIEW", style="Section.TLabel").pack(anchor="w", pady=(0, 6))
         self.automation_preview = module.tk.Text(preview_card, height=3, wrap="word")
-        self.automation_preview.pack(fill="x", pady=(0, 8))
-        self.automation_output = module.tk.Text(preview_card, height=10, wrap="word")
+        self.automation_preview.pack(fill="x", pady=(0, 10))
+        module.ttk.Label(preview_card, text="OUTPUT", style="Section.TLabel").pack(anchor="w", pady=(0, 6))
+        self.automation_output = module.tk.Text(preview_card, height=9, wrap="word")
+        output_scroll = module.ttk.Scrollbar(preview_card, orient="vertical", command=self.automation_output.yview)
+        self.automation_output.configure(yscrollcommand=output_scroll.set)
+        output_scroll.pack(side="right", fill="y")
         self.automation_output.pack(fill="both", expand=True)
+
+        def on_wheel(event):
+            units = _wheel_units(event)
+            if units:
+                self.automation_canvas.yview_scroll(units, "units")
+            return "break"
+
+        def bind_wheel(_event):
+            self.automation_canvas.bind_all("<MouseWheel>", on_wheel)
+            self.automation_canvas.bind_all("<Button-4>", on_wheel)
+            self.automation_canvas.bind_all("<Button-5>", on_wheel)
+
+        def unbind_wheel(_event):
+            self.automation_canvas.unbind_all("<MouseWheel>")
+            self.automation_canvas.unbind_all("<Button-4>")
+            self.automation_canvas.unbind_all("<Button-5>")
+
+        self.automation_canvas.bind("<Enter>", bind_wheel)
+        self.automation_canvas.bind("<Leave>", unbind_wheel)
+        body.bind("<Enter>", bind_wheel)
+        body.bind("<Leave>", unbind_wheel)
         self.rebuild_automation_form()
 
     def _browse_for_action(self, action):
-        directory = action.dest in _DIRECTORY_NAMES and action.dest not in {"output"} \
+        directory = (
+            action.dest in _DIRECTORY_NAMES
+            and action.dest not in {"output"}
             or (action.dest == "output" and self.automation_command.get() not in {"request-external-action"})
+        )
         if directory:
             selected = module.filedialog.askdirectory(title=f"Select {action.dest}")
         else:
@@ -196,13 +285,31 @@ def apply_automation_gui(module: Any) -> None:
         self.automation_field_vars = {}
         command = self.automation_command.get()
         self.automation_confirm.set("")
-        for row_index, action in enumerate(parser_actions(command)):
+
+        parser = command_parsers().get(command)
+        description = (parser.description if parser else None) or "Configure the selected automation command."
+        module.ttk.Label(
+            self.automation_form,
+            text=command.replace("-", " ").title(),
+            style="Metric.TLabel",
+        ).grid(row=0, column=0, columnspan=3, sticky="w")
+        module.ttk.Label(
+            self.automation_form,
+            text=description,
+            style="MetricName.TLabel",
+            wraplength=940,
+        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(2, 10))
+
+        for row_index, action in enumerate(parser_actions(command), 2):
             label_text = action.dest.replace("_", " ").title()
             if not action.option_strings:
-                label_text += " *"
-            module.ttk.Label(self.automation_form, text=label_text, style="MetricName.TLabel", width=24).grid(
-                row=row_index, column=0, sticky="w", padx=(0, 8), pady=4
-            )
+                label_text += "  • required"
+            module.ttk.Label(
+                self.automation_form,
+                text=label_text,
+                style="MetricName.TLabel",
+                width=22,
+            ).grid(row=row_index, column=0, sticky="w", padx=(0, 8), pady=4)
             if _is_bool_action(action):
                 variable = module.tk.BooleanVar(value=bool(action.default))
                 widget = module.ttk.Checkbutton(self.automation_form, variable=variable)
@@ -225,13 +332,14 @@ def apply_automation_gui(module: Any) -> None:
                 if action.type is Path:
                     module.ttk.Button(
                         self.automation_form,
-                        text="Browse",
+                        text="Browse…",
                         style="Soft.TButton",
                         command=lambda current=action: _browse_for_action(self, current),
                     ).grid(row=row_index, column=2, padx=(8, 0), pady=4)
             self.automation_field_vars[action.dest] = variable
         self.automation_form.columnconfigure(1, weight=1)
         self.refresh_automation_preview()
+        self.automation_canvas.yview_moveto(0)
 
     def automation_values(self):
         return {key: variable.get() for key, variable in self.automation_field_vars.items()}
@@ -244,17 +352,25 @@ def apply_automation_gui(module: Any) -> None:
             argv = build_argv(self.automation_command.get(), self.automation_values())
             text = cli_preview(argv)
         except Exception as exc:
-            text = f"Command preview: {exc}"
+            text = f"Complete the required fields to preview the command.\n{exc}"
         self.automation_preview.insert("1.0", text)
         command = self.automation_command.get()
-        required = f"RUN {command}" if command in REMOTE_MUTATION_COMMANDS else "Not required for this command"
-        self.automation_guard_label.config(
-            text=(
-                "Remote mutation safety is unchanged: approval + reservation are still mandatory. "
-                f"GUI confirmation for this command: {required}."
+        remote = command in REMOTE_MUTATION_COMMANDS
+        if remote:
+            expected = f"RUN {command}"
+            self.automation_guard_label.config(
+                text=(
+                    "Remote mutation safety is unchanged: approval + reservation are mandatory. "
+                    f"As an extra desktop guard, type exactly: {expected}"
+                )
             )
-        )
-        self.automation_confirm_entry.config(state="normal" if command in REMOTE_MUTATION_COMMANDS else "disabled")
+            if not self.automation_confirm_row.winfo_manager():
+                self.automation_confirm_row.pack(fill="x", pady=(8, 0))
+        else:
+            self.automation_guard_label.config(
+                text="Local/read-only command. No extra GUI confirmation phrase is required."
+            )
+            self.automation_confirm_row.pack_forget()
 
     def clear_automation_output(self):
         self.automation_output.delete("1.0", "end")
@@ -263,6 +379,7 @@ def apply_automation_gui(module: Any) -> None:
     def _finish_automation(self, output: str, error: str | None):
         self._automation_running = False
         self.automation_output.insert("end", output or "(no output)\n")
+        self.automation_output.see("end")
         if error:
             self.automation_output.insert("end", f"\nERROR: {error}\n")
             self.automation_status.set("Failed")
@@ -284,24 +401,27 @@ def apply_automation_gui(module: Any) -> None:
             if self.automation_confirm.get().strip() != expected:
                 module.messagebox.showwarning(
                     "Remote action confirmation",
-                    f"Type exactly: {expected}\n\nThis is an extra GUI guard; it does not replace approval/reservation validation.",
+                    f"Type exactly: {expected}\n\nThis extra GUI guard does not replace approval/reservation validation.",
                 )
                 return
         self._automation_running = True
         self.automation_status.set("Running…")
         self.automation_run_button.config(state="disabled")
         self.automation_output.insert("end", f"\n$ {cli_preview(argv)}\n")
+        self.automation_output.see("end")
 
         def worker():
             buffer = io.StringIO()
             error = None
             try:
                 with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(buffer):
-                    automation_cli.main(argv)
+                    result = automation_cli.main(argv)
+                if result not in (None, 0):
+                    error = f"Command exited with status {result}"
             except SystemExit as exc:
                 if exc.code not in (None, 0):
                     error = str(exc)
-            except Exception as exc:  # GUI must surface unexpected connector/runtime errors.
+            except Exception as exc:  # surface connector/runtime errors in the UI.
                 error = f"{type(exc).__name__}: {exc}"
             self.root.after(0, self._finish_automation, buffer.getvalue(), error)
 
@@ -311,7 +431,7 @@ def apply_automation_gui(module: Any) -> None:
         base_apply_language(self)
         if not hasattr(self, "automation_page"):
             return
-        # Keep command names/approval phrases invariant while localizing surrounding UI later.
+        # Command names and approval phrases intentionally remain invariant.
         self.main_tabs.tab(self.automation_page, text="Automation")
 
     def set_running(self, running):
