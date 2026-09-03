@@ -74,11 +74,15 @@ See [`docs/CATALOG_AUTOMATION.md`](docs/CATALOG_AUTOMATION.md) for the safety co
 - [x] Non-destructive local shoot ingestion snapshots and deterministic added/changed/removed diffing.
 - [x] Deterministic Missing Asset Audit for catalog rows and conservative exact-stem local-image reconciliation.
 - [x] Read-only Agent Tool Registry foundation with explicit external-mutation metadata and fail-closed execution.
-- [ ] Persistent watched folders with debouncing, crash-safe checkpoints, and incremental processing triggers.
+- [x] Persistent polling-based watched folders with crash-safe JSON checkpoints and deterministic incremental change events. See [`docs/MCP_AUTOMATION.md`](docs/MCP_AUTOMATION.md).
+- [ ] Debouncing and automatic ingest/classify processing triggers on watched-folder events.
 - [ ] Google Drive ingestion adapter using the same local ingestion contract.
 - [ ] S3-compatible object-storage ingestion adapter with scoped credentials and local materialization.
-- [ ] Missing Asset Audit in CLI and desktop Review Center, including unresolved-SKU queues and exportable reports.
-- [ ] MCP server/transport exposing safe tools such as `scan_shoot`, `find_unmatched_skus`, `propose_matches`, `open_review_queue`, and `prepare_shopify_draft`.
+- [x] Missing Asset Audit automation CLI for catalog image references and exact-stem local reconciliation.
+- [ ] Missing Asset Audit in the desktop Review Center, including unresolved-SKU queues and exportable reports.
+- [x] MCP stdio server using the official Python SDK v2 with safe tools for shoot scanning, missing-SKU audits, candidate proposals, and Shopify draft preparation. See [`docs/MCP_AUTOMATION.md`](docs/MCP_AUTOMATION.md).
+- [x] Dedicated automation CLI and console entry points for scan → missing assets → proposal → human-confirmed Shopify draft workflows.
+- [ ] `open_review_queue` MCP/automation tool tied to Review Center state.
 - [ ] Approval-aware Agent execution boundary for Shopify/PIM/ERP writes; external mutation must remain separately confirmed and append-only audited.
 - [ ] Variant-level asset mapping and lifecycle state for SKU variants/options.
 - [ ] Release scheduling for approved product assets with rollback-safe draft state.

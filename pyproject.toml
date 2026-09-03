@@ -9,7 +9,7 @@ description = "Multilingual AI product photo sorter with CLI and Tkinter GUI"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [{name = "Mohamed Anwar"}]
-keywords = ["ai", "computer-vision", "product-photography", "photo-organizer", "image-classification", "product-catalog", "gemini", "openai", "anthropic", "multi-provider", "tkinter", "desktop-app", "cli", "api-key-rotation", "open-source"]
+keywords = ["ai", "computer-vision", "product-photography", "photo-organizer", "image-classification", "product-catalog", "gemini", "openai", "anthropic", "multi-provider", "tkinter", "desktop-app", "cli", "api-key-rotation", "open-source", "mcp", "automation"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "License :: OSI Approved :: MIT License",
@@ -24,15 +24,9 @@ requires-python = ">=3.10"
 dependencies = ["Pillow>=10,<13", "google-genai>=1,<2", "openpyxl>=3.1,<4", "keyring>=25,<27"]
 
 [project.optional-dependencies]
-# ONNX-based visual embeddings are deliberately optional: the normal sorter and
-# packaged desktop builds stay lightweight until measured hybrid routing proves
-# that the extra runtime/model footprint is justified.
 local-embeddings = ["fastembed>=0.5,<1"]
-# Local catalog evidence is also opt-in. RapidOCR carries compact OCR models and
-# uses ONNX Runtime locally; ZXing-C++ supplies cross-platform product/QR barcode
-# decoding. NumPy is explicit because the barcode adapter passes pixel arrays to
-# ZXing-C++ even when OCR is disabled. None of these are in the normal install.
 local-evidence = ["numpy>=1.26,<3", "rapidocr>=3.9,<4", "onnxruntime>=1.27,<2", "zxing-cpp>=3.1,<4"]
+mcp = ["mcp>=2,<3"]
 
 [project.urls]
 Homepage = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter"
@@ -43,6 +37,9 @@ Changelog = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/C
 [project.scripts]
 product-sorter = "ai_product_photo_sorter.cli:main"
 product-sorter-setup = "ai_product_photo_sorter.setup_wizard:main"
+product-sorter-automation = "ai_product_photo_sorter.automation_cli:main"
+product-sorter-watch = "ai_product_photo_sorter.watch_daemon:main"
+product-sorter-mcp = "ai_product_photo_sorter.mcp_server:main"
 
 [project.gui-scripts]
 product-sorter-gui = "ai_product_photo_sorter.gui:main"
