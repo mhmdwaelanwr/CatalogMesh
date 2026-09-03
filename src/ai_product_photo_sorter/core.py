@@ -21,7 +21,6 @@ from .local_evidence import apply_local_evidence
 from .review_center import apply_review_center
 from .sku_matching import apply_sku_matching
 from .catalog_exports import apply_catalog_exports
-from .shopify_publishing import apply_shopify_publishing
 from .shopify_safety import apply_shopify_safety
 
 _impl.DEFAULT_ENV_FILE = env_file()
@@ -54,9 +53,8 @@ apply_review_center(_impl)
 apply_sku_matching(_impl)
 # Catalog exports consume only fully confirmed SKU state and remain offline.
 apply_catalog_exports(_impl)
-# Shopify publishing is the outermost guarded remote layer: preview first, draft
-# staging only on explicit apply, and publication only after a second confirmation.
-apply_shopify_publishing(_impl)
+# Remote Shopify mutations are intentionally NOT installed into the legacy core CLI.
+# They are available only through the approval-aware automation CLI executors.
 apply_shopify_safety(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
