@@ -20,20 +20,17 @@ releases are promoted only after automated builds and the manual checks in
 - [x] Publish `ai-product-photo-sorter` 3.1.0 to PyPI using Trusted Publishing.
 - [x] Publish the backward-compatible `v3.1.1` maintenance release with the canonical `src/ai_product_photo_sorter/` package layout.
 
-`v3.1.1` is the current stable patch release on GitHub Releases and PyPI. It
-preserves the v3.1 command/configuration surface while moving the canonical
-runtime into a maintainable `src/` package layout. Gemini passed the funded
-end-to-end synthetic live sample. OpenAI and Anthropic integration paths remain
-covered by automated request, key-pool, and compatibility tests, with optional
-funded live verification available through the manual `live-provider-smoke`
-workflow whenever usable API credit is available.
-
 ## 3.2 — Quality and workflow
+
+`v3.2.0` is the current stable feature release target for GitHub Releases and
+PyPI. It combines the quality/benchmark work, local-first catalog pipeline, and
+safe MCP/automation surface developed after `v3.1.1`.
 
 - [x] Benchmark Center for isolated real-pipeline timing, provider/model metrics, machine-readable JSON history, Markdown reports, optional ground-truth accuracy, CLI mode, and desktop GUI workflow.
 - [x] Provider preflight and canonical provider selection before desktop/benchmark runs, including safe correction of the observed `gemeni` typo and explicit failure for unknown providers.
 - [x] In-app Environment Center for validated `.env` editing, masked API-key management, OS-keyring clearing, reload/save/delete actions, and persistent desktop settings.
 - [x] In-app Report Center with operation/benchmark artifact discovery, native GitHub-inspired Markdown preview, raw view, copy/open actions, and automatic refresh when output configuration changes.
+- [x] Package and document `v3.2.0` as a minor feature release with Windows, Linux, macOS, wheel, sdist, checksums, and PyPI Trusted Publishing.
 - [ ] Configurable category profiles beyond electronics.
 - [ ] Richer operation statistics and provider cost estimates.
 - [ ] Export/import operation profiles without secrets.
