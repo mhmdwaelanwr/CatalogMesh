@@ -28,6 +28,7 @@ class IngestionAgentToolsTests(unittest.TestCase):
             names = [tool["name"] for tool in registry.manifest()]
             self.assertEqual(names, ["find_missing_assets", "scan_shoot"])
             self.assertTrue(all(not tool["mutates_external_state"] for tool in registry.manifest()))
+            self.assertTrue(all(not tool["requires_human_approval"] for tool in registry.manifest()))
 
             result = registry.call("scan_shoot", {"root": Path(directory)})
             self.assertEqual(result, [])
@@ -46,6 +47,21 @@ class IngestionAgentToolsTests(unittest.TestCase):
 
         with self.assertRaises(PermissionError):
             registry.call("publish", {})
+
+    def test_registry_refuses_approval_gated_read_only_tool(self):
+        registry = AgentToolRegistry()
+        registry.register(
+            AgentTool(
+                name="confirm_match",
+                description="test",
+                mutates_external_state=False,
+                requires_human_approval=True,
+                handler=lambda: "should not run",
+            )
+        )
+
+        with self.assertRaises(PermissionError):
+            registry.call("confirm_match", {})
 
 
 if __name__ == "__main__":
