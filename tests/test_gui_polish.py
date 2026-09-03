@@ -1,6 +1,11 @@
 import unittest
 
-from ai_product_photo_sorter.gui_polish import next_tab_index
+from ai_product_photo_sorter.gui_polish import (
+    SCROLLABLE_WORKSPACE_KEYS,
+    next_tab_index,
+    notebook_insert_position,
+    wheel_units,
+)
 
 
 class GuiPolishTests(unittest.TestCase):
@@ -11,6 +16,26 @@ class GuiPolishTests(unittest.TestCase):
 
     def test_empty_workspace_collection_is_safe(self):
         self.assertEqual(next_tab_index(0, 0, 1), 0)
+
+    def test_long_workspaces_are_explicitly_scrollable(self):
+        self.assertEqual(
+            SCROLLABLE_WORKSPACE_KEYS,
+            ("setup", "benchmark", "review"),
+        )
+
+    def test_mousewheel_normalization_is_cross_platform(self):
+        self.assertEqual(wheel_units(120), -1)
+        self.assertEqual(wheel_units(-120), 1)
+        self.assertEqual(wheel_units(480), -4)
+        self.assertEqual(wheel_units(-480), 4)
+        self.assertEqual(wheel_units(button=4), -3)
+        self.assertEqual(wheel_units(button=5), 3)
+        self.assertEqual(wheel_units(), 0)
+
+    def test_final_tab_wrap_inserts_at_end(self):
+        self.assertEqual(notebook_insert_position(0, 10), 0)
+        self.assertEqual(notebook_insert_position(2, 2), "end")
+        self.assertEqual(notebook_insert_position(5, 5), "end")
 
 
 if __name__ == "__main__":
