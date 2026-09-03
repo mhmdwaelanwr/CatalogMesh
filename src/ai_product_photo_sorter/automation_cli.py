@@ -5,9 +5,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .approval_boundary import approve_request, create_approval_request, validate_grant
 from .catalog_exports import generate_exports
 from .ingestion import scan_image_folder
 from .missing_assets import find_missing_assets, find_missing_local_images
+from .review_automation import open_review_queue
 from .sku_matching import generate_candidates, load_catalog_rows
 from .watch_daemon import main as watch_main
 
@@ -18,6 +20,16 @@ def _catalog_fields(path: Path) -> list[dict[str, Any]]:
 
 def _emit(payload: Any) -> None:
     print(json.dumps(payload, ensure_ascii=False, indent=2, default=str))
+
+
+def _json_object(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"Could not read JSON object {path}: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("Approval payload must be a JSON object")
+    return payload
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -45,9 +57,27 @@ def build_parser() -> argparse.ArgumentParser:
     propose.add_argument("--output", type=Path)
     propose.add_argument("--top-k", type=int, default=5)
 
+    review = sub.add_parser("open-review-queue", help="Read pending Review Center groups without mutating review state")
+    review.add_argument("review_manifest", type=Path)
+    review.add_argument("--limit", type=int, default=50)
+
     draft = sub.add_parser("prepare-shopify-draft", help="Prepare an offline Shopify draft from fully human-confirmed SKU matches")
     draft.add_argument("match_manifest", type=Path)
     draft.add_argument("--output", type=Path)
+
+    request = sub.add_parser("request-external-action", help="Create a local approval request for a future external action; performs no external write")
+    request.add_argument("action")
+    request.add_argument("payload_json", type=Path)
+    request.add_argument("output", type=Path)
+
+    approve = sub.add_parser("approve-external-action", help="Human-only CLI approval for a local action request")
+    approve.add_argument("request", type=Path)
+    approve.add_argument("grant", type=Path)
+    approve.add_argument("--confirm", required=True)
+
+    validate = sub.add_parser("validate-approval", help="Validate that a local approval grant matches its request")
+    validate.add_argument("request", type=Path)
+    validate.add_argument("grant", type=Path)
 
     watch = sub.add_parser("watch", help="Run the persistent watched-folder daemon")
     watch.add_argument("root", type=Path)
@@ -78,9 +108,23 @@ def main(argv: list[str] | None = None) -> int:
             manifest, path = generate_candidates(args.approved_groups, args.catalog, evidence_json=args.evidence, output_dir=args.output, top_k=args.top_k)
             _emit({"manifest": str(path), "summary": manifest.get("summary", {})})
             return 0
+        if args.command == "open-review-queue":
+            _emit(open_review_queue(args.review_manifest, limit=args.limit))
+            return 0
         if args.command == "prepare-shopify-draft":
             summary, path = generate_exports(args.match_manifest, output_dir=args.output, profile="shopify")
             _emit({"manifest": str(path), "summary": summary})
+            return 0
+        if args.command == "request-external-action":
+            path = create_approval_request(args.action, _json_object(args.payload_json), args.output)
+            _emit({"request": str(path), "external_action_performed": False, "human_approval_required": True})
+            return 0
+        if args.command == "approve-external-action":
+            path = approve_request(args.request, args.grant, args.confirm)
+            _emit({"grant": str(path), "external_action_performed": False})
+            return 0
+        if args.command == "validate-approval":
+            _emit(validate_grant(args.request, args.grant))
             return 0
         if args.command == "watch":
             watch_argv = [str(args.root), "--state", str(args.state), "--interval", str(args.interval)]
