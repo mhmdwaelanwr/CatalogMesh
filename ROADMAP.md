@@ -83,8 +83,8 @@ See [`docs/CATALOG_AUTOMATION.md`](docs/CATALOG_AUTOMATION.md) for the safety co
 - [x] Local human-approval boundary with request/grant integrity validation and no Agent/MCP self-approval.
 - [x] Single-use execution reservations with deterministic idempotency keys, retry-policy metadata, append-only redacted execution audit, and credential redaction foundation.
 - [x] Approval-aware Shopify **draft staging** executor that consumes one valid reservation, retries only transient connector failures under the same idempotency key, records execution audit evidence, and always keeps remote products unpublished `DRAFT`.
+- [x] Shopify publication and rollback gates require new action-specific human approvals and single-use reservations; neither mutation is exposed through MCP automation. See [`docs/SHOPIFY_PUBLICATION_GATE.md`](docs/SHOPIFY_PUBLICATION_GATE.md).
 - [ ] Extend the reservation-consumption execution layer to PIM/ERP writes with connector-specific validation, audit, and rollback rules.
-- [ ] Keep Shopify publication as a separately confirmed interactive boundary; do not expose publish through Agent/MCP automation.
 - [ ] Variant-level asset mapping and lifecycle state for SKU variants/options.
 - [ ] Release scheduling for approved product assets with rollback-safe draft state.
 - [ ] Automation rules/triggers for ingest → classify → review queue → match proposal → draft preparation.
