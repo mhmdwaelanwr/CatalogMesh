@@ -1,0 +1,27 @@
+name: shopify-publication-gate-safety
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  publication-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e .
+      - name: Publication gate tests
+        run: python -m unittest tests.test_shopify_publication_gate tests.test_automation_publication_commands -v
+      - name: MCP must not expose publish or rollback execution
+        shell: python
+        run: |
+          from pathlib import Path
+          text = Path('src/ai_product_photo_sorter/mcp_server.py').read_text(encoding='utf-8')
+          forbidden = ('execute_shopify_publish', 'execute_shopify_rollback', 'publish_staged', 'rollback_publication')
+          found = [name for name in forbidden if name in text]
+          if found:
+              raise SystemExit(f'Forbidden publication capability in MCP surface: {found}')
