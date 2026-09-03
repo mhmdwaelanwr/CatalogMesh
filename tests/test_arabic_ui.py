@@ -23,6 +23,12 @@ class ArabicUiTests(unittest.TestCase):
         rendered = shape_arabic_for_tk("مطابقة SKU / الكتالوج", force=True)
         self.assertIn("SKU", rendered)
 
+    def test_format_fields_survive_pre_shaping(self):
+        rendered = shape_arabic_for_tk("تمت معالجة {count} من {total} صورة", force=True)
+        self.assertIn("{count}", rendered)
+        self.assertIn("{total}", rendered)
+        self.assertIn("17", rendered.format(count=17, total=20))
+
     def test_disabled_shaping_is_identity(self):
         logical = "إنشاء تقرير Markdown ذكي شامل"
         self.assertEqual(shape_arabic_for_tk(logical, force=False), logical)
