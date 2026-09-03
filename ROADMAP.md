@@ -82,7 +82,9 @@ See [`docs/CATALOG_AUTOMATION.md`](docs/CATALOG_AUTOMATION.md) for the safety co
 - [x] `open_review_queue` MCP/automation tool tied to Review Center state.
 - [x] Local human-approval boundary with request/grant integrity validation and no Agent/MCP self-approval.
 - [x] Single-use execution reservations with deterministic idempotency keys, retry-policy metadata, append-only redacted execution audit, and credential redaction foundation.
-- [ ] Connector execution layer for Shopify/PIM/ERP that consumes a valid reservation and preserves separate publish confirmation, rollback, and external-write audit evidence.
+- [x] Approval-aware Shopify **draft staging** executor that consumes one valid reservation, retries only transient connector failures under the same idempotency key, records execution audit evidence, and always keeps remote products unpublished `DRAFT`.
+- [ ] Extend the reservation-consumption execution layer to PIM/ERP writes with connector-specific validation, audit, and rollback rules.
+- [ ] Keep Shopify publication as a separately confirmed interactive boundary; do not expose publish through Agent/MCP automation.
 - [ ] Variant-level asset mapping and lifecycle state for SKU variants/options.
 - [ ] Release scheduling for approved product assets with rollback-safe draft state.
 - [ ] Automation rules/triggers for ingest → classify → review queue → match proposal → draft preparation.
