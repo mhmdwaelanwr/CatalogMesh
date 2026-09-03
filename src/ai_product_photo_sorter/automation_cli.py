@@ -7,6 +7,7 @@ from typing import Any
 
 from .approval_boundary import approve_request, create_approval_request, validate_grant
 from .catalog_exports import generate_exports
+from .execution_control import record_execution_result, reserve_grant
 from .ingestion import scan_image_folder
 from .missing_assets import find_missing_assets, find_missing_local_images
 from .review_automation import open_review_queue
@@ -79,6 +80,19 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("request", type=Path)
     validate.add_argument("grant", type=Path)
 
+    reserve = sub.add_parser("reserve-approved-action", help="Consume a grant into a single-use local execution reservation; performs no external write")
+    reserve.add_argument("request", type=Path)
+    reserve.add_argument("grant", type=Path)
+    reserve.add_argument("state_dir", type=Path)
+
+    result = sub.add_parser("record-execution-result", help="Append a redacted local connector-result audit event")
+    result.add_argument("reservation", type=Path)
+    result.add_argument("audit", type=Path)
+    result.add_argument("--status", required=True, choices=["succeeded", "failed", "cancelled"])
+    result.add_argument("--attempt", type=int, required=True)
+    result.add_argument("--details", type=Path)
+    result.add_argument("--external-action-performed", action="store_true")
+
     watch = sub.add_parser("watch", help="Run the persistent watched-folder daemon")
     watch.add_argument("root", type=Path)
     watch.add_argument("--state", type=Path, default=Path(".product-sorter-watch.json"))
@@ -125,6 +139,20 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.command == "validate-approval":
             _emit(validate_grant(args.request, args.grant))
+            return 0
+        if args.command == "reserve-approved-action":
+            _emit(reserve_grant(args.request, args.grant, args.state_dir))
+            return 0
+        if args.command == "record-execution-result":
+            details = _json_object(args.details) if args.details else None
+            _emit(record_execution_result(
+                args.reservation,
+                args.audit,
+                status=args.status,
+                attempt=args.attempt,
+                details=details,
+                external_action_performed=args.external_action_performed,
+            ))
             return 0
         if args.command == "watch":
             watch_argv = [str(args.root), "--state", str(args.state), "--interval", str(args.interval)]

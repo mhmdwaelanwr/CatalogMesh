@@ -79,12 +79,13 @@ See [`docs/CATALOG_AUTOMATION.md`](docs/CATALOG_AUTOMATION.md) for the safety co
 - [ ] Missing Asset Audit in the desktop Review Center, including unresolved-SKU queues and exportable reports.
 - [x] MCP stdio server using the official Python SDK v2 with safe tools for shoot scanning, missing-SKU audits, candidate proposals, and Shopify draft preparation. See [`docs/MCP_AUTOMATION.md`](docs/MCP_AUTOMATION.md).
 - [x] Dedicated automation CLI and console entry points for scan → missing assets → proposal → human-confirmed Shopify draft workflows.
-- [ ] `open_review_queue` MCP/automation tool tied to Review Center state.
-- [ ] Approval-aware Agent execution boundary for Shopify/PIM/ERP writes; external mutation must remain separately confirmed and append-only audited.
+- [x] `open_review_queue` MCP/automation tool tied to Review Center state.
+- [x] Local human-approval boundary with request/grant integrity validation and no Agent/MCP self-approval.
+- [x] Single-use execution reservations with deterministic idempotency keys, retry-policy metadata, append-only redacted execution audit, and credential redaction foundation.
+- [ ] Connector execution layer for Shopify/PIM/ERP that consumes a valid reservation and preserves separate publish confirmation, rollback, and external-write audit evidence.
 - [ ] Variant-level asset mapping and lifecycle state for SKU variants/options.
 - [ ] Release scheduling for approved product assets with rollback-safe draft state.
 - [ ] Automation rules/triggers for ingest → classify → review queue → match proposal → draft preparation.
-- [ ] Connector-level audit events, idempotency keys, retry policy, and credential redaction.
 
 ## 4.0 — Extensibility
 
