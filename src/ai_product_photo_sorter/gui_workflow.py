@@ -58,11 +58,25 @@ def apply_gui_workflow(module: Any) -> None:
         return logical
 
     def _move_tabs(self, order):
-        for index, tab_id in enumerate(order):
+        """Move existing notebook tabs into an exact deterministic order.
+
+        ``ttk.Notebook.insert(index, existing_child)`` shifts indices while
+        moving an already-managed tab. Repeating numeric inserts from left to
+        right can therefore rotate the first tabs to the end. Moving every tab
+        to ``end`` once, in the requested order, is stable for any starting
+        layout and preserves the selected child identity.
+        """
+        selected = self.main_tabs.select()
+        for tab_id in order:
             try:
-                self.main_tabs.insert(index, tab_id)
+                self.main_tabs.insert("end", tab_id)
             except module.tk.TclError:
                 continue
+        if selected:
+            try:
+                self.main_tabs.select(selected)
+            except module.tk.TclError:
+                pass
 
     def _set_language_selector_display(self):
         arabic_label = shape_arabic_for_tk("العربية")
