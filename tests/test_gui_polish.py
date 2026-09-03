@@ -2,8 +2,8 @@ import unittest
 
 from ai_product_photo_sorter.gui_polish import (
     SCROLLABLE_WORKSPACE_KEYS,
+    clamp_scroll_offset,
     next_tab_index,
-    notebook_insert_position,
     wheel_units,
 )
 
@@ -32,10 +32,11 @@ class GuiPolishTests(unittest.TestCase):
         self.assertEqual(wheel_units(button=5), 3)
         self.assertEqual(wheel_units(), 0)
 
-    def test_final_tab_wrap_inserts_at_end(self):
-        self.assertEqual(notebook_insert_position(0, 10), 0)
-        self.assertEqual(notebook_insert_position(2, 2), "end")
-        self.assertEqual(notebook_insert_position(5, 5), "end")
+    def test_scroll_offset_is_bounded(self):
+        self.assertEqual(clamp_scroll_offset(-50, 1200, 700), 0)
+        self.assertEqual(clamp_scroll_offset(200, 1200, 700), 200)
+        self.assertEqual(clamp_scroll_offset(900, 1200, 700), 500)
+        self.assertEqual(clamp_scroll_offset(50, 600, 700), 0)
 
 
 if __name__ == "__main__":
