@@ -59,7 +59,11 @@ class AutomationWatchTests(unittest.TestCase):
             "missing-assets": ["missing-assets", "catalog.csv"],
             "missing-local": ["missing-local", "catalog.csv", "shoot"],
             "propose-matches": ["propose-matches", "approved.csv", "catalog.csv"],
+            "open-review-queue": ["open-review-queue", "review.json"],
             "prepare-shopify-draft": ["prepare-shopify-draft", "matches.json"],
+            "request-external-action": ["request-external-action", "shopify.publish", "payload.json", "request.json"],
+            "approve-external-action": ["approve-external-action", "request.json", "grant.json", "--confirm", "APPROVE apr_demo"],
+            "validate-approval": ["validate-approval", "request.json", "grant.json"],
             "watch": ["watch", "shoot"],
         }
         for command, argv in samples.items():
