@@ -21,7 +21,14 @@ classifiers = [
   "Topic :: Multimedia :: Graphics",
 ]
 requires-python = ">=3.10"
-dependencies = ["Pillow>=10,<13", "google-genai>=1,<2", "openpyxl>=3.1,<4", "keyring>=25,<27"]
+dependencies = [
+  "Pillow>=10,<13",
+  "google-genai>=1,<2",
+  "openpyxl>=3.1,<4",
+  "keyring>=25,<27",
+  "arabic-reshaper>=3,<4",
+  "python-bidi>=0.6,<1",
+]
 
 [project.optional-dependencies]
 local-embeddings = ["fastembed>=0.5,<1"]
