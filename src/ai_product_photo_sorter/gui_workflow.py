@@ -24,18 +24,30 @@ WORKSPACE_USAGE_ORDER = (
     "About",
 )
 
+WORKSPACE_LABEL_ALIASES = {
+    "Operation setup": ("Operation setup", "Setup"),
+    "Models & API keys": ("Models & API keys", "API"),
+    "Results & activity": ("Results & activity", "Results"),
+}
+
 
 def workspace_usage_order(records: Iterable[tuple[str, str]]) -> tuple[str, ...]:
     """Return tab IDs ordered by the common product-catalog workflow.
 
-    Unknown future tabs remain available and are appended in their existing
-    order instead of being dropped.
+    The first three legacy notebook pages are created as ``Setup``, ``API``,
+    and ``Results`` and receive their full labels only during the language
+    pass. Resolve both names here so ordering is correct before localization.
+    Unknown future tabs remain available and are appended in existing order.
     """
     items = [(str(tab_id), str(label).strip()) for tab_id, label in records]
     by_label = {label.casefold(): tab_id for tab_id, label in items}
     ordered: list[str] = []
     for label in WORKSPACE_USAGE_ORDER:
-        tab_id = by_label.get(label.casefold())
+        aliases = WORKSPACE_LABEL_ALIASES.get(label, (label,))
+        tab_id = next(
+            (by_label.get(alias.casefold()) for alias in aliases if by_label.get(alias.casefold()) is not None),
+            None,
+        )
         if tab_id is not None and tab_id not in ordered:
             ordered.append(tab_id)
     ordered.extend(tab_id for tab_id, _label in items if tab_id not in ordered)
@@ -58,18 +70,16 @@ def apply_gui_workflow(module: Any) -> None:
         return logical
 
     def _move_tabs(self, order):
-        """Move existing notebook tabs into an exact deterministic order.
-
-        ``ttk.Notebook.insert(index, existing_child)`` shifts indices while
-        moving an already-managed tab. Repeating numeric inserts from left to
-        right can therefore rotate the first tabs to the end. Moving every tab
-        to ``end`` once, in the requested order, is stable for any starting
-        layout and preserves the selected child identity.
-        """
+        """Move existing notebook tabs into an exact deterministic order."""
         selected = self.main_tabs.select()
-        for tab_id in order:
+        # Repeatedly inserting the desired tab at the current position works
+        # when the requested list already contains every notebook child. The
+        # usage resolver guarantees that invariant, including unknown tabs.
+        for index, tab_id in enumerate(order):
             try:
-                self.main_tabs.insert("end", tab_id)
+                current = self.main_tabs.index(tab_id)
+                if current != index:
+                    self.main_tabs.insert(index, tab_id)
             except module.tk.TclError:
                 continue
         if selected:
