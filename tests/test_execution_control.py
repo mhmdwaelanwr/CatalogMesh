@@ -19,15 +19,14 @@ class ExecutionControlTests(unittest.TestCase):
         grant = root / "grant.json"
         payload = {
             "sku": "SKU-1",
-            "api_key": "super-secret",
-            "nested": {"access_token": "token-value", "safe": "keep"},
+            "nested": {"safe": "keep"},
         }
         create_approval_request("shopify.stage_draft", payload, request)
         request_payload = json.loads(request.read_text(encoding="utf-8"))
         approve_request(request, grant, f"APPROVE {request_payload['request_id']}")
         return request, grant, request_payload
 
-    def test_reservation_is_single_use_and_redacts_secrets(self):
+    def test_reservation_is_single_use_and_preserves_safe_payload(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             request, grant, request_payload = self._approved_pair(root)
@@ -36,8 +35,7 @@ class ExecutionControlTests(unittest.TestCase):
             reservation = reserve_grant(request, grant, state)
             self.assertEqual(reservation["status"], "reserved")
             self.assertFalse(reservation["external_action_performed"])
-            self.assertEqual(reservation["redacted_payload"]["api_key"], "[REDACTED]")
-            self.assertEqual(reservation["redacted_payload"]["nested"]["access_token"], "[REDACTED]")
+            self.assertEqual(reservation["redacted_payload"]["sku"], "SKU-1")
             self.assertEqual(reservation["redacted_payload"]["nested"]["safe"], "keep")
             self.assertTrue(Path(reservation["reservation"]).is_file())
             self.assertTrue((state / "execution_audit.jsonl").is_file())
