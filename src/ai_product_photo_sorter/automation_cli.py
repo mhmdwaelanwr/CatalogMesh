@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .akeneo_execution import AkeneoClient, execute_akeneo_products, reconcile_akeneo_execution
+from .akeneo_rollback import execute_akeneo_rollback
 from .approval_boundary import approve_request, create_approval_request, validate_grant
 from .catalog_exports import generate_exports
 from .connector_profiles import build_connector_plan
@@ -82,7 +83,9 @@ def build_parser() -> argparse.ArgumentParser:
     result = sub.add_parser("record-execution-result"); result.add_argument("reservation", type=Path); result.add_argument("audit", type=Path); result.add_argument("--status", required=True, choices=["succeeded", "failed", "cancelled"]); result.add_argument("--attempt", type=int, required=True); result.add_argument("--details", type=Path); result.add_argument("--external-action-performed", action="store_true")
     for name in ("execute-shopify-stage", "execute-shopify-publish", "execute-shopify-rollback"):
         command = sub.add_parser(name); command.add_argument("request", type=Path); command.add_argument("reservation", type=Path); command.add_argument("--audit", type=Path); command.add_argument("--store"); command.add_argument("--api-version")
-    akeneo = sub.add_parser("execute-akeneo-products"); akeneo.add_argument("request", type=Path); akeneo.add_argument("reservation", type=Path); akeneo.add_argument("--audit", type=Path); akeneo.add_argument("--state", type=Path); akeneo.add_argument("--base-url")
+    for name in ("execute-akeneo-products", "execute-akeneo-rollback"):
+        command = sub.add_parser(name); command.add_argument("request", type=Path); command.add_argument("reservation", type=Path); command.add_argument("--audit", type=Path); command.add_argument("--base-url")
+        if name == "execute-akeneo-products": command.add_argument("--state", type=Path)
     reconcile = sub.add_parser("reconcile-akeneo-execution"); reconcile.add_argument("state", type=Path); reconcile.add_argument("--base-url")
     watch = sub.add_parser("watch"); watch.add_argument("root", type=Path); watch.add_argument("--state", type=Path, default=Path(".product-sorter-watch.json")); watch.add_argument("--interval", type=float, default=5.0); watch.add_argument("--no-recursive", action="store_true"); watch.add_argument("--once", action="store_true")
     return parser
@@ -117,8 +120,10 @@ def main(argv: list[str] | None = None) -> int:
             client = _shopify_client_from_env(args.store, args.api_version)
             fn = {"execute-shopify-stage": execute_shopify_stage, "execute-shopify-publish": execute_shopify_publish, "execute-shopify-rollback": execute_shopify_rollback}[args.command]
             _emit(fn(args.request, args.reservation, client, audit_path=args.audit)); return 0
-        if args.command == "execute-akeneo-products":
-            client = _akeneo_client_from_env(args.base_url); _emit(execute_akeneo_products(args.request, args.reservation, client, audit_path=args.audit, state_path=args.state)); return 0
+        if args.command in {"execute-akeneo-products", "execute-akeneo-rollback"}:
+            client = _akeneo_client_from_env(args.base_url)
+            if args.command == "execute-akeneo-products": _emit(execute_akeneo_products(args.request, args.reservation, client, audit_path=args.audit, state_path=args.state)); return 0
+            _emit(execute_akeneo_rollback(args.request, args.reservation, client, audit_path=args.audit)); return 0
         if args.command == "reconcile-akeneo-execution":
             client = _akeneo_client_from_env(args.base_url); _emit(reconcile_akeneo_execution(args.state, client)); return 0
         if args.command == "watch":

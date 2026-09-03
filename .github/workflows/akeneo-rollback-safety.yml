@@ -1,0 +1,30 @@
+name: akeneo-rollback-safety
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install package
+        run: python -m pip install -e .
+      - name: Run Akeneo rollback tests
+        run: python -m unittest tests.test_akeneo_rollback
+      - name: Guard agent boundary
+        shell: bash
+        run: |
+          if grep -R "execute_akeneo_rollback\|akeneo.rollback_products" src/ai_product_photo_sorter/mcp_server.py; then
+            echo "Akeneo rollback must never be exposed through MCP"
+            exit 1
+          fi
+          if grep -R "rollback-connector\|execute-connector" src/ai_product_photo_sorter/automation_cli.py; then
+            echo "Generic connector execution/rollback commands are forbidden"
+            exit 1
+          fi
