@@ -23,6 +23,27 @@ def apply_gui_polish(module: Any) -> None:
     base_build = module.App.build
     base_apply_language = module.App.apply_language
 
+    def sync_raw_widget_colors(self):
+        """Theme the non-ttk scrolling/text surfaces created by feature modules."""
+        if hasattr(self, "automation_canvas"):
+            self.automation_canvas.configure(bg=self.colors["panel"])
+        for name in ("automation_preview", "automation_output"):
+            widget = getattr(self, name, None)
+            if widget is None:
+                continue
+            widget.configure(
+                bg=self.colors["panel2"],
+                fg=self.colors["text"],
+                insertbackground=self.colors["text"],
+                selectbackground=self.colors["accent"],
+                selectforeground="#ffffff",
+                relief="flat",
+                borderwidth=0,
+                highlightthickness=1,
+                highlightbackground=self.colors["border"],
+                highlightcolor=self.colors["accent"],
+            )
+
     def configure_styles(self):
         base_configure_styles(self)
         style = module.ttk.Style(self.root)
@@ -44,6 +65,7 @@ def apply_gui_polish(module: Any) -> None:
             foreground=self.colors["muted"],
             font=("Sans", 9, "bold"),
         )
+        sync_raw_widget_colors(self)
 
     def build(self):
         base_build(self)
@@ -73,6 +95,7 @@ def apply_gui_polish(module: Any) -> None:
         self.root.bind("<Alt-w>", lambda event: self.focus_workspace_nav(), add="+")
         self.root.bind("<Configure>", self._responsive_workspace_nav, add="+")
         self.sync_workspace_nav()
+        sync_raw_widget_colors(self)
 
     def workspace_entries(self):
         entries = []
@@ -139,6 +162,7 @@ def apply_gui_polish(module: Any) -> None:
     module.App.configure_styles = configure_styles
     module.App.build = build
     module.App.apply_language = apply_language
+    module.App.sync_raw_widget_colors = sync_raw_widget_colors
     module.App.workspace_entries = workspace_entries
     module.App.sync_workspace_nav = sync_workspace_nav
     module.App.select_workspace_from_nav = select_workspace_from_nav
