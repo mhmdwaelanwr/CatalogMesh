@@ -19,9 +19,10 @@ class AgentTool:
 class AgentToolRegistry:
     """Small orchestration surface that can be adapted to MCP/agents later.
 
-    The first registry intentionally exposes only local/read-only operations.
-    External catalog writes must be added as separately gated tools rather than
-    silently wrapping publishing functions.
+    The default registry intentionally exposes only local/read-only operations.
+    Tools that mutate external state or require human approval cannot execute
+    through this registry; future transports must use a separately designed,
+    explicit approval path for those operations.
     """
 
     def __init__(self) -> None:
@@ -47,9 +48,14 @@ class AgentToolRegistry:
         tool = self._tools.get(name)
         if tool is None:
             raise KeyError(f"unknown agent tool: {name}")
-        if tool.mutates_external_state:
+        if tool.mutates_external_state or tool.requires_human_approval:
+            reason = (
+                "mutates external state"
+                if tool.mutates_external_state
+                else "requires human approval"
+            )
             raise PermissionError(
-                f"agent tool {name!r} mutates external state and cannot run through the read-only registry"
+                f"agent tool {name!r} {reason} and cannot run through the read-only registry"
             )
         return tool.handler(**dict(arguments))
 
