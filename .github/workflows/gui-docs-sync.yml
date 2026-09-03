@@ -1,0 +1,59 @@
+name: gui-docs-sync
+
+on:
+  workflow_run:
+    workflows: ["build-and-release"]
+    types: [completed]
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: gui-docs-sync-main
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Download GUI screenshot artifact from build workflow
+        uses: actions/download-artifact@v8
+        with:
+          name: gui-screenshots-windows
+          path: gui-artifacts
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Refresh tracked CI screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p docs/screenshots/ci/windows
+          find docs/screenshots/ci/windows -maxdepth 1 -type f -name '*.png' -delete
+          cp gui-artifacts/*.png docs/screenshots/ci/windows/
+          rm -f docs/screenshots/ci/windows/failure.png docs/screenshots/ci/windows/desktop-failure.png
+          test -n "$(find docs/screenshots/ci/windows -maxdepth 1 -type f -name 'light-*.png' -print -quit)"
+          test -n "$(find docs/screenshots/ci/windows -maxdepth 1 -type f -name 'dark-*.png' -print -quit)"
+
+      - name: Commit refreshed documentation screenshots
+        shell: bash
+        run: |
+          if git diff --quiet -- docs/screenshots/ci/windows; then
+            echo "Screenshots already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots/ci/windows
+          git commit -m "docs: refresh GUI screenshots from CI [skip ci]"
+          git push origin HEAD:main
