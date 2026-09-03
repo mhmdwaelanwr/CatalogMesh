@@ -15,6 +15,7 @@ except ImportError:  # pragma: no cover - package dependencies normally provide 
 
 
 _ARABIC_RE = re.compile(r"[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]")
+_FORMAT_FIELD_RE = re.compile(r"\{[^{}]+\}")
 _PREPARED_CATALOG_IDS: set[int] = set()
 
 
@@ -46,6 +47,17 @@ def arabic_visual_fix_enabled(
     return str(current_platform).startswith("linux")
 
 
+def _mask_format_fields(line: str) -> tuple[str, dict[str, str]]:
+    placeholders: dict[str, str] = {}
+
+    def replace(match: re.Match[str]) -> str:
+        token = f"PSFMTFIELD{len(placeholders)}X"
+        placeholders[token] = match.group(0)
+        return token
+
+    return _FORMAT_FIELD_RE.sub(replace, line), placeholders
+
+
 def shape_arabic_for_tk(text: object, *, force: bool | None = None) -> str:
     """Shape Arabic and resolve BiDi into visual order for Tk display widgets."""
     value = "" if text is None else str(text)
@@ -62,8 +74,12 @@ def shape_arabic_for_tk(text: object, *, force: bool | None = None) -> str:
         if not contains_arabic(line):
             rendered.append(line)
             continue
-        reshaped = arabic_reshaper.reshape(line)
-        rendered.append(get_display(reshaped, base_dir="R"))
+        masked, placeholders = _mask_format_fields(line)
+        reshaped = arabic_reshaper.reshape(masked)
+        display = get_display(reshaped, base_dir="R")
+        for token, original in placeholders.items():
+            display = display.replace(token, original)
+        rendered.append(display)
     return "\n".join(rendered)
 
 
