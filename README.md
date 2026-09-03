@@ -10,7 +10,7 @@ GUI + CLI parity · Cloud & local vision · Human review · Shopify / Akeneo / O
 
 [![Tests](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml/badge.svg)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Release](https://img.shields.io/badge/stable-v3.2.0-4f8cff)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest)
+[![Release](https://img.shields.io/badge/release-3.2.0-4f8cff)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest)
 [![PyPI](https://img.shields.io/pypi/v/ai-product-photo-sorter?logo=pypi&logoColor=white)](https://pypi.org/project/ai-product-photo-sorter/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-21c98b.svg)](LICENSE)
 
@@ -84,6 +84,55 @@ python -m pip install "ai-product-photo-sorter[mcp]"
 ```
 
 Ready-to-run Windows, Linux and macOS packages are available from the latest GitHub Release.
+
+## Test the unreleased source build
+
+To try the newest code from `main` before a public v3.3 release, use a virtual environment and install the repository in editable mode.
+
+```bash
+git clone https://github.com/mhmdwaelanwr/ai-product-photo-sorter.git
+cd ai-product-photo-sorter
+git checkout main
+git pull --ff-only
+python -m venv .venv
+```
+
+Activate the environment, then install and run the desktop app.
+
+```bash
+# Linux / macOS
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .
+product-sorter-gui
+```
+
+```powershell
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e .
+product-sorter-gui
+```
+
+Useful smoke checks before using real product data:
+
+```bash
+product-sorter-automation --help
+product-sorter-automation scan ./your-test-photo-folder
+python -m unittest discover -s tests -t . -v
+python -m compileall -q src product_sorter.py product_sorter_gui.py set_data.py scripts
+```
+
+To test the current PR before it reaches `main`, replace `git checkout main` with:
+
+```bash
+git fetch origin feat/v3.3-gui-cli-parity-cleanup
+git checkout feat/v3.3-gui-cli-parity-cleanup
+git pull --ff-only
+```
+
+Do not use production Shopify/Akeneo/Odoo credentials while casually testing the GUI. Local scan, review, SKU matching, offline exports and command previews are enough to validate most of the workflow without external mutation.
 
 ## Main workflow
 
