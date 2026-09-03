@@ -29,6 +29,7 @@ from .shopify_safety import install_shopify_export_guards
 from .report_gui import apply_report_gui
 from .report_autoload import apply_report_autoload
 from .gui_polish import apply_gui_polish
+from .gui_workflow import apply_gui_workflow
 
 _impl.ROOT = runtime_root()
 prepare_ollama_environment_fields(_environment_gui)
@@ -172,8 +173,11 @@ apply_catalog_exports_gui(_impl)
 apply_automation_gui(_impl)
 apply_report_gui(_impl)
 apply_report_autoload(_impl)
-# Install navigation/spacing polish last so it sees every feature workspace.
+# Install navigation/spacing polish after every feature workspace exists.
 apply_gui_polish(_impl)
+# Apply usage-first tab ordering and the Linux Arabic BiDi/shaping adapter last
+# so older language hooks can retain their internal tab-index assumptions.
+apply_gui_workflow(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main

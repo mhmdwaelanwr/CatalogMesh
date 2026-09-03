@@ -8,6 +8,7 @@ class WorkspaceRenderWindowsTests(unittest.TestCase):
         import tkinter as tk
 
         from ai_product_photo_sorter.gui import App
+        from ai_product_photo_sorter.gui_workflow import WORKSPACE_USAGE_ORDER
 
         root = tk.Tk()
         try:
@@ -15,6 +16,12 @@ class WorkspaceRenderWindowsTests(unittest.TestCase):
             app = App(root)
             root.update_idletasks()
             root.update()
+
+            labels = tuple(
+                str(app.main_tabs.tab(tab_id, "text"))
+                for tab_id in app.main_tabs.tabs()
+            )
+            self.assertEqual(labels, WORKSPACE_USAGE_ORDER)
 
             self.assertEqual(set(app._workspace_scrolls), {"setup", "benchmark", "review"})
             cases = (
