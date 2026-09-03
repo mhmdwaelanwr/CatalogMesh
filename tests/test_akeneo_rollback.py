@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ai_product_photo_sorter.akeneo_execution import ACTION as APPLY_ACTION, execute_akeneo_products
+from ai_product_photo_sorter.akeneo_execution import ACTION as APPLY_ACTION, _fingerprint, execute_akeneo_products
 from ai_product_photo_sorter.akeneo_rollback import ACTION as ROLLBACK_ACTION, execute_akeneo_rollback
 from ai_product_photo_sorter.approval_boundary import approve_request, create_approval_request
 from ai_product_photo_sorter.automation_cli import build_parser
@@ -37,6 +37,20 @@ def reserve(root, action, payload):
     return request, Path(result["reservation"])
 
 
+def rollback_payload(state: Path, client: FakeAkeneoClient):
+    payload = json.loads(state.read_text(encoding="utf-8"))
+    expected = {}
+    for item in payload["records"]:
+        if item.get("write_status") == "applied" and item.get("before_exists"):
+            expected[item["identity"]] = _fingerprint(client.get_product(item["identity"]))
+    return {
+        "state_path": str(state),
+        "plan_id": "cplan_test",
+        "base_url": client.base_url,
+        "expected_current_fingerprints": expected,
+    }
+
+
 class AkeneoRollbackTests(unittest.TestCase):
     def _applied_state(self, root, *, include_created=False):
         records = [{"identity": "SKU-1", "fields": {"identifier": "SKU-1", "values.name": "New"}, "fingerprint": "fp1"}]
@@ -54,7 +68,7 @@ class AkeneoRollbackTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             state, client = self._applied_state(root)
-            request, reservation = reserve(root, ROLLBACK_ACTION, {"state_path": str(state), "plan_id": "cplan_test", "base_url": client.base_url})
+            request, reservation = reserve(root, ROLLBACK_ACTION, rollback_payload(state, client))
             result = execute_akeneo_rollback(request, reservation, client)
             self.assertEqual(result["records_restored"], 1)
             self.assertEqual(client.products["SKU-1"]["values"]["name"][0]["data"], "Old")
@@ -62,11 +76,33 @@ class AkeneoRollbackTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "not available"):
                 execute_akeneo_rollback(request, reservation, client)
 
+    def test_remote_drift_blocks_before_reservation_consumption(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state, client = self._applied_state(root)
+            request, reservation = reserve(root, ROLLBACK_ACTION, rollback_payload(state, client))
+            client.products["SKU-1"]["values"]["name"][0]["data"] = "Changed after approval"
+            patches_before = len(client.patches)
+            with self.assertRaisesRegex(ValueError, "drifted after reconciliation"):
+                execute_akeneo_rollback(request, reservation, client)
+            self.assertEqual(json.loads(reservation.read_text())["status"], "reserved")
+            self.assertEqual(len(client.patches), patches_before)
+
+    def test_missing_fresh_fingerprints_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state, client = self._applied_state(root)
+            request, reservation = reserve(root, ROLLBACK_ACTION, {"state_path": str(state), "plan_id": "cplan_test", "base_url": client.base_url})
+            with self.assertRaisesRegex(ValueError, "fresh read-only reconciliation"):
+                execute_akeneo_rollback(request, reservation, client)
+            self.assertEqual(json.loads(reservation.read_text())["status"], "reserved")
+
     def test_apply_approval_cannot_be_reused_for_rollback(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             state, client = self._applied_state(root)
-            request, reservation = reserve(root, APPLY_ACTION, {"state_path": str(state), "plan_id": "cplan_test", "base_url": client.base_url})
+            payload = rollback_payload(state, client)
+            request, reservation = reserve(root, APPLY_ACTION, payload)
             with self.assertRaisesRegex(ValueError, ROLLBACK_ACTION):
                 execute_akeneo_rollback(request, reservation, client)
 
@@ -74,7 +110,7 @@ class AkeneoRollbackTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             state, client = self._applied_state(root, include_created=True)
-            request, reservation = reserve(root, ROLLBACK_ACTION, {"state_path": str(state), "plan_id": "cplan_test", "base_url": client.base_url})
+            request, reservation = reserve(root, ROLLBACK_ACTION, rollback_payload(state, client))
             with self.assertRaisesRegex(ValueError, "separate explicitly approved action"):
                 execute_akeneo_rollback(request, reservation, client)
             self.assertEqual(json.loads(reservation.read_text())["status"], "reserved")

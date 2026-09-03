@@ -28,23 +28,26 @@ Before the first PATCH, the executor reads every target product and atomically s
 product-sorter-automation reconcile-akeneo-execution akeneo_execution_state.json
 ```
 
-Reconciliation performs GET requests only and zero network writes.
+Reconciliation performs GET requests only and zero network writes. Its `current_fingerprint` values are the SHA-256 fingerprints that must be reviewed and copied into a rollback approval if a rollback is required.
 
 ## Separately approved rollback
 
-Rollback is a new external action, never an automatic continuation of apply. It requires a fresh approval for exactly:
+Rollback is a new external action, never an automatic continuation of apply. It requires a fresh read-only reconciliation followed by a fresh approval for exactly:
 
 ```text
 akeneo.rollback_products
 ```
 
-The rollback approval payload binds the original execution state, plan and Akeneo origin:
+The rollback approval payload binds the original execution state, plan, Akeneo origin, and the exact current remote fingerprint for every restorable product:
 
 ```json
 {
   "state_path": "/absolute/path/akeneo_execution_state.json",
   "plan_id": "cplan_...",
-  "base_url": "https://example.cloud.akeneo.com"
+  "base_url": "https://example.cloud.akeneo.com",
+  "expected_current_fingerprints": {
+    "SKU-001": "<64-character SHA-256 current_fingerprint>"
+  }
 }
 ```
 
@@ -60,9 +63,13 @@ The rollback executor is deliberately conservative:
 - it restores only a bounded set of Akeneo product fields captured in the pre-write snapshot;
 - it refuses to delete products that were created by the apply execution;
 - creation deletion would require a different, separately designed and separately approved destructive action;
-- it verifies every restore target still exists before consuming the rollback reservation;
+- it requires a fresh reconciliation fingerprint for every restorable product;
+- immediately before consuming the rollback reservation, it GETs every target and compares the live fingerprint against the exact fingerprint approved by the human;
+- any missing target or remote drift blocks the rollback before reservation consumption and before any PATCH;
 - a partial rollback is marked failed and requires reconciliation; it is never retried automatically;
 - the rollback reservation is single-use and cannot reuse the original apply approval.
+
+This fingerprint gate prevents a rollback approval from silently overwriting remote changes that occur after the reviewed reconciliation snapshot. Local approval artifacts remain integrity-checked local files; they are not cryptographically signed against a hostile local user.
 
 ## Agent boundary
 
