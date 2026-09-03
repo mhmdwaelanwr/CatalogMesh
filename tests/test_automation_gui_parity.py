@@ -3,10 +3,17 @@ import unittest
 from ai_product_photo_sorter.automation_cli import build_parser
 from ai_product_photo_sorter.automation_gui import (
     REMOTE_MUTATION_COMMANDS,
+    _wheel_units,
     build_argv,
     command_names,
     cli_preview,
 )
+
+
+class _WheelEvent:
+    def __init__(self, *, delta=0, num=None):
+        self.delta = delta
+        self.num = num
 
 
 class AutomationGuiParityTests(unittest.TestCase):
@@ -69,6 +76,13 @@ class AutomationGuiParityTests(unittest.TestCase):
             cli_preview(["scan", "My Photos"]),
             "product-sorter-automation scan 'My Photos'",
         )
+
+    def test_scroll_wheel_normalizes_windows_macos_and_linux_events(self):
+        self.assertLess(_wheel_units(_WheelEvent(delta=120)), 0)
+        self.assertGreater(_wheel_units(_WheelEvent(delta=-120)), 0)
+        self.assertEqual(_wheel_units(_WheelEvent(num=4)), -3)
+        self.assertEqual(_wheel_units(_WheelEvent(num=5)), 3)
+        self.assertEqual(_wheel_units(_WheelEvent()), 0)
 
 
 if __name__ == "__main__":
