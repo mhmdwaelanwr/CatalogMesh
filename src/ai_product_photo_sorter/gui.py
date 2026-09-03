@@ -23,6 +23,7 @@ from .local_evidence_gui import apply_local_evidence_gui
 from .review_center_gui import apply_review_center_gui
 from .sku_matching_gui import apply_sku_matching_gui
 from .catalog_exports_gui import apply_catalog_exports_gui
+from .automation_gui import apply_automation_gui
 from .shopify_environment import prepare_shopify_environment_fields
 from .shopify_safety import install_shopify_export_guards
 from .report_gui import apply_report_gui
@@ -164,8 +165,10 @@ apply_local_evidence_gui(_impl)
 apply_review_center_gui(_impl)
 apply_sku_matching_gui(_impl)
 apply_catalog_exports_gui(_impl)
-# Remote Shopify mutation controls are deliberately absent from the legacy desktop GUI.
-# Approval-aware execution remains available through product-sorter-automation only.
+# Automation Center is generated from automation_cli.build_parser(), so command
+# additions stay in GUI/CLI parity. Remote mutations still execute only through
+# the approval-aware connector functions used by the canonical CLI.
+apply_automation_gui(_impl)
 apply_report_gui(_impl)
 apply_report_autoload(_impl)
 
