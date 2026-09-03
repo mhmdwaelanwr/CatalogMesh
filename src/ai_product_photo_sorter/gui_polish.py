@@ -26,20 +26,249 @@ def wheel_units(delta: int = 0, button: int | None = None) -> int:
     return -magnitude if delta > 0 else magnitude
 
 
-def notebook_insert_position(index: int, remaining_count: int):
-    """Return a valid ttk.Notebook insertion position after forgetting a tab."""
-    return index if index < remaining_count else "end"
+def clamp_scroll_offset(offset: int, total: int, viewport: int) -> int:
+    """Clamp a packed-workspace scroll offset to its valid range."""
+    maximum = max(0, int(total) - max(1, int(viewport)))
+    return max(0, min(int(offset), maximum))
+
+
+def _as_int(value, default: int = 0) -> int:
+    try:
+        return int(float(str(value).strip()))
+    except (TypeError, ValueError):
+        return default
+
+
+def _pair(value) -> tuple[int, int]:
+    if isinstance(value, (tuple, list)):
+        if not value:
+            return (0, 0)
+        if len(value) == 1:
+            number = _as_int(value[0])
+            return (number, number)
+        return (_as_int(value[0]), _as_int(value[1]))
+    text = str(value or "").replace("{", " ").replace("}", " ").replace(",", " ")
+    parts = [part for part in text.split() if part]
+    if not parts:
+        return (0, 0)
+    if len(parts) == 1:
+        number = _as_int(parts[0])
+        return (number, number)
+    return (_as_int(parts[0]), _as_int(parts[1]))
+
+
+def _frame_padding(widget) -> tuple[int, int, int, int]:
+    try:
+        raw = widget.cget("padding")
+    except Exception:
+        return (0, 0, 0, 0)
+    if isinstance(raw, (tuple, list)):
+        parts = [_as_int(item) for item in raw]
+    else:
+        text = str(raw or "").replace("{", " ").replace("}", " ").replace(",", " ")
+        parts = [_as_int(item) for item in text.split() if item]
+    if not parts:
+        return (0, 0, 0, 0)
+    if len(parts) == 1:
+        return (parts[0], parts[0], parts[0], parts[0])
+    if len(parts) == 2:
+        return (parts[0], parts[1], parts[0], parts[1])
+    if len(parts) == 3:
+        return (parts[0], parts[1], parts[2], parts[1])
+    return (parts[0], parts[1], parts[2], parts[3])
+
+
+class _PackedWorkspaceScroller:
+    """Scroll a notebook page without re-parenting any existing Tk widgets.
+
+    Tk widgets cannot be safely re-parented after creation. The previous GUI
+    polish attempted to place an already-created notebook page inside a Canvas,
+    which produced blank pages on real Tk renderers. This scroller keeps every
+    widget under its original parent and only swaps the page's direct children
+    from ``pack`` to ``place`` so they can be translated vertically.
+    """
+
+    def __init__(self, module: Any, owner: Any, page: Any, key: str):
+        self.module = module
+        self.owner = owner
+        self.page = page
+        self.key = key
+        self.offset = 0
+        self.total_height = 0
+        self.viewport_height = 1
+        self._layout_scheduled = False
+        self._specs: list[dict[str, Any]] = []
+
+        page.update_idletasks()
+        for child in list(page.pack_slaves()):
+            try:
+                info = child.pack_info()
+            except module.tk.TclError:
+                continue
+            if str(info.get("side", "top")) not in {"top", ""}:
+                continue
+            self._specs.append({"widget": child, "pack": dict(info)})
+
+        if not self._specs:
+            raise ValueError(f"workspace {key!r} has no packed children to scroll")
+
+        for spec in self._specs:
+            spec["widget"].pack_forget()
+
+        self.scrollbar = module.ttk.Scrollbar(page, orient="vertical", command=self.yview)
+        page.bind("<Configure>", self._schedule_layout, add="+")
+        for spec in self._specs:
+            spec["widget"].bind("<Configure>", self._schedule_layout, add="+")
+        page.after_idle(self.relayout)
+
+    def _schedule_layout(self, _event=None):
+        if self._layout_scheduled:
+            return
+        self._layout_scheduled = True
+        self.page.after_idle(self._run_scheduled_layout)
+
+    def _run_scheduled_layout(self):
+        self._layout_scheduled = False
+        try:
+            self.relayout()
+        except self.module.tk.TclError:
+            pass
+
+    def _natural_layout(self, available_width: int):
+        items: list[dict[str, Any]] = []
+        natural_total = 0
+        expand_indexes: list[int] = []
+        for index, spec in enumerate(self._specs):
+            child = spec["widget"]
+            info = spec["pack"]
+            pad_left, pad_right = _pair(info.get("padx", 0))
+            pad_top, pad_bottom = _pair(info.get("pady", 0))
+            ipadx = _as_int(info.get("ipadx", 0))
+            ipady = _as_int(info.get("ipady", 0))
+            fill = str(info.get("fill", "none"))
+            anchor = str(info.get("anchor", "center"))
+            expand = str(info.get("expand", "0")).lower() in {"1", "true", "yes"}
+            requested_height = max(1, int(child.winfo_reqheight()) + 2 * ipady)
+            requested_width = max(1, int(child.winfo_reqwidth()) + 2 * ipadx)
+            width = (
+                max(1, available_width - pad_left - pad_right)
+                if fill in {"x", "both"}
+                else min(requested_width, max(1, available_width - pad_left - pad_right))
+            )
+            item = {
+                "widget": child,
+                "pad_left": pad_left,
+                "pad_right": pad_right,
+                "pad_top": pad_top,
+                "pad_bottom": pad_bottom,
+                "height": requested_height,
+                "width": width,
+                "anchor": anchor,
+            }
+            items.append(item)
+            natural_total += pad_top + requested_height + pad_bottom
+            if expand:
+                expand_indexes.append(index)
+        return items, natural_total, expand_indexes
+
+    def relayout(self):
+        self.page.update_idletasks()
+        width = max(1, int(self.page.winfo_width()))
+        height = max(1, int(self.page.winfo_height()))
+        left, top, right, bottom = _frame_padding(self.page)
+        scrollbar_width = max(14, int(self.scrollbar.winfo_reqwidth()))
+        gutter = scrollbar_width + 5
+        available_width = max(1, width - left - right - gutter)
+        available_height = max(1, height - top - bottom)
+
+        items, children_height, expand_indexes = self._natural_layout(available_width)
+        natural_total = top + children_height + bottom
+        if natural_total < height and expand_indexes:
+            extra = height - natural_total
+            each, remainder = divmod(extra, len(expand_indexes))
+            for order, index in enumerate(expand_indexes):
+                items[index]["height"] += each + (1 if order < remainder else 0)
+
+        self.total_height = top + bottom + sum(
+            item["pad_top"] + item["height"] + item["pad_bottom"] for item in items
+        )
+        self.viewport_height = height
+        self.offset = clamp_scroll_offset(self.offset, self.total_height, self.viewport_height)
+
+        y = top - self.offset
+        for item in items:
+            y += item["pad_top"]
+            child = item["widget"]
+            anchor = item["anchor"]
+            if "w" in anchor:
+                x = left + item["pad_left"]
+            elif "e" in anchor:
+                x = width - right - gutter - item["pad_right"] - item["width"]
+            else:
+                usable = max(1, available_width - item["pad_left"] - item["pad_right"])
+                x = left + item["pad_left"] + max(0, (usable - item["width"]) // 2)
+            child.place(
+                x=max(0, int(x)),
+                y=int(y),
+                width=max(1, int(item["width"])),
+                height=max(1, int(item["height"])),
+            )
+            y += item["height"] + item["pad_bottom"]
+
+        if self.total_height > self.viewport_height + 1:
+            self.scrollbar.place(
+                x=max(0, width - right - scrollbar_width),
+                y=max(0, top),
+                width=scrollbar_width,
+                height=available_height,
+            )
+            first = self.offset / max(1, self.total_height)
+            last = min(1.0, (self.offset + self.viewport_height) / max(1, self.total_height))
+            self.scrollbar.set(first, last)
+        else:
+            self.scrollbar.place_forget()
+            self.scrollbar.set(0.0, 1.0)
+
+    def can_scroll(self) -> bool:
+        return self.total_height > self.viewport_height + 1
+
+    def scroll_units(self, units: int):
+        if not units or not self.can_scroll():
+            return
+        self.offset = clamp_scroll_offset(
+            self.offset + int(units) * 42,
+            self.total_height,
+            self.viewport_height,
+        )
+        self.relayout()
+
+    def yview(self, *args):
+        if not args:
+            if self.total_height <= 0:
+                return (0.0, 1.0)
+            return (
+                self.offset / self.total_height,
+                min(1.0, (self.offset + self.viewport_height) / self.total_height),
+            )
+        command = str(args[0])
+        if command == "moveto" and len(args) >= 2:
+            fraction = max(0.0, min(1.0, float(args[1])))
+            maximum = max(0, self.total_height - self.viewport_height)
+            self.offset = int(round(maximum * fraction))
+        elif command == "scroll" and len(args) >= 3:
+            amount = int(args[1])
+            kind = str(args[2])
+            step = max(40, int(self.viewport_height * 0.85)) if kind == "pages" else 42
+            self.offset = clamp_scroll_offset(
+                self.offset + amount * step,
+                self.total_height,
+                self.viewport_height,
+            )
+        self.relayout()
 
 
 def apply_gui_polish(module: Any) -> None:
-    """Add responsive scrolling, compact navigation, and theme consistency.
-
-    Feature modules keep owning their canonical content frames. This final layer
-    wraps only the workspaces that can outgrow a laptop-height viewport
-    (Operation setup, Benchmark, and Review) in a vertical canvas after every
-    feature has finished building. The content widgets are not recreated, so
-    their callbacks and state stay untouched.
-    """
+    """Add safe page scrolling, compact navigation, and theme consistency."""
 
     base_configure_styles = module.App.configure_styles
     base_build = module.App.build
@@ -66,9 +295,6 @@ def apply_gui_polish(module: Any) -> None:
                 highlightcolor=self.colors["accent"],
             )
 
-        for info in getattr(self, "_workspace_scrolls", {}).values():
-            info["canvas"].configure(bg=self.colors["panel"])
-
     def configure_styles(self):
         base_configure_styles(self)
         style = module.ttk.Style(self.root)
@@ -90,10 +316,6 @@ def apply_gui_polish(module: Any) -> None:
             foreground=self.colors["muted"],
             font=("Sans", 9, "bold"),
         )
-
-        # ``clam`` still falls back to platform colors for readonly combobox
-        # fields unless state maps are explicit. That produced the pale grey
-        # fields / low-contrast white text visible in dark-mode screenshots.
         style.configure(
             "TCombobox",
             fieldbackground=self.colors["field"],
@@ -133,139 +355,71 @@ def apply_gui_polish(module: Any) -> None:
             selectbackground=self.colors["accent"],
             selectforeground="#ffffff",
         )
-
-        # The combobox popdown list is a classic Tk Listbox on several
-        # platforms, so ttk styling alone does not recolor it.
         self.root.option_add("*TCombobox*Listbox.background", self.colors["field"])
         self.root.option_add("*TCombobox*Listbox.foreground", self.colors["text"])
         self.root.option_add("*TCombobox*Listbox.selectBackground", self.colors["accent"])
         self.root.option_add("*TCombobox*Listbox.selectForeground", "#ffffff")
-
         sync_raw_widget_colors(self)
 
-    def _wrap_workspace(self, content, key: str):
-        if content is None:
+    def _install_workspace_scroller(self, page, key: str):
+        if page is None:
             return None
-        notebook = self.main_tabs
         try:
-            index = notebook.index(content)
-        except module.tk.TclError:
+            scroller = _PackedWorkspaceScroller(module, self, page, key)
+        except (ValueError, module.tk.TclError):
             return None
-
-        tab_text = notebook.tab(content, "text")
-        tab_state = notebook.tab(content, "state")
-        notebook.forget(content)
-
-        host = module.ttk.Frame(notebook, style="Panel.TFrame")
-        remaining_tabs = notebook.tabs()
-        insert_at = notebook_insert_position(index, len(remaining_tabs))
-        notebook.insert(insert_at, host, text=tab_text, state=tab_state)
-
-        canvas = module.tk.Canvas(
-            host,
-            bg=self.colors["panel"],
-            highlightthickness=0,
-            borderwidth=0,
-        )
-        scrollbar = module.ttk.Scrollbar(
-            host,
-            orient="vertical",
-            command=canvas.yview,
-        )
-        canvas.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
-        canvas.pack(side="left", fill="both", expand=True)
-
-        window_id = canvas.create_window((0, 0), window=content, anchor="nw")
-
-        def update_scrollregion(_event=None):
-            canvas.configure(scrollregion=canvas.bbox("all"))
-
-        def resize_content(event):
-            # Keep fill/expand layouts behaving like a normal notebook page,
-            # but let genuinely taller content request more height and scroll.
-            content.update_idletasks()
-            requested_height = max(content.winfo_reqheight(), int(event.height))
-            canvas.itemconfigure(
-                window_id,
-                width=max(1, int(event.width)),
-                height=max(1, requested_height),
-            )
-            update_scrollregion()
-
-        content.bind("<Configure>", update_scrollregion, add="+")
-        canvas.bind("<Configure>", resize_content, add="+")
         self._workspace_scrolls[key] = {
-            "host": host,
-            "content": content,
-            "canvas": canvas,
-            "scrollbar": scrollbar,
-            "window": window_id,
+            "page": page,
+            "content": page,
+            "host": page,
+            "scrollbar": scroller.scrollbar,
+            "scroller": scroller,
         }
-        return host
+        return scroller
 
     def _event_in_workspace(self, event_widget, info) -> bool:
         if event_widget is None:
             return False
         path = str(event_widget)
-        content_path = str(info["content"])
-        host_path = str(info["host"])
-        canvas_path = str(info["canvas"])
-        return (
-            path == content_path
-            or path.startswith(content_path + ".")
-            or path == host_path
-            or path.startswith(host_path + ".")
-            or path == canvas_path
-        )
+        page_path = str(info["page"])
+        return path == page_path or path.startswith(page_path + ".")
 
     def _workspace_mousewheel(self, event):
-        # Preserve native scrolling for data grids and text viewers.
         if isinstance(event.widget, (module.ttk.Treeview, module.tk.Text)):
             return None
-
         units = wheel_units(
             int(getattr(event, "delta", 0) or 0),
             getattr(event, "num", None),
         )
         if not units:
             return None
-
         for info in getattr(self, "_workspace_scrolls", {}).values():
             if _event_in_workspace(self, event.widget, info):
-                top, bottom = info["canvas"].yview()
-                if bottom - top >= 0.999:
+                scroller = info["scroller"]
+                if not scroller.can_scroll():
                     return None
-                info["canvas"].yview_scroll(units, "units")
+                scroller.scroll_units(units)
                 return "break"
         return None
 
     def build(self):
         base_build(self)
-
         self._workspace_scrolls = {}
 
-        # Operation setup is the original first tab. Wrap it after all feature
-        # cards have been inserted so every existing widget scrolls together.
         tabs = self.main_tabs.tabs()
         if tabs:
-            setup_content = self.main_tabs.nametowidget(tabs[0])
-            self.setup_page = setup_content
-            self.setup_tab = _wrap_workspace(self, setup_content, "setup")
+            self.setup_page = self.main_tabs.nametowidget(tabs[0])
+            self.setup_scroller = _install_workspace_scroller(self, self.setup_page, "setup")
 
-        benchmark_content = getattr(self, "benchmark_page", None)
-        if benchmark_content is not None:
-            self.benchmark_tab = _wrap_workspace(
-                self, benchmark_content, "benchmark"
+        benchmark_page = getattr(self, "benchmark_page", None)
+        if benchmark_page is not None:
+            self.benchmark_scroller = _install_workspace_scroller(
+                self, benchmark_page, "benchmark"
             )
 
-        review_content = getattr(self, "review_page", None)
-        if review_content is not None:
-            self.review_content_page = review_content
-            review_host = _wrap_workspace(self, review_content, "review")
-            if review_host is not None:
-                # Review methods select/rename ``self.review_page`` later.
-                self.review_page = review_host
+        review_page = getattr(self, "review_page", None)
+        if review_page is not None:
+            self.review_scroller = _install_workspace_scroller(self, review_page, "review")
 
         self.workspace_nav_frame = module.ttk.Frame(self.header, style="App.TFrame")
         self.workspace_nav_frame.pack(side="right", padx=(0, 8), pady=8)
@@ -283,33 +437,17 @@ def apply_gui_polish(module: Any) -> None:
             width=24,
         )
         self.workspace_nav.pack(side="left")
-        self.workspace_nav.bind(
-            "<<ComboboxSelected>>", self.select_workspace_from_nav
-        )
-        self.main_tabs.bind(
-            "<<NotebookTabChanged>>", self.sync_workspace_nav, add="+"
-        )
+        self.workspace_nav.bind("<<ComboboxSelected>>", self.select_workspace_from_nav)
+        self.main_tabs.bind("<<NotebookTabChanged>>", self.sync_workspace_nav, add="+")
 
-        # Own these bindings explicitly rather than ttk.Notebook.enable_traversal()
-        # so Ctrl+Tab cannot be applied twice on platforms with class bindings.
-        self.root.bind(
-            "<Control-Tab>", lambda event: self.cycle_workspace(1), add="+"
-        )
+        self.root.bind("<Control-Tab>", lambda event: self.cycle_workspace(1), add="+")
         self.root.bind(
             "<Control-Shift-Tab>",
             lambda event: self.cycle_workspace(-1),
             add="+",
         )
-        self.root.bind(
-            "<Alt-w>", lambda event: self.focus_workspace_nav(), add="+"
-        )
-        self.root.bind(
-            "<Configure>", self._responsive_workspace_nav, add="+"
-        )
-
-        # Toplevel bindings see wheel events from descendant widgets without
-        # using bind_all(), so Automation Center's own local wheel guard cannot
-        # accidentally remove these bindings.
+        self.root.bind("<Alt-w>", lambda event: self.focus_workspace_nav(), add="+")
+        self.root.bind("<Configure>", self._responsive_workspace_nav, add="+")
         self.root.bind("<MouseWheel>", self._workspace_mousewheel, add="+")
         self.root.bind("<Button-4>", self._workspace_mousewheel, add="+")
         self.root.bind("<Button-5>", self._workspace_mousewheel, add="+")
@@ -357,9 +495,7 @@ def apply_gui_polish(module: Any) -> None:
             ),
             0,
         )
-        self.main_tabs.select(
-            entries[next_tab_index(current, len(entries), step)][0]
-        )
+        self.main_tabs.select(entries[next_tab_index(current, len(entries), step)][0])
         return "break"
 
     def focus_workspace_nav(self):
@@ -388,16 +524,14 @@ def apply_gui_polish(module: Any) -> None:
         base_apply_language(self)
         if hasattr(self, "workspace_nav_label"):
             labels = {"ar": "مساحة العمل", "en": "Workspace", "zh": "工作区"}
-            self.workspace_nav_label.configure(
-                text=labels.get(self.lang, "Workspace")
-            )
+            self.workspace_nav_label.configure(text=labels.get(self.lang, "Workspace"))
             self.sync_workspace_nav()
 
     module.App.configure_styles = configure_styles
     module.App.build = build
     module.App.apply_language = apply_language
     module.App.sync_raw_widget_colors = sync_raw_widget_colors
-    module.App._wrap_workspace = _wrap_workspace
+    module.App._install_workspace_scroller = _install_workspace_scroller
     module.App._workspace_mousewheel = _workspace_mousewheel
     module.App.workspace_entries = workspace_entries
     module.App.sync_workspace_nav = sync_workspace_nav
