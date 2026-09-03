@@ -4,6 +4,32 @@ All notable project changes are documented here.
 
 ## Unreleased
 
+## 3.2.0 — 2026-09-03
+
+### Catalog automation and agents
+
+- Added deterministic local shoot ingestion snapshots plus added/changed/removed diffing without mutating source photos.
+- Added Missing Asset Audit helpers for catalog image references and conservative exact-stem local image reconciliation.
+- Added a read-only Agent Tool Registry foundation with explicit mutation and human-approval metadata plus fail-closed execution.
+- Added a persistent polling-based watched-folder daemon with crash-safe JSON checkpoints and deterministic incremental events.
+- Hardened watched-folder checkpoints against concurrent temp-file collisions, invalid state paths, and corrupted snapshot entries.
+- Added `product-sorter-automation` commands for scanning shoots, missing-asset audits, local reconciliation, SKU candidate proposals, offline Shopify draft preparation, and watched folders.
+- Added `product-sorter-watch` as a dedicated watched-folder console entry point.
+- Added optional MCP support through `ai-product-photo-sorter[mcp]` and the `product-sorter-mcp` stdio server.
+- Added MCP tools for shoot scanning, missing-SKU audits, ranked candidate proposals, and offline Shopify draft preparation while deliberately exposing no publish tool.
+- Preserved mandatory human confirmation before SKU matches become confirmed or Shopify draft preparation can succeed.
+
+### Local-first catalog pipeline
+
+- Added first-class Ollama local vision support with local-only and local-first/cloud-fallback operation modes.
+- Added local image-embedding Shadow Mode, labeled threshold calibration, and Hybrid Routing Lab simulation for evidence-driven future routing promotion.
+- Added optional local OCR and barcode evidence extraction without automatic catalog confirmation.
+- Added memory-aware parallel image preprocessing with bounded cache reuse and benchmark metrics.
+- Added the non-destructive Review Center with merge/split/move, metadata corrections, approvals, and append-only audit history.
+- Added deterministic SKU/catalog candidate matching with ranked reasons and mandatory human confirmation.
+- Added safe offline Shopify draft and neutral PIM exports built only from fully confirmed matches.
+- Added guarded Shopify Admin GraphQL planning, preview, draft staging, exact-SKU collision protection, idempotency state, separately confirmed publication, and rollback to draft.
+
 ### Desktop workflow and reliability
 
 - Added canonical provider preflight shared by CLI and GUI, including safe correction of the observed `gemeni` typo to `gemini` and clear rejection of unknown providers before a run starts.
@@ -24,7 +50,7 @@ All notable project changes are documented here.
 - Added a synthetic end-to-end benchmark CI test that runs the real pipeline twice and verifies isolation, reporting, token accounting, and source preservation without live credentials.
 - Fixed deterministic SQLite connection and operation-lock cleanup on every engine exit path, preventing retained Windows file handles after successful or interrupted runs.
 - Added a dedicated desktop Benchmark tab that reuses the configured workspace, provider priority, model, and API credentials.
-- Added `BENCHMARK.md` with reproducible comparison methodology and explicit caveats for cloud versus future local-provider measurements.
+- Added `BENCHMARK.md` with reproducible comparison methodology and explicit caveats for cloud versus local-provider measurements.
 
 ## 3.1.1 — 2026-08-26
 
