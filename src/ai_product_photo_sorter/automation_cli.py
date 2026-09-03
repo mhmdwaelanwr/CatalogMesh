@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,8 @@ from .execution_control import record_execution_result, reserve_grant
 from .ingestion import scan_image_folder
 from .missing_assets import find_missing_assets, find_missing_local_images
 from .review_automation import open_review_queue
+from .shopify_execution import execute_shopify_stage
+from .shopify_publishing import API_VERSION, ShopifyClient
 from .sku_matching import generate_candidates, load_catalog_rows
 from .watch_daemon import main as watch_main
 
@@ -31,6 +34,16 @@ def _json_object(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("Approval payload must be a JSON object")
     return payload
+
+
+def _shopify_client_from_env(store_domain: str | None = None, api_version: str | None = None) -> ShopifyClient:
+    domain = (store_domain or os.getenv("SHOPIFY_STORE_DOMAIN", "")).strip()
+    token = os.getenv("SHOPIFY_ADMIN_ACCESS_TOKEN", "").strip()
+    if not domain:
+        raise ValueError("SHOPIFY_STORE_DOMAIN is required for approved Shopify execution")
+    if not token:
+        raise ValueError("SHOPIFY_ADMIN_ACCESS_TOKEN is required for approved Shopify execution")
+    return ShopifyClient(domain, token, api_version=api_version or os.getenv("SHOPIFY_API_VERSION", API_VERSION))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -93,6 +106,13 @@ def build_parser() -> argparse.ArgumentParser:
     result.add_argument("--details", type=Path)
     result.add_argument("--external-action-performed", action="store_true")
 
+    shopify_stage = sub.add_parser("execute-shopify-stage", help="Consume one approved reservation to stage Shopify products as unpublished DRAFT only")
+    shopify_stage.add_argument("request", type=Path)
+    shopify_stage.add_argument("reservation", type=Path)
+    shopify_stage.add_argument("--audit", type=Path)
+    shopify_stage.add_argument("--store")
+    shopify_stage.add_argument("--api-version")
+
     watch = sub.add_parser("watch", help="Run the persistent watched-folder daemon")
     watch.add_argument("root", type=Path)
     watch.add_argument("--state", type=Path, default=Path(".product-sorter-watch.json"))
@@ -153,6 +173,10 @@ def main(argv: list[str] | None = None) -> int:
                 details=details,
                 external_action_performed=args.external_action_performed,
             ))
+            return 0
+        if args.command == "execute-shopify-stage":
+            client = _shopify_client_from_env(args.store, args.api_version)
+            _emit(execute_shopify_stage(args.request, args.reservation, client, audit_path=args.audit))
             return 0
         if args.command == "watch":
             watch_argv = [str(args.root), "--state", str(args.state), "--interval", str(args.interval)]
