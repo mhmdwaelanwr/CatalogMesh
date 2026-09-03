@@ -8,6 +8,7 @@ from typing import Any
 
 from .approval_boundary import approve_request, create_approval_request, validate_grant
 from .catalog_exports import generate_exports
+from .connector_profiles import build_connector_plan
 from .execution_control import record_execution_result, reserve_grant
 from .ingestion import scan_image_folder
 from .missing_assets import find_missing_assets, find_missing_local_images
@@ -56,6 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
     propose = sub.add_parser("propose-matches"); propose.add_argument("approved_groups", type=Path); propose.add_argument("catalog", type=Path); propose.add_argument("--evidence", type=Path); propose.add_argument("--output", type=Path); propose.add_argument("--top-k", type=int, default=5)
     review = sub.add_parser("open-review-queue"); review.add_argument("review_manifest", type=Path); review.add_argument("--limit", type=int, default=50)
     draft = sub.add_parser("prepare-shopify-draft"); draft.add_argument("match_manifest", type=Path); draft.add_argument("--output", type=Path)
+    connector = sub.add_parser("prepare-connector-plan"); connector.add_argument("export_manifest", type=Path); connector.add_argument("profile", type=Path); connector.add_argument("--output", type=Path)
     request = sub.add_parser("request-external-action"); request.add_argument("action"); request.add_argument("payload_json", type=Path); request.add_argument("output", type=Path)
     approve = sub.add_parser("approve-external-action"); approve.add_argument("request", type=Path); approve.add_argument("grant", type=Path); approve.add_argument("--confirm", required=True)
     validate = sub.add_parser("validate-approval"); validate.add_argument("request", type=Path); validate.add_argument("grant", type=Path)
@@ -87,6 +89,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "open-review-queue": _emit(open_review_queue(args.review_manifest, limit=args.limit)); return 0
         if args.command == "prepare-shopify-draft":
             summary, path = generate_exports(args.match_manifest, output_dir=args.output, profile="shopify"); _emit({"manifest": str(path), "summary": summary}); return 0
+        if args.command == "prepare-connector-plan":
+            plan, path = build_connector_plan(args.export_manifest, args.profile, output=args.output); _emit({"plan": str(path), "plan_id": plan["plan_id"], "action": plan["action"], "records": len(plan["records"]), "network_calls_performed": 0, "human_approval_required": True}); return 0
         if args.command == "request-external-action":
             path = create_approval_request(args.action, _json_object(args.payload_json), args.output); _emit({"request": str(path), "external_action_performed": False, "human_approval_required": True}); return 0
         if args.command == "approve-external-action":

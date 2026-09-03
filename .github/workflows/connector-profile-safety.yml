@@ -1,0 +1,26 @@
+name: connector-profile-safety
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  connector-profile-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e .
+      - name: Run connector profile tests
+        run: python -m unittest tests.test_connector_profiles -v
+      - name: Ensure no generic connector executor is exposed
+        shell: python
+        run: |
+          from pathlib import Path
+          cli = Path('src/ai_product_photo_sorter/automation_cli.py').read_text(encoding='utf-8')
+          mcp = Path('src/ai_product_photo_sorter/mcp_server.py').read_text(encoding='utf-8')
+          if 'execute-connector' in cli or 'execute_connector' in mcp:
+              raise SystemExit('Generic connector execution surface is forbidden')
