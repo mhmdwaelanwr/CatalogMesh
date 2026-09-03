@@ -28,6 +28,7 @@ from .shopify_environment import prepare_shopify_environment_fields
 from .shopify_safety import install_shopify_export_guards
 from .report_gui import apply_report_gui
 from .report_autoload import apply_report_autoload
+from .gui_polish import apply_gui_polish
 
 _impl.ROOT = runtime_root()
 prepare_ollama_environment_fields(_environment_gui)
@@ -171,6 +172,8 @@ apply_catalog_exports_gui(_impl)
 apply_automation_gui(_impl)
 apply_report_gui(_impl)
 apply_report_autoload(_impl)
+# Install navigation/spacing polish last so it sees every feature workspace.
+apply_gui_polish(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main
