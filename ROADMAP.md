@@ -67,6 +67,24 @@ The strategic order is **Ollama / Local Vision → Hybrid visual clustering → 
 - [ ] Validate the guarded Shopify workflow against a development store using a non-sensitive mock catalog before treating remote publishing as production-verified.
 - [ ] PIM/ERP connector profiles with explicit field mapping, validation, and authenticated write boundaries.
 
+## 3.4 — Catalog automation and agents
+
+See [`docs/CATALOG_AUTOMATION.md`](docs/CATALOG_AUTOMATION.md) for the safety contract. The goal is to expose the existing local-first pipeline to modern catalog workflows without allowing agents or connectors to bypass human-reviewed SKU and publishing boundaries.
+
+- [x] Non-destructive local shoot ingestion snapshots and deterministic added/changed/removed diffing.
+- [x] Deterministic Missing Asset Audit for catalog rows and conservative exact-stem local-image reconciliation.
+- [x] Read-only Agent Tool Registry foundation with explicit external-mutation metadata and fail-closed execution.
+- [ ] Persistent watched folders with debouncing, crash-safe checkpoints, and incremental processing triggers.
+- [ ] Google Drive ingestion adapter using the same local ingestion contract.
+- [ ] S3-compatible object-storage ingestion adapter with scoped credentials and local materialization.
+- [ ] Missing Asset Audit in CLI and desktop Review Center, including unresolved-SKU queues and exportable reports.
+- [ ] MCP server/transport exposing safe tools such as `scan_shoot`, `find_unmatched_skus`, `propose_matches`, `open_review_queue`, and `prepare_shopify_draft`.
+- [ ] Approval-aware Agent execution boundary for Shopify/PIM/ERP writes; external mutation must remain separately confirmed and append-only audited.
+- [ ] Variant-level asset mapping and lifecycle state for SKU variants/options.
+- [ ] Release scheduling for approved product assets with rollback-safe draft state.
+- [ ] Automation rules/triggers for ingest → classify → review queue → match proposal → draft preparation.
+- [ ] Connector-level audit events, idempotency keys, retry policy, and credential redaction.
+
 ## 4.0 — Extensibility
 
 - [ ] Provider plugin interface and custom OpenAI-compatible endpoints.
