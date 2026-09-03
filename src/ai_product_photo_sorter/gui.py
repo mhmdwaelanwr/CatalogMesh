@@ -24,7 +24,6 @@ from .review_center_gui import apply_review_center_gui
 from .sku_matching_gui import apply_sku_matching_gui
 from .catalog_exports_gui import apply_catalog_exports_gui
 from .shopify_environment import prepare_shopify_environment_fields
-from .shopify_publishing_gui import apply_shopify_publishing_gui
 from .shopify_safety import install_shopify_export_guards
 from .report_gui import apply_report_gui
 from .report_autoload import apply_report_autoload
@@ -165,7 +164,8 @@ apply_local_evidence_gui(_impl)
 apply_review_center_gui(_impl)
 apply_sku_matching_gui(_impl)
 apply_catalog_exports_gui(_impl)
-apply_shopify_publishing_gui(_impl)
+# Remote Shopify mutation controls are deliberately absent from the legacy desktop GUI.
+# Approval-aware execution remains available through product-sorter-automation only.
 apply_report_gui(_impl)
 apply_report_autoload(_impl)
 
