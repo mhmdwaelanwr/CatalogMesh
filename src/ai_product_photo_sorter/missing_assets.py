@@ -4,6 +4,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
 
+from .ingestion import IMAGE_EXTENSIONS
+
 
 DEFAULT_ASSET_COLUMNS = ("image", "images", "image_url", "image_urls", "photo", "photos")
 
@@ -33,6 +35,9 @@ def find_missing_assets(
     Matching is intentionally deterministic and offline. A row is considered to
     have an asset when any configured asset column contains non-whitespace text.
     Rows without a SKU are ignored because they cannot be safely actionable.
+
+    ``row_number`` is reported using spreadsheet/CSV coordinates with an assumed
+    header row at row 1, so the first supplied catalog record is row 2.
     """
     missing: list[MissingAsset] = []
     normalized_assets = tuple(column.strip() for column in asset_columns if column.strip())
@@ -51,12 +56,12 @@ def find_missing_assets(
 
 def image_files_by_stem(paths: Iterable[str | Path]) -> set[str]:
     """Return case-folded image stems for local shoot/catalog reconciliation."""
-    extensions = {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff", ".bmp", ".heic"}
-    return {
-        Path(path).stem.casefold()
-        for path in paths
-        if Path(path).suffix.casefold() in extensions
-    }
+    stems: set[str] = set()
+    for value in paths:
+        path = Path(value)
+        if path.suffix.casefold() in IMAGE_EXTENSIONS:
+            stems.add(path.stem.casefold())
+    return stems
 
 
 def find_missing_local_images(
@@ -69,7 +74,8 @@ def find_missing_local_images(
 
     This is a conservative preflight helper, not an automatic SKU matcher. It
     deliberately avoids fuzzy matching so ambiguous catalog writes remain gated
-    behind the existing review and confirmation workflow.
+    behind the existing review and confirmation workflow. ``row_number`` uses
+    the same header-at-row-1 convention as :func:`find_missing_assets`.
     """
     stems = image_files_by_stem(image_paths)
     missing: list[MissingAsset] = []
