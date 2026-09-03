@@ -8,7 +8,7 @@ from .approval_boundary import create_approval_request, validate_grant
 from .catalog_exports import generate_exports
 from .ingestion import scan_image_folder
 from .missing_assets import find_missing_assets, find_missing_local_images
-from .review_automation import open_review_queue
+from .review_automation import open_review_queue as get_review_queue
 from .sku_matching import generate_candidates, load_catalog_rows
 
 
@@ -50,9 +50,9 @@ def build_server():
         return {"manifest": str(path), "summary": manifest.get("summary", {}), "automatic_confirmation": False, "human_confirmation_required": True}
 
     @server.tool()
-    def open_review_queue_tool(review_manifest: str, limit: int = 50) -> dict[str, object]:
+    def open_review_queue(review_manifest: str, limit: int = 50) -> dict[str, object]:
         """Read pending Review Center groups. This tool never changes review state."""
-        return open_review_queue(review_manifest, limit=limit)
+        return get_review_queue(review_manifest, limit=limit)
 
     @server.tool()
     def prepare_shopify_draft(match_manifest: str, output_dir: str | None = None) -> dict[str, object]:
