@@ -26,7 +26,6 @@ def apply_gui_polish(module: Any) -> None:
     def configure_styles(self):
         base_configure_styles(self)
         style = module.ttk.Style(self.root)
-        # Keep many feature tabs readable without wasting horizontal space.
         style.configure(
             "TNotebook.Tab",
             background=self.colors["panel2"],
@@ -48,8 +47,6 @@ def apply_gui_polish(module: Any) -> None:
 
     def build(self):
         base_build(self)
-        self.main_tabs.enable_traversal()
-
         self.workspace_nav_frame = module.ttk.Frame(self.header, style="App.TFrame")
         self.workspace_nav_frame.pack(side="right", padx=(0, 8), pady=8)
         self.workspace_nav_label = module.ttk.Label(
@@ -69,6 +66,8 @@ def apply_gui_polish(module: Any) -> None:
         self.workspace_nav.bind("<<ComboboxSelected>>", self.select_workspace_from_nav)
         self.main_tabs.bind("<<NotebookTabChanged>>", self.sync_workspace_nav, add="+")
 
+        # Own these bindings explicitly rather than ttk.Notebook.enable_traversal()
+        # so Ctrl+Tab cannot be applied twice on platforms with class bindings.
         self.root.bind("<Control-Tab>", lambda event: self.cycle_workspace(1), add="+")
         self.root.bind("<Control-Shift-Tab>", lambda event: self.cycle_workspace(-1), add="+")
         self.root.bind("<Alt-w>", lambda event: self.focus_workspace_nav(), add="+")
