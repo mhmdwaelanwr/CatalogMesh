@@ -17,11 +17,14 @@ class WorkspaceRenderWindowsTests(unittest.TestCase):
             root.update_idletasks()
             root.update()
 
+            self.assertEqual(root.title(), "CatalogMesh")
             labels = tuple(
                 str(app.main_tabs.tab(tab_id, "text"))
                 for tab_id in app.main_tabs.tabs()
             )
             self.assertEqual(labels, WORKSPACE_USAGE_ORDER)
+            self.assertTrue(hasattr(app, "rclone_page"))
+            self.assertEqual(app.rclone_title.cget("text"), "Cloud Storage · rclone")
 
             self.assertEqual(set(app._workspace_scrolls), {"setup", "benchmark", "review"})
             cases = (
@@ -45,6 +48,33 @@ class WorkspaceRenderWindowsTests(unittest.TestCase):
                     )
                     self.assertIs(info["content"], page)
                     self.assertIs(info["host"], page)
+
+            # Exercise the final runtime i18n layer against the real integrated
+            # App, not only the pure translation index.
+            app.lang = "zh"
+            app.apply_language()
+            root.update_idletasks()
+            expected_zh = tuple(app.ui_translate(label) for label in WORKSPACE_USAGE_ORDER)
+            actual_zh = tuple(
+                str(app.main_tabs.tab(tab_id, "text"))
+                for tab_id in app.main_tabs.tabs()
+            )
+            self.assertEqual(actual_zh, expected_zh)
+            self.assertEqual(app.rclone_title.cget("text"), "云存储 · rclone")
+            self.assertEqual(app.workspace_nav_label.cget("text"), "工作区")
+            self.assertEqual(root.title(), "CatalogMesh")
+
+            app.lang = "ar"
+            app.apply_language()
+            root.update_idletasks()
+            expected_ar = tuple(app.ui_translate(label) for label in WORKSPACE_USAGE_ORDER)
+            actual_ar = tuple(
+                str(app.main_tabs.tab(tab_id, "text"))
+                for tab_id in app.main_tabs.tabs()
+            )
+            self.assertEqual(actual_ar, expected_ar)
+            self.assertEqual(app.rclone_title.cget("text"), app.ui_translate("Cloud Storage · rclone"))
+            self.assertEqual(root.title(), "CatalogMesh")
         finally:
             try:
                 root.destroy()
