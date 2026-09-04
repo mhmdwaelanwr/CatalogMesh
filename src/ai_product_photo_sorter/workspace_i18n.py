@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .gui_icons import apply_gui_icons
 from .gui_workflow import WORKSPACE_USAGE_ORDER
 
 
@@ -26,3 +27,7 @@ def apply_workspace_i18n(module: Any) -> None:
             self.sync_workspace_sidebar()
 
     module.App.apply_language = apply_language
+    # Icons are the final presentation-only layer. Installing them here keeps
+    # the established feature/i18n patch order unchanged and guarantees that
+    # localized workspace labels already exist before sidebar decoration.
+    apply_gui_icons(module)
