@@ -65,6 +65,30 @@ class WorkflowAutomationCliTests(unittest.TestCase):
             Path("/tmp/review-plan.json"),
         )
 
+    @mock.patch("ai_product_photo_sorter.automation_cli.export_approved")
+    def test_review_export_uses_shared_summary_contract(self, export):
+        export.return_value = (
+            {"approved_groups": 2, "pending_groups": 0, "catalog_ready": True},
+            Path("/tmp/approved_product_groups.csv"),
+        )
+        out = io.StringIO()
+        with redirect_stdout(out):
+            self.assertEqual(
+                automation_cli.main([
+                    "review-export-approved",
+                    "/tmp/product_review_manifest.json",
+                    "--approved-out",
+                    "/tmp/approved_product_groups.csv",
+                ]),
+                0,
+            )
+        payload = json.loads(out.getvalue())
+        self.assertEqual(payload["summary"]["approved_groups"], 2)
+        export.assert_called_once_with(
+            Path("/tmp/product_review_manifest.json"),
+            Path("/tmp/approved_product_groups.csv"),
+        )
+
     @mock.patch("ai_product_photo_sorter.automation_cli.confirm_candidate")
     def test_sku_confirm_keeps_human_confirmation_backend(self, confirm):
         confirm.return_value = (
