@@ -18,7 +18,7 @@ Windows SmartScreen may show a warning because the current release binaries are 
 Requirements: Python 3.10 or newer.
 
 ```powershell
-py -m pip install --upgrade ai-product-photo-sorter
+py -m pip install --upgrade catalogmesh
 catalogmesh-gui
 ```
 
@@ -27,9 +27,11 @@ If `catalogmesh-gui` is not found after installation, close and reopen PowerShel
 You can also verify the installed package from PowerShell:
 
 ```powershell
-py -m pip show ai-product-photo-sorter
+py -m pip show catalogmesh
 catalogmesh --help
 ```
+
+The historical PyPI project name `ai-product-photo-sorter` remains a legacy v3.x identifier. New installs should use `catalogmesh`.
 
 ## Development build from main
 
