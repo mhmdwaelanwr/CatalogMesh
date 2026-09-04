@@ -4,6 +4,15 @@ All notable project changes are documented here.
 
 ## Unreleased
 
+## 3.3.2 — 2026-09-04
+
+### Package identity migration
+
+- Promoted `catalogmesh` to the primary PyPI distribution and public install name.
+- Updated repository, README, Windows and PyPI metadata to the canonical `mhmdwaelanwr/CatalogMesh` project identity.
+- Preserved the `ai_product_photo_sorter` Python import namespace plus legacy `product-sorter-*` commands and `PRODUCT_SORTER_*` settings for v3.x compatibility.
+- Kept the existing Windows/Linux/macOS release artifacts and all human-review, connector approval/reservation, publication, MCP, and rclone safety boundaries unchanged.
+
 ## 3.3.1 — 2026-09-04
 
 ### Maintenance release
