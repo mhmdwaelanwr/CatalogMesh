@@ -14,6 +14,7 @@ from .resource_lifecycle import apply_resource_lifecycle
 from .benchmark import apply_benchmark
 from .benchmark_reproducibility import apply_benchmark_reproducibility
 from .hybrid_embeddings import apply_hybrid_embeddings
+from .hybrid_embeddings_help import apply_hybrid_embeddings_help
 from .performance_pipeline import apply_performance_pipeline
 from .threshold_calibration import apply_threshold_calibration
 from .hybrid_routing_lab import apply_hybrid_routing_lab
@@ -39,6 +40,9 @@ apply_benchmark(_impl)
 apply_benchmark_reproducibility(_impl)
 # Shadow embeddings extend the complete benchmark/reproducibility layer.
 apply_hybrid_embeddings(_impl)
+# Keep the real shadow parser unchanged while making every shadow option visible
+# in the composed CatalogMesh CLI help output.
+apply_hybrid_embeddings_help(_impl)
 # Safe preprocessing warms the final shared image cache while preserving ordered
 # provider inference and operation-state mutation.
 apply_performance_pipeline(_impl)
