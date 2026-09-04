@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-product-photo-sorter"
-version = "3.3.0"
+version = "3.3.1"
 description = "CatalogMesh multilingual AI workspace for product catalog operations, review, storage and guarded automation"
 readme = "README.md"
 license = {file = "LICENSE"}
