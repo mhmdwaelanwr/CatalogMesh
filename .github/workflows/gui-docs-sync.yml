@@ -101,10 +101,38 @@ jobs:
               --title "docs: refresh packaged Windows GUI screenshots" \
               --body "$body"
             echo "Updated screenshot PR #$existing"
-          else
-            gh pr create \
-              --base main \
-              --head "$SYNC_BRANCH" \
-              --title "docs: refresh packaged Windows GUI screenshots" \
-              --body "$body"
+            exit 0
           fi
+
+          set +e
+          create_output="$(gh pr create \
+            --base main \
+            --head "$SYNC_BRANCH" \
+            --title "docs: refresh packaged Windows GUI screenshots" \
+            --body "$body" 2>&1)"
+          create_status=$?
+          set -e
+
+          if [ "$create_status" -eq 0 ]; then
+            echo "$create_output"
+            exit 0
+          fi
+
+          if grep -Fq "GitHub Actions is not permitted to create or approve pull requests" <<<"$create_output"; then
+            encoded_branch="${SYNC_BRANCH//\//%2F}"
+            compare_url="https://github.com/${GITHUB_REPOSITORY}/compare/main...${encoded_branch}?expand=1"
+            echo "::warning::Repository settings prevent GITHUB_TOKEN from creating pull requests. The refreshed screenshot branch is ready: $compare_url"
+            {
+              echo "## GUI screenshot refresh branch ready"
+              echo
+              echo "The screenshots were generated, validated, committed, and pushed successfully."
+              echo
+              echo "Repository settings currently prevent the Actions GITHUB_TOKEN from creating a pull request."
+              echo
+              echo "Open the protected-branch PR here: $compare_url"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "$create_output" >&2
+          exit "$create_status"
