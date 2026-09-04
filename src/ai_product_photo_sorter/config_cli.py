@@ -209,12 +209,13 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "delete":
-            expected = f"DELETE CONFIG {_path()}"
+            config_path = _path()
+            expected = f"DELETE CONFIG {config_path.as_posix()}"
             if args.confirm != expected:
                 raise ValueError(f"Configuration deletion requires the exact confirmation: {expected}")
-            _path().unlink(missing_ok=True)
+            config_path.unlink(missing_ok=True)
             clear_keyring()
-            print(f"Deleted CatalogMesh configuration: {_path()}")
+            print(f"Deleted CatalogMesh configuration: {config_path}")
             return 0
     except (OSError, ValueError) as exc:
         raise SystemExit(str(exc)) from exc
