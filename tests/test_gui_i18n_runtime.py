@@ -57,13 +57,15 @@ class GuiI18nRuntimeTests(unittest.TestCase):
         index = TranslationIndex(collect_translation_triplets())
         self.assertEqual(index.translate("Cloud Storage · rclone", "zh"), "云存储 · rclone")
         actual = index.translate("Cloud Storage · rclone", "ar")
-        # Other GUI tests may have already pre-shaped loaded Arabic catalogs on
-        # Linux. Compare both values in the canonical Tk visual form so this
-        # remains deterministic on Linux, Windows and macOS.
-        self.assertEqual(
-            shape_arabic_for_tk(actual, force=True),
-            shape_arabic_for_tk("التخزين السحابي · rclone", force=True),
-        )
+        # TranslationIndex returns the Tk-ready visual Arabic form when shaping
+        # is enabled, so compare it directly with the canonical shaped value.
+        logical = "التخزين السحابي · rclone"
+        shaped = shape_arabic_for_tk(logical, force=True)
+        # Loaded GUI catalogs can already be pre-shaped by an earlier Tk
+        # workflow test in the same process. Both representations are valid
+        # inputs to the final presentation layer; neither may fall back to
+        # English.
+        self.assertIn(actual, {logical, shaped})
 
     def test_catalogmesh_brand_has_all_supported_taglines(self):
         self.assertEqual(APP_NAME, "CatalogMesh")

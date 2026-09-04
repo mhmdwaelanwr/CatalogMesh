@@ -225,6 +225,25 @@ def stream_transfer(
     return int(process.wait())
 
 
+
+def run_transfer(
+    source: Path | str,
+    target: str,
+    *,
+    options: TransferOptions | None = None,
+) -> str:
+    """Run one transfer to completion and return merged rclone output.
+
+    This is the synchronous CLI adapter over the same ``stream_transfer``
+    backend used by the Tkinter Storage Center.
+    """
+    lines: list[str] = []
+    returncode = stream_transfer(source, target, options=options, on_line=lines.append)
+    output = "\n".join(lines)
+    if returncode != 0:
+        raise RcloneError(output.strip() or f"rclone exited with code {returncode}")
+    return output
+
 def append_sync_audit(
     output: Path | str,
     *,

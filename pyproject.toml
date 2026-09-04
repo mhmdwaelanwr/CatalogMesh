@@ -44,12 +44,24 @@ Changelog = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/C
 [project.scripts]
 product-sorter = "ai_product_photo_sorter.cli:main"
 product-sorter-setup = "ai_product_photo_sorter.setup_wizard:main"
+product-sorter-config = "ai_product_photo_sorter.config_cli:main"
+product-sorter-reports = "ai_product_photo_sorter.reports_cli:main"
 product-sorter-automation = "ai_product_photo_sorter.automation_cli:main"
+product-sorter-storage = "ai_product_photo_sorter.storage_cli:main"
 product-sorter-watch = "ai_product_photo_sorter.watch_daemon:main"
 product-sorter-mcp = "ai_product_photo_sorter.mcp_server:main"
+catalogmesh = "ai_product_photo_sorter.cli:main"
+catalogmesh-setup = "ai_product_photo_sorter.setup_wizard:main"
+catalogmesh-config = "ai_product_photo_sorter.config_cli:main"
+catalogmesh-reports = "ai_product_photo_sorter.reports_cli:main"
+catalogmesh-automation = "ai_product_photo_sorter.automation_cli:main"
+catalogmesh-storage = "ai_product_photo_sorter.storage_cli:main"
+catalogmesh-watch = "ai_product_photo_sorter.watch_daemon:main"
+catalogmesh-mcp = "ai_product_photo_sorter.mcp_server:main"
 
 [project.gui-scripts]
 product-sorter-gui = "ai_product_photo_sorter.gui:main"
+catalogmesh-gui = "ai_product_photo_sorter.gui:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

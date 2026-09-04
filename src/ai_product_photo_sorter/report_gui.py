@@ -19,7 +19,7 @@ _TEXT = {
     "en": {
         "tab": "Reports",
         "title": "Report Center",
-        "hint": "Browse operation and benchmark evidence without leaving Product Sorter. Markdown reports use a GitHub-inspired rendered preview.",
+        "hint": "Browse operation and benchmark evidence without leaving CatalogMesh. Markdown reports use a GitHub-inspired rendered preview.",
         "refresh": "Refresh",
         "preview": "Preview",
         "raw": "Raw",
@@ -33,9 +33,9 @@ _TEXT = {
         "copied": "Report copied to clipboard",
     },
     "ar": {
-        "tab": "Reports",
+        "tab": "التقارير",
         "title": "مركز التقارير",
-        "hint": "راجع تقارير التشغيل والـBenchmark من داخل Product Sorter. ملفات Markdown تظهر بمعاينة منسقة شبيهة بـGitHub.",
+        "hint": "راجع تقارير التشغيل والـBenchmark من داخل CatalogMesh. ملفات Markdown تظهر بمعاينة منسقة شبيهة بـGitHub.",
         "refresh": "تحديث",
         "preview": "معاينة",
         "raw": "النص الخام",
@@ -49,9 +49,9 @@ _TEXT = {
         "copied": "تم نسخ التقرير",
     },
     "zh": {
-        "tab": "Reports",
+        "tab": "报告",
         "title": "报告中心",
-        "hint": "无需离开 Product Sorter 即可查看任务和基准测试证据。Markdown 报告使用类似 GitHub 的格式化预览。",
+        "hint": "无需离开 CatalogMesh 即可查看任务和基准测试证据。Markdown 报告使用类似 GitHub 的格式化预览。",
         "refresh": "刷新",
         "preview": "预览",
         "raw": "原始文本",

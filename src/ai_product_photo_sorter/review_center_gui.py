@@ -7,7 +7,7 @@ from pathlib import Path
 from tkinter import simpledialog
 from typing import Any
 
-from PIL import Image, ImageTk
+from PIL import Image
 
 from .review_center import (
     MANIFEST_NAME,
@@ -41,10 +41,10 @@ _TEXT = {
         "brand": "Brand",
         "model": "Model",
         "notes": "Notes",
-        "idle": "Open a Product Sorter output folder to start review.",
+        "idle": "Open a CatalogMesh output folder to start review.",
     },
     "ar": {
-        "tab": "Review",
+        "tab": "المراجعة",
         "title": "مركز المراجعة",
         "hint": "راجع مجموعات المنتجات بصريًا قبل مطابقة الكتالوج. التصحيحات تعدّل Manifest وAudit Log فقط، ولا يتم نقل الصور من هذه الشاشة.",
         "open": "افتح مجلد النتائج",
@@ -64,10 +64,10 @@ _TEXT = {
         "brand": "العلامة",
         "model": "الموديل",
         "notes": "ملاحظات",
-        "idle": "افتح مجلد نتائج Product Sorter لبدء المراجعة.",
+        "idle": "افتح مجلد نتائج CatalogMesh لبدء المراجعة.",
     },
     "zh": {
-        "tab": "Review",
+        "tab": "审核",
         "title": "审核中心",
         "hint": "在目录匹配前直观确认产品分组。修改仅写入审核清单和审计日志，本工作区不会移动照片。",
         "open": "打开输出目录",
@@ -87,7 +87,7 @@ _TEXT = {
         "brand": "品牌",
         "model": "型号",
         "notes": "备注",
-        "idle": "打开 Product Sorter 输出目录开始审核。",
+        "idle": "打开 CatalogMesh 输出目录开始审核。",
     },
 }
 
@@ -278,7 +278,7 @@ def apply_review_center_gui(module: Any) -> None:
     def open_review_output(self):
         current = Path(self.vars["output"].get()).expanduser() if self.vars.get("output") and self.vars["output"].get().strip() else None
         initial = str(current) if current and current.is_dir() else None
-        raw = module.filedialog.askdirectory(title="Select Product Sorter output folder", initialdir=initial)
+        raw = module.filedialog.askdirectory(title="Select CatalogMesh output folder", initialdir=initial)
         if not raw:
             return
         root = Path(raw).expanduser().resolve()
@@ -382,11 +382,20 @@ def apply_review_center_gui(module: Any) -> None:
             self.review_preview.config(image="", text=f"Preview unavailable\n{path}")
             return
         try:
+            from PIL import ImageTk
+        except ImportError:
+            self._review_preview_image = None
+            self.review_preview.config(
+                image="",
+                text="Preview unavailable\nPillow ImageTk support is not installed.",
+            )
+            return
+        try:
             with Image.open(path) as original:
                 image = original.convert("RGB")
                 image.thumbnail((430, 300), Image.Resampling.LANCZOS)
                 preview = ImageTk.PhotoImage(image)
-        except OSError as exc:
+        except (OSError, RuntimeError) as exc:
             self._review_preview_image = None
             self.review_preview.config(image="", text=f"Preview error: {exc}")
             return

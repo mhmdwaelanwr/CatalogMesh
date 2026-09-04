@@ -27,6 +27,9 @@ if not hasattr(_impl, "_ORIGINAL_SAVE_ENV"):
 if not hasattr(_impl, "_ORIGINAL_COLLECT_SETTINGS"):
     _impl._ORIGINAL_COLLECT_SETTINGS = _impl.collect_settings
 
+# Settings owned by v3.3 desktop/local/storage extensions.  The compatibility
+# writer must persist these explicitly because the stable v3.1 schema otherwise
+# drops unknown keys when Environment/Storage saves the .env file.
 _DESKTOP_ENV_KEYS = (
     "APP_THEME",
     "PRODUCT_SORTER_MD_REPORT",
@@ -37,6 +40,22 @@ _DESKTOP_ENV_KEYS = (
     "OLLAMA_KEEP_ALIVE",
     "OLLAMA_TIMEOUT",
     "PRODUCT_SORTER_IMAGE_CACHE_ENTRIES",
+    "HYBRID_EMBEDDINGS",
+    "HYBRID_EMBEDDING_MODEL",
+    "HYBRID_SIMILARITY_SAME",
+    "HYBRID_SIMILARITY_DIFFERENT",
+    "HYBRID_EMBEDDING_BATCH_SIZE",
+    "HYBRID_EMBEDDING_PARALLEL",
+    "HYBRID_EMBEDDING_CACHE_DIR",
+    "PRODUCT_SORTER_PREPROCESS_WORKERS",
+    "PRODUCT_SORTER_PREPROCESS_MEMORY_MB",
+    "PRODUCT_SORTER_RCLONE_REMOTE",
+    "PRODUCT_SORTER_RCLONE_PATH",
+    "PRODUCT_SORTER_RCLONE_MODE",
+    "PRODUCT_SORTER_RCLONE_AUTO_COPY",
+    "PRODUCT_SORTER_RCLONE_BWLIMIT",
+    "PRODUCT_SORTER_RCLONE_TRANSFERS",
+    "PRODUCT_SORTER_RCLONE_CHECKERS",
     "SHOPIFY_STORE_DOMAIN",
     "SHOPIFY_API_VERSION",
     "SHOPIFY_PUBLICATION_ID",
@@ -53,7 +72,7 @@ def _build_env_text(values: dict[str, str]) -> str:
     }
     extras = [name for name in _DESKTOP_ENV_KEYS if name not in existing]
     if extras:
-        text += "\n\n# Desktop, local-AI and guarded commerce settings\n"
+        text += "\n\n# Desktop, local-AI, storage and guarded commerce settings\n"
         text += "\n".join(
             f"{name}={_impl.clean(str(values.get(name, '')))}" for name in extras
         )

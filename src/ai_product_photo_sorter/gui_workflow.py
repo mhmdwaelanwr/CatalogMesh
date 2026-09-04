@@ -114,6 +114,9 @@ def apply_gui_workflow(module: Any) -> None:
         # translation pass, then apply the usage-first order afterward.
         self._legacy_workspace_order = tuple(tab_id for tab_id, _label in records)
         self._usage_workspace_order = workspace_usage_order(records)
+        _move_tabs(self, self._usage_workspace_order)
+        if hasattr(self, "rebuild_workspace_sidebar"):
+            self.rebuild_workspace_sidebar()
         _set_language_selector_display(self)
 
     def apply_language(self):
@@ -124,6 +127,8 @@ def apply_gui_workflow(module: Any) -> None:
 
         if hasattr(self, "_usage_workspace_order"):
             _move_tabs(self, self._usage_workspace_order)
+        if hasattr(self, "rebuild_workspace_sidebar"):
+            self.rebuild_workspace_sidebar()
 
         # The desktop/window manager on Linux already handles BiDi for the
         # native title bar. Keep that one logical while Tk labels/tabs receive

@@ -64,10 +64,29 @@ def shape_arabic_for_tk(text: object, *, force: bool | None = None) -> str:
     enabled = arabic_visual_fix_enabled() if force is None else bool(force)
     if not enabled or not contains_arabic(value):
         return value
-    if arabic_reshaper is None or get_display is None:
-        return value
-
     rendered: list[str] = []
+    if arabic_reshaper is None or get_display is None:
+        # Dependency-free fallback for unusual/offline installations.  Keep
+        # ASCII/format tokens internally LTR while reversing the surrounding
+        # Arabic visual sequence for Tk renderers that lack BiDi.  Normal
+        # installations use arabic-reshaper + python-bidi below for joined
+        # presentation forms and full Unicode BiDi behavior.
+        token_re = re.compile(r"([A-Za-z0-9_.:/+@-]+|\{[^{}]+\})")
+        for line in value.split("\n"):
+            if not contains_arabic(line):
+                rendered.append(line); continue
+            parts = token_re.split(line)
+            visual = []
+            for part in reversed(parts):
+                if not part:
+                    continue
+                if token_re.fullmatch(part):
+                    visual.append(part)
+                else:
+                    visual.append(part[::-1])
+            rendered.append("".join(visual))
+        return "\n".join(rendered)
+
     # Resolve line-by-line so wrapped help/status strings keep their explicit
     # newline structure rather than letting one paragraph affect the next.
     for line in value.split("\n"):
