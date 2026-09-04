@@ -33,7 +33,7 @@ REMOTE_MUTATION_COMMANDS = frozenset(
     }
 )
 
-_DIRECTORY_NAMES = {"root", "shoot", "state_dir", "output", "source"}
+_DIRECTORY_NAMES = {"root", "shoot", "state_dir", "output", "output_root", "source"}
 
 
 def command_parsers() -> dict[str, argparse.ArgumentParser]:
@@ -94,7 +94,6 @@ def build_argv(command: str, values: dict[str, Any]) -> list[str]:
                 argv.extend([option, entry])
         else:
             argv.extend([option, text])
-    # argparse remains the final authority on types, choices and required fields.
     automation_cli.build_parser().parse_args(argv)
     return argv
 
@@ -104,7 +103,6 @@ def cli_preview(argv: list[str]) -> str:
 
 
 def _wheel_units(event: Any) -> int:
-    """Normalize Windows/macOS wheel events and Linux Button-4/5 events."""
     number = getattr(event, "num", None)
     if number == 4:
         return -3
@@ -113,7 +111,6 @@ def _wheel_units(event: Any) -> int:
     delta = int(getattr(event, "delta", 0) or 0)
     if not delta:
         return 0
-    # Windows commonly reports multiples of 120; macOS can report small deltas.
     return -max(1, min(4, abs(delta) // 120 or 1)) if delta > 0 else max(1, min(4, abs(delta) // 120 or 1))
 
 
@@ -140,11 +137,7 @@ def apply_automation_gui(module: Any) -> None:
         title_row.pack(fill="x")
         self.automation_title = module.ttk.Label(title_row, text="Automation Center", style="Metric.TLabel")
         self.automation_title.pack(side="left", anchor="w")
-        module.ttk.Label(
-            title_row,
-            textvariable=self.automation_status,
-            style="MetricName.TLabel",
-        ).pack(side="right", anchor="e")
+        module.ttk.Label(title_row, textvariable=self.automation_status, style="MetricName.TLabel").pack(side="right", anchor="e")
         self.automation_hint = module.ttk.Label(
             header,
             text=(
@@ -170,8 +163,6 @@ def apply_automation_gui(module: Any) -> None:
         self.automation_command_box.pack(side="left", fill="x", expand=True)
         self.automation_command_box.bind("<<ComboboxSelected>>", lambda _event: self.rebuild_automation_form())
 
-        # The command form can be taller than a laptop display. Keep the header
-        # fixed and scroll the command body instead of forcing a larger window.
         scroll_shell = module.ttk.Frame(page, style="Panel.TFrame")
         scroll_shell.pack(fill="both", expand=True)
         self.automation_canvas = module.tk.Canvas(
@@ -189,9 +180,7 @@ def apply_automation_gui(module: Any) -> None:
 
         body = module.ttk.Frame(self.automation_canvas, style="Panel.TFrame", padding=(0, 0, 8, 14))
         self.automation_body = body
-        self._automation_canvas_window = self.automation_canvas.create_window(
-            (0, 0), window=body, anchor="nw"
-        )
+        self._automation_canvas_window = self.automation_canvas.create_window((0, 0), window=body, anchor="nw")
         body.bind(
             "<Configure>",
             lambda _event: self.automation_canvas.configure(scrollregion=self.automation_canvas.bbox("all")),
@@ -206,11 +195,7 @@ def apply_automation_gui(module: Any) -> None:
 
         self.automation_guard = module.ttk.Frame(body, style="Card.TFrame", padding=(16, 12))
         self.automation_guard.pack(fill="x", pady=(10, 0))
-        self.automation_guard_label = module.ttk.Label(
-            self.automation_guard,
-            style="MetricName.TLabel",
-            wraplength=980,
-        )
+        self.automation_guard_label = module.ttk.Label(self.automation_guard, style="MetricName.TLabel", wraplength=980)
         self.automation_guard_label.pack(anchor="w")
         self.automation_confirm_row = module.ttk.Frame(self.automation_guard, style="Card.TFrame")
         self.automation_confirm_row.pack(fill="x", pady=(8, 0))
@@ -239,10 +224,12 @@ def apply_automation_gui(module: Any) -> None:
 
         preview_card = module.ttk.Frame(body, style="Card.TFrame", padding=(16, 12))
         preview_card.pack(fill="both", expand=True, pady=(10, 0))
-        self.automation_preview_label = module.ttk.Label(preview_card, text="COMMAND PREVIEW", style="Section.TLabel"); self.automation_preview_label.pack(anchor="w", pady=(0, 6))
+        self.automation_preview_label = module.ttk.Label(preview_card, text="COMMAND PREVIEW", style="Section.TLabel")
+        self.automation_preview_label.pack(anchor="w", pady=(0, 6))
         self.automation_preview = module.tk.Text(preview_card, height=3, wrap="word")
         self.automation_preview.pack(fill="x", pady=(0, 10))
-        self.automation_output_label = module.ttk.Label(preview_card, text="OUTPUT", style="Section.TLabel"); self.automation_output_label.pack(anchor="w", pady=(0, 6))
+        self.automation_output_label = module.ttk.Label(preview_card, text="OUTPUT", style="Section.TLabel")
+        self.automation_output_label.pack(anchor="w", pady=(0, 6))
         self.automation_output = module.tk.Text(preview_card, height=9, wrap="word")
         output_scroll = module.ttk.Scrollbar(preview_card, orient="vertical", command=self.automation_output.yview)
         self.automation_output.configure(yscrollcommand=output_scroll.set)
@@ -373,9 +360,7 @@ def apply_automation_gui(module: Any) -> None:
             if not self.automation_confirm_row.winfo_manager():
                 self.automation_confirm_row.pack(fill="x", pady=(8, 0))
         else:
-            self.automation_guard_label.config(
-                text=_TEXT.get(self.lang, _TEXT["en"])["local_guard"]
-            )
+            self.automation_guard_label.config(text=_TEXT.get(self.lang, _TEXT["en"])["local_guard"])
             self.automation_confirm_row.pack_forget()
 
     def clear_automation_output(self):
@@ -427,7 +412,7 @@ def apply_automation_gui(module: Any) -> None:
             except SystemExit as exc:
                 if exc.code not in (None, 0):
                     error = str(exc)
-            except Exception as exc:  # surface connector/runtime errors in the UI.
+            except Exception as exc:
                 error = f"{type(exc).__name__}: {exc}"
             self.root.after(0, self._finish_automation, buffer.getvalue(), error)
 
