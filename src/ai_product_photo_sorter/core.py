@@ -23,6 +23,7 @@ from .review_center import apply_review_center
 from .sku_matching import apply_sku_matching
 from .catalog_exports import apply_catalog_exports
 from .catalog_exports_help import apply_catalog_exports_help
+from .rclone_autocopy import apply_rclone_autocopy
 from .shopify_safety import apply_shopify_safety
 
 _impl.DEFAULT_ENV_FILE = env_file()
@@ -61,6 +62,10 @@ apply_catalog_exports(_impl)
 # Keep the working standalone export parser while making its options visible in
 # the composed CatalogMesh CLI help output used by parity checks and users.
 apply_catalog_exports_help(_impl)
+# Terminal runs share the same bounded rclone backend as Storage Center. The hook
+# fires only from RUN_COMPLETED and always uses copy; GUI subprocesses retain the
+# richer cancellable desktop lifecycle and are explicitly detected/skipped.
+apply_rclone_autocopy(_impl)
 # Remote Shopify mutations are intentionally NOT installed into the legacy core CLI.
 # They are available only through the approval-aware automation CLI executors.
 apply_shopify_safety(_impl)
