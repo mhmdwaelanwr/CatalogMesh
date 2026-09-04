@@ -8,13 +8,13 @@ Create a **pending Trusted Publisher** in the PyPI account that owns the release
 
 - PyPI project name: `catalogmesh`
 - Owner: `mhmdwaelanwr`
-- Repository: `ai-product-photo-sorter`
+- Repository: `CatalogMesh`
 - Workflow filename: `release.yml`
 - Environment: `pypi`
 
 Do not create an API token. The existing GitHub Actions release job uses OIDC Trusted Publishing.
 
-A pending publisher does not reserve the project name until the first successful upload, so the release should be merged/published immediately after this setup is confirmed.
+A pending publisher does not create or reserve the project until the first successful upload. PyPI converts it to a normal Trusted Publisher automatically after that first successful publish.
 
 ## Packaging identity
 
@@ -50,4 +50,4 @@ Historical `product-sorter-*` command aliases and `PRODUCT_SORTER_*` configurati
 
 `.github/workflows/release.yml` builds `catalogmesh-<version>-py3-none-any.whl` and the matching source distribution and publishes them through the protected `pypi` GitHub environment.
 
-The old `ai-product-photo-sorter` PyPI project remains part of project history. New users should install `catalogmesh` once the first CatalogMesh PyPI release is published.
+The old `ai-product-photo-sorter` PyPI project remains part of project history. New users should install `catalogmesh` after the first CatalogMesh PyPI release is published.

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/mhmdwaelanwr/ai-product-photo-sorter/main/assets/branding/product-sorter-logo.svg" width="150" alt="CatalogMesh logo">
+<img src="https://raw.githubusercontent.com/mhmdwaelanwr/CatalogMesh/main/assets/branding/product-sorter-logo.svg" width="150" alt="CatalogMesh logo">
 
 # CatalogMesh
 
@@ -8,10 +8,10 @@
 
 GUI + CLI parity · Cloud & local vision · Human review · rclone storage · Shopify / Akeneo / Odoo workflows · MCP-safe automation
 
-[![Tests](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml/badge.svg)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml)
+[![Tests](https://github.com/mhmdwaelanwr/CatalogMesh/actions/workflows/tests.yml/badge.svg)](https://github.com/mhmdwaelanwr/CatalogMesh/actions/workflows/tests.yml)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Release](https://img.shields.io/badge/release-3.3.1-4f8cff)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest)
-[![PyPI](https://img.shields.io/pypi/v/ai-product-photo-sorter?logo=pypi&logoColor=white)](https://pypi.org/project/ai-product-photo-sorter/)
+[![Release](https://img.shields.io/badge/release-3.3.2-4f8cff)](https://github.com/mhmdwaelanwr/CatalogMesh/releases/latest)
+[![PyPI](https://img.shields.io/pypi/v/catalogmesh?logo=pypi&logoColor=white)](https://pypi.org/project/catalogmesh/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-21c98b.svg)](LICENSE)
 
 </div>
@@ -20,7 +20,7 @@ GUI + CLI parity · Cloud & local vision · Human review · rclone storage · Sh
 
 <sub>Automatically generated from the latest canonical packaged-Windows GUI captures: Operation, Review, Storage and Automation.</sub>
 
-> **Release status:** `v3.3.1` is the current stable CatalogMesh release. **CatalogMesh** is the desktop display brand, while the existing `ai-product-photo-sorter` PyPI package name, `product-sorter-*` CLI commands and `PRODUCT_SORTER_*` settings remain compatible through the v3.x line.
+> **Release status:** `v3.3.2` is the current stable CatalogMesh release. **CatalogMesh** is the product, repository and primary PyPI distribution name. The historical `ai-product-photo-sorter` distribution, `product-sorter-*` CLI commands and `PRODUCT_SORTER_*` settings remain supported as v3.x compatibility identifiers.
 
 CatalogMesh turns a raw chronological product shoot into reviewed product groups, catalog/SKU matches, exports, cloud-storage copies and controlled connector actions. The original photos stay untouched. Human review remains the authority for catalog identity and externally visible publication.
 
@@ -65,7 +65,7 @@ The v3.3 capability registry also verifies the real workflow surfaces behind all
 Requires Python 3.10+.
 
 ```bash
-python -m pip install --upgrade ai-product-photo-sorter
+python -m pip install --upgrade catalogmesh
 ```
 
 Main entry points (the existing `product-sorter-*` names remain compatible; v3.3 provides CatalogMesh aliases):
@@ -85,19 +85,19 @@ catalogmesh-mcp / product-sorter-mcp                 optional read-only/safe MCP
 Optional local and MCP extras:
 
 ```bash
-python -m pip install "ai-product-photo-sorter[local-embeddings]"
-python -m pip install "ai-product-photo-sorter[local-evidence]"
-python -m pip install "ai-product-photo-sorter[mcp]"
+python -m pip install "catalogmesh[local-embeddings]"
+python -m pip install "catalogmesh[local-evidence]"
+python -m pip install "catalogmesh[mcp]"
 ```
 
 ### Stable desktop downloads
 
-The stable `v3.3.1` release provides ready-to-run packages from the latest GitHub Release. The legacy `ProductSorterPro` artifact names are retained for v3.x download compatibility:
+The stable `v3.3.2` release provides ready-to-run packages from the latest GitHub Release. The legacy `ProductSorterPro` artifact names are retained for v3.x download compatibility:
 
 | Platform | Stable artifact |
 |---|---|
 | Windows x64 | `ProductSorterPro-windows-x64.zip` |
-| Linux Debian/Ubuntu | `product-sorter-pro_3.3.1_all.deb` |
+| Linux Debian/Ubuntu | `product-sorter-pro_3.3.2_all.deb` |
 | Linux standalone | `ProductSorterPro-linux-x64.tar.gz` |
 | macOS Apple Silicon | `ProductSorterPro-macos-arm64.zip` |
 | macOS Intel | `ProductSorterPro-macos-x64.zip` |
@@ -106,11 +106,11 @@ For Windows launch steps, PyPI installation and SmartScreen guidance, see [WINDO
 
 ## Test the latest source build
 
-To try the newest code from `main`, use a virtual environment and install the repository in editable mode. Stable v3.3.1 capabilities are already on `main`; no feature branch is required.
+To try the newest code from `main`, use a virtual environment and install the repository in editable mode. Stable v3.3.2 capabilities are already on `main`; no feature branch is required.
 
 ```bash
-git clone https://github.com/mhmdwaelanwr/ai-product-photo-sorter.git
-cd ai-product-photo-sorter
+git clone https://github.com/mhmdwaelanwr/CatalogMesh.git
+cd CatalogMesh
 git checkout main
 git pull --ff-only
 python -m venv .venv
@@ -169,7 +169,7 @@ Sorting, review and automation never treat an AI guess as confirmed catalog iden
 
 ## Storage Center · rclone
 
-CatalogMesh v3.3.1 can copy completed local output to any remote already configured in the user's rclone installation. Processing itself remains local so SQLite resume/checkpoint and temporary files are not placed directly on a cloud filesystem.
+CatalogMesh v3.3.2 can copy completed local output to any remote already configured in the user's rclone installation. Processing itself remains local so SQLite resume/checkpoint and temporary files are not placed directly on a cloud filesystem.
 
 The Storage workspace includes remote discovery, connectivity testing, dry-run preview, Copy, manually confirmed Sync mirror, bandwidth limiting, transfer/checker controls, live activity and cancellation. Automatic post-run upload is deliberately **Copy-only** and never uses Sync, so it does not delete destination-only files.
 
@@ -298,7 +298,7 @@ Local approval artifacts provide integrity checks for the expected local workflo
 
 The desktop app includes all 12 daily-workflow workspaces in this order: Operation setup, Models & API keys, Results & activity, Review, SKU Match, Exports, Storage, Automation, Reports, Benchmark, Environment and About.
 
-The v3.3.1 UI includes compact workspace navigation for crowded tab sets and vertically scrollable feature workspaces. Use the header Workspace picker, `Ctrl+Tab` / `Ctrl+Shift+Tab`, or `Alt+W` to move quickly between workspaces on smaller displays.
+The v3.3.2 UI includes compact workspace navigation for crowded tab sets and vertically scrollable feature workspaces. Use the header Workspace picker, `Ctrl+Tab` / `Ctrl+Shift+Tab`, or `Alt+W` to move quickly between workspaces on smaller displays.
 
 Light/dark packaged-Windows screenshots are generated by CI from the real packaged executable. After a successful `main` build, `gui-docs-sync` refreshes `docs/screenshots/ci/windows/` from that smoke-test artifact and regenerates the README hero from the canonical Operation, Review, Storage and Automation captures. Visual-noise filtering prevents tiny hosted-runner rendering differences from creating documentation churn.
 
@@ -332,7 +332,6 @@ Light/dark packaged-Windows screenshots are generated by CI from the real packag
 │   ├── storage_cli.py             first-class rclone Storage CLI
 │   ├── rclone_storage.py          safe local-first rclone transfer core
 │   ├── rclone_autocopy.py         copy-only terminal post-run storage hook
-│   ├── rclone_gui.py              translated Storage Center
 │   ├── automation_cli.py          canonical automation command parser
 │   ├── automation_gui.py          parser-driven, scrollable Automation Center
 │   ├── gui_polish.py              responsive workspace navigation / layout polish
@@ -354,8 +353,8 @@ The small top-level/source compatibility wrappers remain intentionally for exist
 ## Development
 
 ```bash
-git clone https://github.com/mhmdwaelanwr/ai-product-photo-sorter.git
-cd ai-product-photo-sorter
+git clone https://github.com/mhmdwaelanwr/CatalogMesh.git
+cd CatalogMesh
 python -m venv .venv
 python -m pip install -e .
 python -m unittest discover -s tests -t . -v

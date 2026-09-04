@@ -36,8 +36,8 @@ The historical PyPI project name `ai-product-photo-sorter` remains a legacy v3.x
 ## Development build from main
 
 ```powershell
-git clone https://github.com/mhmdwaelanwr/ai-product-photo-sorter.git
-cd ai-product-photo-sorter
+git clone https://github.com/mhmdwaelanwr/CatalogMesh.git
+cd CatalogMesh
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 py -m pip install --upgrade pip

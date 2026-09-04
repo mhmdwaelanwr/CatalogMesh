@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-VERSION = "3.3.1"
+VERSION = "3.3.2"
 SCHEMA_VERSION = 2
 
 class OperationLock:
