@@ -163,7 +163,6 @@ def build_parser() -> argparse.ArgumentParser:
     missing_local.add_argument("shoot", type=Path)
     missing_local.add_argument("--sku-column", default="sku")
 
-    # Compatibility name retained; sku-generate is the explicit workflow name.
     _add_candidate_args(sub.add_parser("propose-matches"))
     _add_candidate_args(sub.add_parser("sku-generate"))
 
@@ -194,7 +193,6 @@ def build_parser() -> argparse.ArgumentParser:
     sku_clear.add_argument("manifest", type=Path)
     sku_clear.add_argument("group")
 
-    # Compatibility Shopify-only export name retained beside generic safe export.
     draft = sub.add_parser("prepare-shopify-draft")
     draft.add_argument("match_manifest", type=Path)
     draft.add_argument("--output", type=Path)
@@ -357,8 +355,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "review-export-approved":
-            manifest, path = export_approved(args.manifest, args.approved_out)
-            _emit({"approved_csv": str(path), "summary": review_summary(manifest)})
+            summary, path = export_approved(args.manifest, args.approved_out)
+            _emit({"approved_csv": str(path), "summary": summary})
             return 0
 
         if args.command == "sku-confirm":
