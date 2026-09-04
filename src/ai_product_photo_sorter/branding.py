@@ -1,9 +1,9 @@
-"""User-facing product branding kept separate from compatibility identifiers.
+"""User-facing CatalogMesh branding and compatibility identifiers.
 
-The Python package, console entry points and persisted environment variable names
-remain ``product-sorter`` / ``PRODUCT_SORTER_*`` through the v3.x line so
-existing scripts and installations continue to work.  The desktop product brand
-can evolve independently.
+CatalogMesh is the primary product and PyPI project name. The historical
+``product-sorter-*`` entry points, ``PRODUCT_SORTER_*`` environment variables and
+keyring service remain supported through the v3.x line so existing scripts and
+local configuration keep working.
 """
 from __future__ import annotations
 
@@ -15,9 +15,9 @@ APP_TAGLINE = {
     "zh": "面向商品目录运营的 AI 工作区",
 }
 
-# Compatibility identifiers are intentionally stable for v3.x.
+PACKAGE_NAME = "catalogmesh"
+LEGACY_PACKAGE_NAME = "ai-product-photo-sorter"
 LEGACY_DISPLAY_NAME = "Product Sorter Pro"
-PACKAGE_NAME = "ai-product-photo-sorter"
 CLI_PREFIX = "product-sorter"
 ENV_PREFIX = "PRODUCT_SORTER_"
 KEYRING_SERVICE = "product-sorter-pro"
