@@ -10,7 +10,7 @@ GUI + CLI parity · Cloud & local vision · Human review · rclone storage · Sh
 
 [![Tests](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml/badge.svg)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/actions/workflows/tests.yml)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Release](https://img.shields.io/badge/release-3.3.0-4f8cff)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest)
+[![Release](https://img.shields.io/badge/release-3.3.1-4f8cff)](https://github.com/mhmdwaelanwr/ai-product-photo-sorter/releases/latest)
 [![PyPI](https://img.shields.io/pypi/v/ai-product-photo-sorter?logo=pypi&logoColor=white)](https://pypi.org/project/ai-product-photo-sorter/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-21c98b.svg)](LICENSE)
 
@@ -20,7 +20,7 @@ GUI + CLI parity · Cloud & local vision · Human review · rclone storage · Sh
 
 <sub>Automatically generated from the latest canonical packaged-Windows GUI captures: Operation, Review, Storage and Automation.</sub>
 
-> **Release status:** `v3.3.0` is the current stable CatalogMesh release. **CatalogMesh** is the desktop display brand, while the existing `ai-product-photo-sorter` PyPI package name, `product-sorter-*` CLI commands and `PRODUCT_SORTER_*` settings remain compatible through the v3.x line.
+> **Release status:** `v3.3.1` is the current stable CatalogMesh release. **CatalogMesh** is the desktop display brand, while the existing `ai-product-photo-sorter` PyPI package name, `product-sorter-*` CLI commands and `PRODUCT_SORTER_*` settings remain compatible through the v3.x line.
 
 CatalogMesh turns a raw chronological product shoot into reviewed product groups, catalog/SKU matches, exports, cloud-storage copies and controlled connector actions. The original photos stay untouched. Human review remains the authority for catalog identity and externally visible publication.
 
@@ -92,19 +92,21 @@ python -m pip install "ai-product-photo-sorter[mcp]"
 
 ### Stable desktop downloads
 
-The stable `v3.3.0` release provides ready-to-run packages from the latest GitHub Release. The legacy `ProductSorterPro` artifact names are retained for v3.x download compatibility:
+The stable `v3.3.1` release provides ready-to-run packages from the latest GitHub Release. The legacy `ProductSorterPro` artifact names are retained for v3.x download compatibility:
 
 | Platform | Stable artifact |
 |---|---|
 | Windows x64 | `ProductSorterPro-windows-x64.zip` |
-| Linux Debian/Ubuntu | `product-sorter-pro_3.3.0_all.deb` |
+| Linux Debian/Ubuntu | `product-sorter-pro_3.3.1_all.deb` |
 | Linux standalone | `ProductSorterPro-linux-x64.tar.gz` |
 | macOS Apple Silicon | `ProductSorterPro-macos-arm64.zip` |
 | macOS Intel | `ProductSorterPro-macos-x64.zip` |
 
+For Windows launch steps, PyPI installation and SmartScreen guidance, see [WINDOWS.md](WINDOWS.md).
+
 ## Test the latest source build
 
-To try the newest code from `main`, use a virtual environment and install the repository in editable mode. Stable v3.3.0 capabilities are already on `main`; no feature branch is required.
+To try the newest code from `main`, use a virtual environment and install the repository in editable mode. Stable v3.3.1 capabilities are already on `main`; no feature branch is required.
 
 ```bash
 git clone https://github.com/mhmdwaelanwr/ai-product-photo-sorter.git
@@ -167,7 +169,7 @@ Sorting, review and automation never treat an AI guess as confirmed catalog iden
 
 ## Storage Center · rclone
 
-CatalogMesh v3.3.0 can copy completed local output to any remote already configured in the user's rclone installation. Processing itself remains local so SQLite resume/checkpoint and temporary files are not placed directly on a cloud filesystem.
+CatalogMesh v3.3.1 can copy completed local output to any remote already configured in the user's rclone installation. Processing itself remains local so SQLite resume/checkpoint and temporary files are not placed directly on a cloud filesystem.
 
 The Storage workspace includes remote discovery, connectivity testing, dry-run preview, Copy, manually confirmed Sync mirror, bandwidth limiting, transfer/checker controls, live activity and cancellation. Automatic post-run upload is deliberately **Copy-only** and never uses Sync, so it does not delete destination-only files.
 
@@ -296,7 +298,7 @@ Local approval artifacts provide integrity checks for the expected local workflo
 
 The desktop app includes all 12 daily-workflow workspaces in this order: Operation setup, Models & API keys, Results & activity, Review, SKU Match, Exports, Storage, Automation, Reports, Benchmark, Environment and About.
 
-The v3.3.0 UI includes compact workspace navigation for crowded tab sets and vertically scrollable feature workspaces. Use the header Workspace picker, `Ctrl+Tab` / `Ctrl+Shift+Tab`, or `Alt+W` to move quickly between workspaces on smaller displays.
+The v3.3.1 UI includes compact workspace navigation for crowded tab sets and vertically scrollable feature workspaces. Use the header Workspace picker, `Ctrl+Tab` / `Ctrl+Shift+Tab`, or `Alt+W` to move quickly between workspaces on smaller displays.
 
 Light/dark packaged-Windows screenshots are generated by CI from the real packaged executable. After a successful `main` build, `gui-docs-sync` refreshes `docs/screenshots/ci/windows/` from that smoke-test artifact and regenerates the README hero from the canonical Operation, Review, Storage and Automation captures. Visual-noise filtering prevents tiny hosted-runner rendering differences from creating documentation churn.
 
