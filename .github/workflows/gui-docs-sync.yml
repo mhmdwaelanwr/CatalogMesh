@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   actions: read
+  pull-requests: write
 
 concurrency:
   group: gui-docs-sync-main
@@ -19,6 +20,9 @@ jobs:
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
+    env:
+      SYNC_BRANCH: ci/gui-docs-sync
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -39,20 +43,68 @@ jobs:
           set -euo pipefail
           mkdir -p docs/screenshots/ci/windows
           find docs/screenshots/ci/windows -maxdepth 1 -type f -name '*.png' -delete
-          cp gui-artifacts/*.png docs/screenshots/ci/windows/
-          rm -f docs/screenshots/ci/windows/failure.png docs/screenshots/ci/windows/desktop-failure.png
-          test -n "$(find docs/screenshots/ci/windows -maxdepth 1 -type f -name 'light-*.png' -print -quit)"
-          test -n "$(find docs/screenshots/ci/windows -maxdepth 1 -type f -name 'dark-*.png' -print -quit)"
 
-      - name: Commit refreshed documentation screenshots
+          # Track only the 12 workflow screenshots per theme. Debug/theme-transition
+          # captures remain build artifacts and do not become README documentation.
+          cp gui-artifacts/light-[0-9][0-9]-*.png docs/screenshots/ci/windows/
+          cp gui-artifacts/dark-[0-9][0-9]-*.png docs/screenshots/ci/windows/
+
+          light_count="$(find docs/screenshots/ci/windows -maxdepth 1 -type f -name 'light-[0-9][0-9]-*.png' | wc -l)"
+          dark_count="$(find docs/screenshots/ci/windows -maxdepth 1 -type f -name 'dark-[0-9][0-9]-*.png' | wc -l)"
+          test "$light_count" -eq 12
+          test "$dark_count" -eq 12
+
+      - name: Commit screenshots on protected-sync branch
+        id: commit
         shell: bash
         run: |
-          if git diff --quiet -- docs/screenshots/ci/windows; then
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # PNG is globally ignored for user catalog media. CI documentation images
+          # are an intentional exception and must be force-added when first created.
+          git add -A docs/screenshots/ci/windows
+          git add -f docs/screenshots/ci/windows/light-[0-9][0-9]-*.png
+          git add -f docs/screenshots/ci/windows/dark-[0-9][0-9]-*.png
+
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Screenshots already current."
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/screenshots/ci/windows
-          git commit -m "docs: refresh GUI screenshots from CI [skip ci]"
-          git push origin HEAD:main
+
+          git checkout -B "$SYNC_BRANCH"
+          git commit -m "docs: refresh GUI screenshots from CI"
+          git push --force-with-lease origin "HEAD:refs/heads/$SYNC_BRANCH"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Open or reuse screenshot refresh pull request
+        if: steps.commit.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          existing="$(gh pr list --state open --base main --head "$SYNC_BRANCH" --json number --jq '.[0].number // empty')"
+          body=$(cat <<'EOF'
+          ## Automated GUI documentation refresh
+          - generated from the successful packaged Windows GUI smoke on `main`
+          - contains exactly 12 light + 12 dark workflow screenshots
+          - no application code, release, tag, or version change
+          - uses a PR because repository rules intentionally block direct writes to `main`
+
+          The normal repository status checks and review/merge rules still apply.
+          EOF
+          )
+
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" \
+              --title "docs: refresh packaged Windows GUI screenshots" \
+              --body "$body"
+            echo "Updated screenshot PR #$existing"
+          else
+            gh pr create \
+              --base main \
+              --head "$SYNC_BRANCH" \
+              --title "docs: refresh packaged Windows GUI screenshots" \
+              --body "$body"
+          fi
