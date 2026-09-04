@@ -74,7 +74,13 @@ def _akeneo_client_from_env(base_url: str | None = None) -> AkeneoClient:
     missing = [name for name, value in required.items() if not value]
     if missing:
         raise ValueError("Missing Akeneo environment credential(s): " + ", ".join(missing))
-    return AkeneoClient(resolved, required["AKENEO_CLIENT_ID"], required["AKENEO_CLIENT_SECRET"], required["AKENEO_USERNAME"], required["AKENEO_PASSWORD"])
+    return AkeneoClient(
+        resolved,
+        required["AKENEO_CLIENT_ID"],
+        required["AKENEO_CLIENT_SECRET"],
+        required["AKENEO_USERNAME"],
+        required["AKENEO_PASSWORD"],
+    )
 
 
 def _odoo_client_from_env(base_url: str | None = None, database: str | None = None) -> OdooClient:
@@ -82,14 +88,35 @@ def _odoo_client_from_env(base_url: str | None = None, database: str | None = No
     resolved_db = (database or os.getenv("ODOO_DATABASE", "")).strip()
     username = os.getenv("ODOO_USERNAME", "").strip()
     api_key = os.getenv("ODOO_API_KEY", "")
-    missing = [name for name, value in {"ODOO_BASE_URL": resolved_url, "ODOO_DATABASE": resolved_db, "ODOO_USERNAME": username, "ODOO_API_KEY": api_key}.items() if not value]
+    missing = [
+        name
+        for name, value in {
+            "ODOO_BASE_URL": resolved_url,
+            "ODOO_DATABASE": resolved_db,
+            "ODOO_USERNAME": username,
+            "ODOO_API_KEY": api_key,
+        }.items()
+        if not value
+    ]
     if missing:
         raise ValueError("Missing Odoo environment setting(s): " + ", ".join(missing))
     return OdooClient(resolved_url, resolved_db, username, api_key)
 
 
+def _require_storage_sync_confirmation(value: str, target: str) -> None:
+    expected = f"SYNC {target}"
+    if str(value or "") != expected:
+        raise ValueError(
+            "Destructive storage sync requires the exact target-specific confirmation: "
+            f"{expected}"
+        )
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="catalogmesh-automation", description="Safe catalog automation commands for CatalogMesh")
+    parser = argparse.ArgumentParser(
+        prog="catalogmesh-automation",
+        description="Safe catalog automation commands for CatalogMesh",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     scan = sub.add_parser("scan"); scan.add_argument("root", type=Path); scan.add_argument("--no-recursive", action="store_true")
     missing = sub.add_parser("missing-assets"); missing.add_argument("catalog", type=Path); missing.add_argument("--sku-column", default="sku"); missing.add_argument("--asset-column", action="append", dest="asset_columns")
@@ -107,7 +134,8 @@ def build_parser() -> argparse.ArgumentParser:
         command = sub.add_parser(name); command.add_argument("request", type=Path); command.add_argument("reservation", type=Path); command.add_argument("--audit", type=Path); command.add_argument("--store"); command.add_argument("--api-version")
     for name in ("execute-akeneo-products", "execute-akeneo-rollback"):
         command = sub.add_parser(name); command.add_argument("request", type=Path); command.add_argument("reservation", type=Path); command.add_argument("--audit", type=Path); command.add_argument("--base-url")
-        if name == "execute-akeneo-products": command.add_argument("--state", type=Path)
+        if name == "execute-akeneo-products":
+            command.add_argument("--state", type=Path)
     reconcile = sub.add_parser("reconcile-akeneo-execution"); reconcile.add_argument("state", type=Path); reconcile.add_argument("--base-url")
     odoo = sub.add_parser("execute-odoo-products"); odoo.add_argument("request", type=Path); odoo.add_argument("reservation", type=Path); odoo.add_argument("--audit", type=Path); odoo.add_argument("--state", type=Path); odoo.add_argument("--base-url"); odoo.add_argument("--database")
     odoo_reconcile = sub.add_parser("reconcile-odoo-execution"); odoo_reconcile.add_argument("state", type=Path); odoo_reconcile.add_argument("--base-url"); odoo_reconcile.add_argument("--database")
@@ -116,63 +144,101 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("storage-remotes")
     storage_test = sub.add_parser("storage-test"); storage_test.add_argument("remote"); storage_test.add_argument("--remote-path", default="")
     for name in ("storage-dry-run", "storage-copy", "storage-sync"):
-        command = sub.add_parser(name); command.add_argument("source", type=Path); command.add_argument("remote"); command.add_argument("--remote-path", default=""); command.add_argument("--bwlimit", default=""); command.add_argument("--transfers", type=int, default=4); command.add_argument("--checkers", type=int, default=8)
-        if name == "storage-sync": command.add_argument("--confirm-sync", action="store_true", required=True, help="Required acknowledgement that sync can delete remote-only files")
+        command = sub.add_parser(name)
+        command.add_argument("source", type=Path)
+        command.add_argument("remote")
+        command.add_argument("--remote-path", default="")
+        command.add_argument("--bwlimit", default="")
+        command.add_argument("--transfers", type=int, default=4)
+        command.add_argument("--checkers", type=int, default=8)
+        if name == "storage-sync":
+            command.add_argument(
+                "--confirm-sync",
+                default="",
+                metavar="PHRASE",
+                help='Required exact target-specific phrase: "SYNC <full-target>".',
+            )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        if args.command == "scan": _emit([item.to_dict() for item in scan_image_folder(args.root, recursive=not args.no_recursive)]); return 0
+        if args.command == "scan":
+            _emit([item.to_dict() for item in scan_image_folder(args.root, recursive=not args.no_recursive)]); return 0
         if args.command == "missing-assets":
             kwargs: dict[str, Any] = {"sku_column": args.sku_column}
-            if args.asset_columns: kwargs["asset_columns"] = tuple(args.asset_columns)
+            if args.asset_columns:
+                kwargs["asset_columns"] = tuple(args.asset_columns)
             _emit([item.to_dict() for item in find_missing_assets(_catalog_fields(args.catalog), **kwargs)]); return 0
         if args.command == "missing-local":
-            images = scan_image_folder(args.shoot); _emit([item.to_dict() for item in find_missing_local_images(_catalog_fields(args.catalog), [asset.path for asset in images], sku_column=args.sku_column)]); return 0
+            images = scan_image_folder(args.shoot)
+            _emit([item.to_dict() for item in find_missing_local_images(_catalog_fields(args.catalog), [asset.path for asset in images], sku_column=args.sku_column)]); return 0
         if args.command == "propose-matches":
-            manifest, path = generate_candidates(args.approved_groups, args.catalog, evidence_json=args.evidence, output_dir=args.output, top_k=args.top_k); _emit({"manifest": str(path), "summary": manifest.get("summary", {})}); return 0
-        if args.command == "open-review-queue": _emit(open_review_queue(args.review_manifest, limit=args.limit)); return 0
+            manifest, path = generate_candidates(args.approved_groups, args.catalog, evidence_json=args.evidence, output_dir=args.output, top_k=args.top_k)
+            _emit({"manifest": str(path), "summary": manifest.get("summary", {})}); return 0
+        if args.command == "open-review-queue":
+            _emit(open_review_queue(args.review_manifest, limit=args.limit)); return 0
         if args.command == "prepare-shopify-draft":
-            summary, path = generate_exports(args.match_manifest, output_dir=args.output, profile="shopify"); _emit({"manifest": str(path), "summary": summary}); return 0
+            summary, path = generate_exports(args.match_manifest, output_dir=args.output, profile="shopify")
+            _emit({"manifest": str(path), "summary": summary}); return 0
         if args.command == "prepare-connector-plan":
-            plan, path = build_connector_plan(args.export_manifest, args.profile, output=args.output); _emit({"plan": str(path), "plan_id": plan["plan_id"], "action": plan["action"], "records": len(plan["records"]), "network_calls_performed": 0, "human_approval_required": True}); return 0
+            plan, path = build_connector_plan(args.export_manifest, args.profile, output=args.output)
+            _emit({"plan": str(path), "plan_id": plan["plan_id"], "action": plan["action"], "records": len(plan["records"]), "network_calls_performed": 0, "human_approval_required": True}); return 0
         if args.command == "request-external-action":
-            path = create_approval_request(args.action, _json_object(args.payload_json), args.output); _emit({"request": str(path), "external_action_performed": False, "human_approval_required": True}); return 0
+            path = create_approval_request(args.action, _json_object(args.payload_json), args.output)
+            _emit({"request": str(path), "external_action_performed": False, "human_approval_required": True}); return 0
         if args.command == "approve-external-action":
-            path = approve_request(args.request, args.grant, args.confirm); _emit({"grant": str(path), "external_action_performed": False}); return 0
-        if args.command == "validate-approval": _emit(validate_grant(args.request, args.grant)); return 0
-        if args.command == "reserve-approved-action": _emit(reserve_grant(args.request, args.grant, args.state_dir)); return 0
+            path = approve_request(args.request, args.grant, args.confirm)
+            _emit({"grant": str(path), "external_action_performed": False}); return 0
+        if args.command == "validate-approval":
+            _emit(validate_grant(args.request, args.grant)); return 0
+        if args.command == "reserve-approved-action":
+            _emit(reserve_grant(args.request, args.grant, args.state_dir)); return 0
         if args.command == "record-execution-result":
-            details = _json_object(args.details) if args.details else None; _emit(record_execution_result(args.reservation, args.audit, status=args.status, attempt=args.attempt, details=details, external_action_performed=args.external_action_performed)); return 0
+            details = _json_object(args.details) if args.details else None
+            _emit(record_execution_result(args.reservation, args.audit, status=args.status, attempt=args.attempt, details=details, external_action_performed=args.external_action_performed)); return 0
         if args.command in {"execute-shopify-stage", "execute-shopify-publish", "execute-shopify-rollback"}:
             client = _shopify_client_from_env(args.store, args.api_version)
-            fn = {"execute-shopify-stage": execute_shopify_stage, "execute-shopify-publish": execute_shopify_publish, "execute-shopify-rollback": execute_shopify_rollback}[args.command]
+            fn = {
+                "execute-shopify-stage": execute_shopify_stage,
+                "execute-shopify-publish": execute_shopify_publish,
+                "execute-shopify-rollback": execute_shopify_rollback,
+            }[args.command]
             _emit(fn(args.request, args.reservation, client, audit_path=args.audit)); return 0
         if args.command in {"execute-akeneo-products", "execute-akeneo-rollback"}:
             client = _akeneo_client_from_env(args.base_url)
-            if args.command == "execute-akeneo-products": _emit(execute_akeneo_products(args.request, args.reservation, client, audit_path=args.audit, state_path=args.state)); return 0
+            if args.command == "execute-akeneo-products":
+                _emit(execute_akeneo_products(args.request, args.reservation, client, audit_path=args.audit, state_path=args.state)); return 0
             _emit(execute_akeneo_rollback(args.request, args.reservation, client, audit_path=args.audit)); return 0
         if args.command == "reconcile-akeneo-execution":
-            client = _akeneo_client_from_env(args.base_url); _emit(reconcile_akeneo_execution(args.state, client)); return 0
+            client = _akeneo_client_from_env(args.base_url)
+            _emit(reconcile_akeneo_execution(args.state, client)); return 0
         if args.command == "execute-odoo-products":
-            client = _odoo_client_from_env(args.base_url, args.database); _emit(execute_odoo_products(args.request, args.reservation, client, audit_path=args.audit, state_path=args.state)); return 0
+            client = _odoo_client_from_env(args.base_url, args.database)
+            _emit(execute_odoo_products(args.request, args.reservation, client, audit_path=args.audit, state_path=args.state)); return 0
         if args.command == "reconcile-odoo-execution":
-            client = _odoo_client_from_env(args.base_url, args.database); _emit(reconcile_odoo_execution(args.state, client)); return 0
+            client = _odoo_client_from_env(args.base_url, args.database)
+            _emit(reconcile_odoo_execution(args.state, client)); return 0
         if args.command == "watch":
             watch_argv = [str(args.root), "--state", str(args.state), "--interval", str(args.interval)]
-            if args.no_recursive: watch_argv.append("--no-recursive")
-            if args.once: watch_argv.append("--once")
+            if args.no_recursive:
+                watch_argv.append("--no-recursive")
+            if args.once:
+                watch_argv.append("--once")
             return watch_main(watch_argv)
-        if args.command == "storage-version": _emit({"version": rclone_version()}); return 0
-        if args.command == "storage-remotes": _emit({"remotes": list(list_remotes())}); return 0
+        if args.command == "storage-version":
+            _emit({"version": rclone_version()}); return 0
+        if args.command == "storage-remotes":
+            _emit({"remotes": list(list_remotes())}); return 0
         if args.command == "storage-test":
             target = remote_target(args.remote, args.remote_path)
             _emit({"remote": args.remote, "remote_path": args.remote_path, "target": target, "reachable": True, "listing": test_remote(target)}); return 0
         if args.command in {"storage-dry-run", "storage-copy", "storage-sync"}:
             mode = "copy" if args.command in {"storage-dry-run", "storage-copy"} else "sync"
             target = remote_target(args.remote, args.remote_path)
+            if args.command == "storage-sync":
+                _require_storage_sync_confirmation(args.confirm_sync, target)
             options = TransferOptions(
                 mode=mode,
                 dry_run=args.command == "storage-dry-run",

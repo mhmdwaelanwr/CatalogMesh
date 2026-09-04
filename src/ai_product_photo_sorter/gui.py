@@ -24,6 +24,7 @@ from .review_center_gui import apply_review_center_gui
 from .sku_matching_gui import apply_sku_matching_gui
 from .catalog_exports_gui import apply_catalog_exports_gui
 from .rclone_gui import apply_rclone_gui
+from .rclone_gui_hardening import apply_rclone_gui_hardening
 from .automation_gui import apply_automation_gui
 from .shopify_environment import prepare_shopify_environment_fields
 from .shopify_safety import install_shopify_export_guards
@@ -34,6 +35,7 @@ from .gui_polish import apply_gui_polish
 from .gui_workflow import apply_gui_workflow
 from .branding_gui import apply_branding_gui
 from .gui_i18n_runtime import apply_global_gui_i18n
+from .workspace_i18n import apply_workspace_i18n
 
 _impl.ROOT = runtime_root()
 prepare_ollama_environment_fields(_environment_gui)
@@ -178,6 +180,7 @@ apply_catalog_exports_gui(_impl)
 # copies completed output to an already-configured remote. It is not exposed via
 # MCP and automatic mode never uses destructive sync semantics.
 apply_rclone_gui(_impl)
+apply_rclone_gui_hardening(_impl)
 # Automation Center is generated from automation_cli.build_parser(), so command
 # additions stay in GUI/CLI parity. Remote mutations still execute only through
 # the approval-aware connector functions used by the canonical CLI.
@@ -193,6 +196,9 @@ apply_gui_workflow(_impl)
 # Final presentation pass: translate seeded/hardcoded widget text, notebook tabs,
 # headings, status variables and dialogs using every loaded three-language catalog.
 apply_global_gui_i18n(_impl)
+# Canonicalize workspace labels after the global pass so already-translated
+# feature tab text cannot bypass the shared fallback catalog.
+apply_workspace_i18n(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main
