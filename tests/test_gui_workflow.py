@@ -19,6 +19,7 @@ class GuiWorkflowTests(unittest.TestCase):
             ("review", "Review"),
             ("sku", "SKU Match"),
             ("exports", "Exports"),
+            ("storage", "Storage"),
             ("automation", "Automation"),
         ]
         ordered_ids = workspace_usage_order(records)
