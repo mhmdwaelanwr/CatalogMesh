@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .paths import runtime_root
+from .paths import env_file, runtime_root
 from . import _setup_impl as _impl
 from .ollama_local import (
     DEFAULT_BASE_URL,
@@ -17,7 +17,7 @@ from .secrets_store import save as save_secrets
 
 _ROOT = runtime_root()
 _impl.ROOT = _ROOT
-_impl.ENV_FILE = _ROOT / ".env"
+_impl.ENV_FILE = env_file()
 _impl.MAIN_SCRIPT = _ROOT / "product_sorter.py"
 
 if not hasattr(_impl, "_ORIGINAL_BUILD_ENV_TEXT"):
@@ -92,7 +92,9 @@ def _save_env(values: dict[str, str], path: Path | None = None) -> None:
                 "Configure a working keyring or inject the token through the process environment."
             )
         values["SHOPIFY_ADMIN_ACCESS_TOKEN"] = ""
-    _impl._ORIGINAL_SAVE_ENV(values, _impl.ENV_FILE if path is None else path)
+    target = _impl.ENV_FILE if path is None else path
+    target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    _impl._ORIGINAL_SAVE_ENV(values, target)
 
 
 def _collect_settings(current: dict[str, str]) -> dict[str, str]:
