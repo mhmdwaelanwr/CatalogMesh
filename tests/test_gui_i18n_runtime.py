@@ -20,6 +20,7 @@ from ai_product_photo_sorter import (
     sku_matching_gui,
     threshold_calibration_gui,
 )
+from ai_product_photo_sorter.arabic_ui import shape_arabic_for_tk
 from ai_product_photo_sorter.branding import APP_NAME, APP_TAGLINE
 from ai_product_photo_sorter.gui_i18n_runtime import (
     TranslationIndex,
@@ -55,8 +56,14 @@ class GuiI18nRuntimeTests(unittest.TestCase):
     def test_storage_catalog_participates_in_global_translation_index(self):
         index = TranslationIndex(collect_translation_triplets())
         self.assertEqual(index.translate("Cloud Storage · rclone", "zh"), "云存储 · rclone")
-        with patch.dict(os.environ, {"PRODUCT_SORTER_ARABIC_SHAPING": "0"}):
-            self.assertEqual(index.translate("Cloud Storage · rclone", "ar"), "التخزين السحابي · rclone")
+        actual = index.translate("Cloud Storage · rclone", "ar")
+        # Other GUI tests may have already pre-shaped loaded Arabic catalogs on
+        # Linux. Compare both values in the canonical Tk visual form so this
+        # remains deterministic on Linux, Windows and macOS.
+        self.assertEqual(
+            shape_arabic_for_tk(actual, force=True),
+            shape_arabic_for_tk("التخزين السحابي · rclone", force=True),
+        )
 
     def test_catalogmesh_brand_has_all_supported_taglines(self):
         self.assertEqual(APP_NAME, "CatalogMesh")
