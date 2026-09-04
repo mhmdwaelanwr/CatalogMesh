@@ -1,8 +1,8 @@
 """Capability contracts used to keep CatalogMesh GUI and CLI in parity.
 
 The registry deliberately describes real backend/workflow capabilities rather than
-pure presentation details.  CI uses it to fail when a capability loses either its
-CLI or desktop surface.  Visual-only helpers such as opening a file picker or the
+pure presentation details. CI uses it to fail when a capability loses either its
+CLI or desktop surface. Visual-only helpers such as opening a file picker or the
 About page are explicitly marked and are not required to grow artificial CLI
 commands.
 """
@@ -42,141 +42,97 @@ STORAGE_CAPABILITIES = (
 )
 
 
-# Primary desktop workflow.  The order is intentional and mirrors the sidebar.
 WORKFLOW_CAPABILITIES = (
     WorkflowCapability(
-        "operation.sort",
-        "Operation setup",
-        "catalogmesh",
-        "start",
+        "operation.sort", "Operation setup", "catalogmesh", "start",
         core_cli_flags=("--source", "--output"),
     ),
     WorkflowCapability(
-        "models.configure",
-        "Models & API keys",
-        "catalogmesh-setup",
-        "refresh_models",
+        "models.configure", "Models & API keys", "catalogmesh-setup", "refresh_models",
     ),
     WorkflowCapability(
-        "results.activity",
-        "Results & activity",
-        "catalogmesh",
-        "refresh_tables",
+        "results.activity", "Results & activity", "catalogmesh", "refresh_tables",
         core_cli_flags=("--source", "--output"),
     ),
     WorkflowCapability(
-        "review.manage",
-        "Review",
-        "catalogmesh / catalogmesh-automation",
-        "reload_review",
+        "review.manage", "Review", "catalogmesh / catalogmesh-automation", "reload_review",
         core_cli_flags=(
-            "--review-init",
-            "--review-summary",
-            "--review-apply",
-            "--review-export-approved",
+            "--review-init", "--review-summary", "--review-apply", "--review-export-approved",
         ),
         automation_commands=(
-            "review-init",
-            "review-summary",
-            "review-apply",
-            "review-export-approved",
+            "review-init", "review-summary", "review-apply", "review-export-approved",
         ),
     ),
     WorkflowCapability(
-        "sku.match",
-        "SKU Match",
-        "catalogmesh / catalogmesh-automation",
-        "generate_sku_candidates",
+        "sku.match", "SKU Match", "catalogmesh / catalogmesh-automation", "generate_sku_candidates",
         core_cli_flags=("--sku-match", "--sku-confirm", "--sku-clear"),
         automation_commands=("sku-generate", "sku-confirm", "sku-clear"),
     ),
     WorkflowCapability(
-        "exports.generate",
-        "Exports",
-        "catalogmesh / catalogmesh-automation",
-        "generate_catalog_exports",
+        "exports.generate", "Exports", "catalogmesh / catalogmesh-automation", "generate_catalog_exports",
         core_cli_flags=("--export-catalog",),
         automation_commands=("export-catalog",),
     ),
     WorkflowCapability(
-        "storage.manage",
-        "Storage",
-        "catalogmesh-storage / catalogmesh-automation",
-        "start_rclone_transfer",
+        "storage.manage", "Storage", "catalogmesh-storage / catalogmesh-automation", "start_rclone_transfer",
         automation_commands=tuple(item.automation_command for item in STORAGE_CAPABILITIES),
     ),
     WorkflowCapability(
-        "automation.run",
-        "Automation",
-        "catalogmesh-automation",
-        "run_automation_command",
+        "automation.run", "Automation", "catalogmesh-automation", "run_automation_command",
     ),
     WorkflowCapability(
-        "reports.generate_and_view",
-        "Reports",
-        "catalogmesh --md-report",
-        "refresh_reports",
+        "reports.generate_and_view", "Reports", "catalogmesh --md-report", "refresh_reports",
         core_cli_flags=("--md-report",),
     ),
     WorkflowCapability(
-        "benchmark.run",
-        "Benchmark",
-        "catalogmesh --benchmark",
-        "start_benchmark",
+        "benchmark.run", "Benchmark", "catalogmesh --benchmark", "start_benchmark",
         core_cli_flags=("--benchmark",),
     ),
     WorkflowCapability(
-        "environment.configure",
-        "Environment",
-        "catalogmesh-setup",
-        "save_environment",
+        "environment.configure", "Environment", "catalogmesh-setup", "save_environment",
     ),
     WorkflowCapability(
-        "about.display",
-        "About",
-        "n/a",
-        "copy_contact",
-        visual_only=True,
+        "about.display", "About", "n/a", "copy_contact", visual_only=True,
     ),
 )
 
 
-# Important real capabilities nested inside the Benchmark/Environment workflow.
-# They still require both a callable desktop path and a CLI path even though they
-# do not own a top-level sidebar page.
+# Important real capabilities nested inside the main workspaces. These are not
+# cosmetic controls: they change the shared processing/evidence backend and must
+# stay callable from both CLI and desktop GUI.
 INTERNAL_CAPABILITIES = (
     WorkflowCapability(
-        "local_ai.ollama_models",
-        "Models & API keys",
-        "catalogmesh / catalogmesh-setup",
-        "refresh_ollama_models",
+        "provider.routing", "Models & API keys", "catalogmesh --provider/--providers", "use_ollama_first",
+        core_cli_flags=("--provider", "--providers"),
     ),
     WorkflowCapability(
-        "local_evidence.generate",
-        "Benchmark",
-        "catalogmesh --local-evidence",
-        "run_local_evidence",
+        "local_ai.ollama_models", "Models & API keys", "catalogmesh / catalogmesh-setup", "refresh_ollama_models",
+    ),
+    WorkflowCapability(
+        "hybrid_embeddings.shadow", "Benchmark", "catalogmesh --hybrid-embeddings", "command",
+        core_cli_flags=(
+            "--hybrid-embeddings", "--hybrid-embedding-model",
+            "--hybrid-same-threshold", "--hybrid-different-threshold",
+        ),
+    ),
+    WorkflowCapability(
+        "performance.preprocessing", "Environment", "catalogmesh --preprocess-workers", "command",
+        core_cli_flags=("--preprocess-workers", "--preprocess-memory-mb", "--image-cache-entries"),
+    ),
+    WorkflowCapability(
+        "local_evidence.generate", "Benchmark", "catalogmesh --local-evidence", "run_local_evidence",
         core_cli_flags=("--local-evidence",),
     ),
     WorkflowCapability(
-        "calibration.prepare_ground_truth",
-        "Benchmark",
-        "catalogmesh --prepare-ground-truth",
-        "prepare_ground_truth_labels",
+        "calibration.prepare_ground_truth", "Benchmark", "catalogmesh --prepare-ground-truth", "prepare_ground_truth_labels",
         core_cli_flags=("--prepare-ground-truth",),
     ),
     WorkflowCapability(
-        "calibration.run",
-        "Benchmark",
-        "catalogmesh --calibrate-hybrid",
-        "calibrate_hybrid_thresholds",
+        "calibration.run", "Benchmark", "catalogmesh --calibrate-hybrid", "calibrate_hybrid_thresholds",
         core_cli_flags=("--calibrate-hybrid",),
     ),
     WorkflowCapability(
-        "hybrid_routing.simulate",
-        "Benchmark",
-        "catalogmesh --simulate-hybrid-routing",
-        "simulate_hybrid_routing",
+        "hybrid_routing.simulate", "Benchmark", "catalogmesh --simulate-hybrid-routing", "simulate_hybrid_routing",
         core_cli_flags=("--simulate-hybrid-routing",),
     ),
 )
