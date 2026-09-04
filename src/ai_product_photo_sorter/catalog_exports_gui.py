@@ -27,7 +27,7 @@ _TEXT = {
         "working": "Validating confirmed products and generating safe export files…",
     },
     "ar": {
-        "tab": "Exports",
+        "tab": "التصدير",
         "title": "ملفات تصدير الكتالوج",
         "hint": "أنشئ ملفات Offline فقط من مطابقات SKU المؤكدة بشريًا. ملف Shopify يظل Draft وغير منشور، والصور المحلية تخرج في Manifest منفصل حتى تتوفر روابط عامة.",
         "manifest": "ملف SKU Match",

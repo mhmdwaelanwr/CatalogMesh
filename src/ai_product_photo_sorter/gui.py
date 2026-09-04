@@ -29,6 +29,7 @@ from .shopify_environment import prepare_shopify_environment_fields
 from .shopify_safety import install_shopify_export_guards
 from .report_gui import apply_report_gui
 from .report_autoload import apply_report_autoload
+from .design_gui import apply_design_gui
 from .gui_polish import apply_gui_polish
 from .gui_workflow import apply_gui_workflow
 from .branding_gui import apply_branding_gui
@@ -183,6 +184,7 @@ apply_rclone_gui(_impl)
 apply_automation_gui(_impl)
 apply_report_gui(_impl)
 apply_report_autoload(_impl)
+apply_design_gui(_impl)
 # Install navigation/spacing polish after every feature workspace exists.
 apply_gui_polish(_impl)
 # Apply usage-first tab ordering and the Linux Arabic BiDi/shaping adapter after

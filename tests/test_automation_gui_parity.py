@@ -74,7 +74,7 @@ class AutomationGuiParityTests(unittest.TestCase):
     def test_preview_uses_public_automation_entrypoint(self):
         self.assertEqual(
             cli_preview(["scan", "My Photos"]),
-            "product-sorter-automation scan 'My Photos'",
+            "catalogmesh-automation scan 'My Photos'",
         )
 
     def test_scroll_wheel_normalizes_windows_macos_and_linux_events(self):

@@ -41,7 +41,7 @@ _TEXT = {
         "working": "Ranking catalog candidates locally…",
     },
     "ar": {
-        "tab": "SKU Match",
+        "tab": "مطابقة SKU",
         "title": "مطابقة SKU / الكتالوج",
         "hint": (
             "رتّب مرشحي الكتالوج اعتمادًا على المجموعات المعتمدة وأدلة OCR/Barcode المحلية. "

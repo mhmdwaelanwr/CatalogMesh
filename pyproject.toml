@@ -47,9 +47,15 @@ product-sorter-setup = "ai_product_photo_sorter.setup_wizard:main"
 product-sorter-automation = "ai_product_photo_sorter.automation_cli:main"
 product-sorter-watch = "ai_product_photo_sorter.watch_daemon:main"
 product-sorter-mcp = "ai_product_photo_sorter.mcp_server:main"
+catalogmesh = "ai_product_photo_sorter.cli:main"
+catalogmesh-setup = "ai_product_photo_sorter.setup_wizard:main"
+catalogmesh-automation = "ai_product_photo_sorter.automation_cli:main"
+catalogmesh-watch = "ai_product_photo_sorter.watch_daemon:main"
+catalogmesh-mcp = "ai_product_photo_sorter.mcp_server:main"
 
 [project.gui-scripts]
 product-sorter-gui = "ai_product_photo_sorter.gui:main"
+catalogmesh-gui = "ai_product_photo_sorter.gui:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

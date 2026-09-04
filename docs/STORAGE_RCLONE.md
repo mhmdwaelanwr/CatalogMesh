@@ -60,6 +60,21 @@ gdrive:CatalogMesh/Sorted_Products
 
 Using the local output folder name as the final cloud directory reduces accidental collisions between separate catalog workspaces.
 
+## CLI parity
+
+The dedicated Storage Center and the terminal use the same `rclone_storage.py` backend. The CLI surface is available through either `catalogmesh-automation` or the compatible `product-sorter-automation` name:
+
+```bash
+catalogmesh-automation storage-version
+catalogmesh-automation storage-remotes
+catalogmesh-automation storage-test gdrive: --remote-path CatalogMesh
+catalogmesh-automation storage-dry-run ./Sorted_Products gdrive: --remote-path CatalogMesh --bwlimit 10M --transfers 4 --checkers 8
+catalogmesh-automation storage-copy ./Sorted_Products gdrive: --remote-path CatalogMesh
+catalogmesh-automation storage-sync ./Sorted_Products gdrive: --remote-path CatalogMesh --confirm-sync
+```
+
+The GUI exposes live output and a Cancel button; the CLI streams the same transfer output to the terminal and can be interrupted normally. Manual CLI sync is fail-closed unless `--confirm-sync` is present. Automatic post-sort transfer remains copy-only in both workflows.
+
 ## Configuration
 
 The feature uses the normal app settings for non-secret preferences:

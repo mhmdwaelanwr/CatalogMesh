@@ -66,15 +66,15 @@ Requires Python 3.10+.
 python -m pip install --upgrade ai-product-photo-sorter
 ```
 
-Main entry points:
+Main entry points (the existing `product-sorter-*` names remain compatible; v3.3 also provides CatalogMesh aliases):
 
 ```text
-product-sorter             normal sorter CLI
-product-sorter-gui         desktop GUI
-product-sorter-setup       guided setup
-product-sorter-automation  catalog / connector automation CLI
-product-sorter-watch       watched-folder daemon
-product-sorter-mcp         optional MCP server
+catalogmesh / product-sorter                         normal sorter CLI
+catalogmesh-gui / product-sorter-gui                 desktop GUI
+catalogmesh-setup / product-sorter-setup             guided setup
+catalogmesh-automation / product-sorter-automation   catalog / connector / storage CLI
+catalogmesh-watch / product-sorter-watch             watched-folder daemon
+catalogmesh-mcp / product-sorter-mcp                 optional MCP server
 ```
 
 Optional local and MCP extras:
@@ -173,6 +173,19 @@ The v3.3 source build can copy completed local output to any remote already conf
 The Storage workspace includes remote discovery, connectivity testing, dry-run preview, Copy, manually confirmed Sync mirror, bandwidth limiting, transfer/checker controls, live activity and cancellation. Automatic post-run upload is deliberately **Copy-only** and never uses Sync, so it does not delete destination-only files.
 
 CatalogMesh does not parse or own the rclone credential file and does not start the rclone remote-control HTTP server. Storage actions are not exposed through MCP.
+
+The same functional storage surface is available from the automation CLI:
+
+```bash
+catalogmesh-automation storage-version
+catalogmesh-automation storage-remotes
+catalogmesh-automation storage-test gdrive: --remote-path CatalogMesh
+catalogmesh-automation storage-dry-run ./Sorted_Products gdrive: --remote-path CatalogMesh
+catalogmesh-automation storage-copy ./Sorted_Products gdrive: --remote-path CatalogMesh
+catalogmesh-automation storage-sync ./Sorted_Products gdrive: --remote-path CatalogMesh --confirm-sync
+```
+
+`storage-sync` deliberately requires `--confirm-sync`. CLI transfer output streams through the same rclone backend used by the GUI; terminal interruption provides cancellation while the GUI exposes a Cancel button.
 
 See [Storage Center / rclone](docs/STORAGE_RCLONE.md) for the detailed safety model and settings.
 

@@ -16,6 +16,12 @@ from typing import Any
 
 from . import automation_cli
 
+_TEXT = {
+    "en": {"tab":"Automation","title":"Automation Center","hint":"Run the same capability set exposed by the CLI, with previews, approvals and audit visibility.","command":"Command","confirmation":"Confirmation","run":"Run command","clear":"Clear output","preview":"COMMAND PREVIEW","output":"OUTPUT","ready":"Ready","running":"Running…","completed":"Completed","failed":"Failed","browse":"Browse…","local_guard":"Local/read-only command. No extra GUI confirmation phrase is required."},
+    "ar": {"tab":"الأتمتة","title":"مركز الأتمتة","hint":"شغّل نفس القدرات المتاحة في CLI مع المعاينة والموافقات وسجل التدقيق.","command":"الأمر","confirmation":"التأكيد","run":"تشغيل الأمر","clear":"مسح المخرجات","preview":"معاينة الأمر","output":"المخرجات","ready":"جاهز","running":"جاري التشغيل…","completed":"اكتمل","failed":"فشل","browse":"اختيار…","local_guard":"أمر محلي أو للقراءة فقط. لا يحتاج عبارة تأكيد إضافية من الواجهة."},
+    "zh": {"tab":"自动化","title":"自动化中心","hint":"运行与 CLI 相同的能力，并提供预览、审批和审计可见性。","command":"命令","confirmation":"确认","run":"运行命令","clear":"清除输出","preview":"命令预览","output":"输出","ready":"就绪","running":"运行中…","completed":"已完成","failed":"失败","browse":"浏览…","local_guard":"本地/只读命令，不需要额外的 GUI 确认短语。"},
+}
+
 REMOTE_MUTATION_COMMANDS = frozenset(
     {
         "execute-shopify-stage",
@@ -27,7 +33,7 @@ REMOTE_MUTATION_COMMANDS = frozenset(
     }
 )
 
-_DIRECTORY_NAMES = {"root", "shoot", "state_dir", "output"}
+_DIRECTORY_NAMES = {"root", "shoot", "state_dir", "output", "source"}
 
 
 def command_parsers() -> dict[str, argparse.ArgumentParser]:
@@ -94,7 +100,7 @@ def build_argv(command: str, values: dict[str, Any]) -> list[str]:
 
 
 def cli_preview(argv: list[str]) -> str:
-    return "product-sorter-automation " + " ".join(shlex.quote(part) for part in argv)
+    return "catalogmesh-automation " + " ".join(shlex.quote(part) for part in argv)
 
 
 def _wheel_units(event: Any) -> int:
@@ -233,10 +239,10 @@ def apply_automation_gui(module: Any) -> None:
 
         preview_card = module.ttk.Frame(body, style="Card.TFrame", padding=(16, 12))
         preview_card.pack(fill="both", expand=True, pady=(10, 0))
-        module.ttk.Label(preview_card, text="COMMAND PREVIEW", style="Section.TLabel").pack(anchor="w", pady=(0, 6))
+        self.automation_preview_label = module.ttk.Label(preview_card, text="COMMAND PREVIEW", style="Section.TLabel"); self.automation_preview_label.pack(anchor="w", pady=(0, 6))
         self.automation_preview = module.tk.Text(preview_card, height=3, wrap="word")
         self.automation_preview.pack(fill="x", pady=(0, 10))
-        module.ttk.Label(preview_card, text="OUTPUT", style="Section.TLabel").pack(anchor="w", pady=(0, 6))
+        self.automation_output_label = module.ttk.Label(preview_card, text="OUTPUT", style="Section.TLabel"); self.automation_output_label.pack(anchor="w", pady=(0, 6))
         self.automation_output = module.tk.Text(preview_card, height=9, wrap="word")
         output_scroll = module.ttk.Scrollbar(preview_card, orient="vertical", command=self.automation_output.yview)
         self.automation_output.configure(yscrollcommand=output_scroll.set)
@@ -332,7 +338,7 @@ def apply_automation_gui(module: Any) -> None:
                 if action.type is Path:
                     module.ttk.Button(
                         self.automation_form,
-                        text="Browse…",
+                        text=_TEXT.get(self.lang, _TEXT["en"])["browse"],
                         style="Soft.TButton",
                         command=lambda current=action: _browse_for_action(self, current),
                     ).grid(row=row_index, column=2, padx=(8, 0), pady=4)
@@ -368,13 +374,13 @@ def apply_automation_gui(module: Any) -> None:
                 self.automation_confirm_row.pack(fill="x", pady=(8, 0))
         else:
             self.automation_guard_label.config(
-                text="Local/read-only command. No extra GUI confirmation phrase is required."
+                text=_TEXT.get(self.lang, _TEXT["en"])["local_guard"]
             )
             self.automation_confirm_row.pack_forget()
 
     def clear_automation_output(self):
         self.automation_output.delete("1.0", "end")
-        self.automation_status.set("Ready")
+        self.automation_status.set(_TEXT.get(self.lang, _TEXT["en"])["ready"])
 
     def _finish_automation(self, output: str, error: str | None):
         self._automation_running = False
@@ -382,9 +388,9 @@ def apply_automation_gui(module: Any) -> None:
         self.automation_output.see("end")
         if error:
             self.automation_output.insert("end", f"\nERROR: {error}\n")
-            self.automation_status.set("Failed")
+            self.automation_status.set(_TEXT.get(self.lang, _TEXT["en"])["failed"])
         else:
-            self.automation_status.set("Completed")
+            self.automation_status.set(_TEXT.get(self.lang, _TEXT["en"])["completed"])
         self.automation_run_button.config(state="normal")
 
     def run_automation_command(self):
@@ -405,7 +411,7 @@ def apply_automation_gui(module: Any) -> None:
                 )
                 return
         self._automation_running = True
-        self.automation_status.set("Running…")
+        self.automation_status.set(_TEXT.get(self.lang, _TEXT["en"])["running"])
         self.automation_run_button.config(state="disabled")
         self.automation_output.insert("end", f"\n$ {cli_preview(argv)}\n")
         self.automation_output.see("end")
@@ -431,8 +437,19 @@ def apply_automation_gui(module: Any) -> None:
         base_apply_language(self)
         if not hasattr(self, "automation_page"):
             return
-        # Command names and approval phrases intentionally remain invariant.
-        self.main_tabs.tab(self.automation_page, text="Automation")
+        t = _TEXT.get(self.lang, _TEXT["en"])
+        self.main_tabs.tab(self.automation_page, text=t["tab"])
+        self.automation_title.configure(text=t["title"])
+        self.automation_hint.configure(text=t["hint"])
+        self.automation_command_label.configure(text=t["command"])
+        self.automation_confirm_label.configure(text=t["confirmation"])
+        self.automation_run_button.configure(text=t["run"])
+        self.automation_clear_button.configure(text=t["clear"])
+        self.automation_preview_label.configure(text=t["preview"])
+        self.automation_output_label.configure(text=t["output"])
+        if not self._automation_running:
+            self.automation_status.set(t["ready"])
+        self.rebuild_automation_form()
 
     def set_running(self, running):
         base_set_running(self, running)

@@ -54,7 +54,7 @@ _TEXT = {
     "en": {
         "tab": "Environment",
         "title": "Environment Center",
-        "hint": "Edit Product Sorter configuration without leaving the desktop app. API keys stay masked and the .env file remains private.",
+        "hint": "Edit CatalogMesh configuration without leaving the desktop app. API keys stay masked and the .env file remains private.",
         "file": "Configuration file",
         "reload": "Reload",
         "save_all": "Save all",
@@ -74,9 +74,9 @@ _TEXT = {
         "select": "Select a setting to edit.",
     },
     "ar": {
-        "tab": "Environment",
+        "tab": "البيئة",
         "title": "مركز الإعدادات",
-        "hint": "عدّل إعدادات Product Sorter من داخل البرنامج. مفاتيح API تظل مخفية وملف .env يظل خاصًا.",
+        "hint": "عدّل إعدادات CatalogMesh من داخل البرنامج. مفاتيح API تظل مخفية وملف .env يظل خاصًا.",
         "file": "ملف الإعدادات",
         "reload": "إعادة تحميل",
         "save_all": "حفظ الكل",
@@ -96,9 +96,9 @@ _TEXT = {
         "select": "اختر إعدادًا لتعديله.",
     },
     "zh": {
-        "tab": "Environment",
+        "tab": "环境",
         "title": "环境配置中心",
-        "hint": "无需离开桌面应用即可编辑 Product Sorter 配置。API 密钥保持隐藏，.env 文件保持私密。",
+        "hint": "无需离开桌面应用即可编辑 CatalogMesh 配置。API 密钥保持隐藏，.env 文件保持私密。",
         "file": "配置文件",
         "reload": "重新加载",
         "save_all": "全部保存",
@@ -413,7 +413,7 @@ def apply_environment_gui(module: Any) -> None:
     def delete_environment(self):
         if not module.messagebox.askyesno(
             "Environment",
-            "Delete the Product Sorter .env configuration and clear stored API keys from the OS keyring?",
+            "Delete the CatalogMesh .env configuration and clear stored API keys from the OS keyring?",
         ):
             return
         try:

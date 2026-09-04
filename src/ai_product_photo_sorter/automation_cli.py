@@ -21,6 +21,16 @@ from .shopify_publication_gate import execute_shopify_publish, execute_shopify_r
 from .shopify_publishing import API_VERSION, ShopifyClient
 from .sku_matching import generate_candidates, load_catalog_rows
 from .watch_daemon import main as watch_main
+from .rclone_storage import (
+    RcloneError,
+    TransferOptions,
+    build_transfer_command,
+    list_remotes,
+    remote_target,
+    rclone_version,
+    run_transfer,
+    test_remote,
+)
 
 
 def _catalog_fields(path: Path) -> list[dict[str, Any]]:
@@ -79,7 +89,7 @@ def _odoo_client_from_env(base_url: str | None = None, database: str | None = No
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="product-sorter-automation", description="Safe local catalog-image automation commands for Product Sorter")
+    parser = argparse.ArgumentParser(prog="catalogmesh-automation", description="Safe catalog automation commands for CatalogMesh")
     sub = parser.add_subparsers(dest="command", required=True)
     scan = sub.add_parser("scan"); scan.add_argument("root", type=Path); scan.add_argument("--no-recursive", action="store_true")
     missing = sub.add_parser("missing-assets"); missing.add_argument("catalog", type=Path); missing.add_argument("--sku-column", default="sku"); missing.add_argument("--asset-column", action="append", dest="asset_columns")
@@ -102,6 +112,12 @@ def build_parser() -> argparse.ArgumentParser:
     odoo = sub.add_parser("execute-odoo-products"); odoo.add_argument("request", type=Path); odoo.add_argument("reservation", type=Path); odoo.add_argument("--audit", type=Path); odoo.add_argument("--state", type=Path); odoo.add_argument("--base-url"); odoo.add_argument("--database")
     odoo_reconcile = sub.add_parser("reconcile-odoo-execution"); odoo_reconcile.add_argument("state", type=Path); odoo_reconcile.add_argument("--base-url"); odoo_reconcile.add_argument("--database")
     watch = sub.add_parser("watch"); watch.add_argument("root", type=Path); watch.add_argument("--state", type=Path, default=Path(".product-sorter-watch.json")); watch.add_argument("--interval", type=float, default=5.0); watch.add_argument("--no-recursive", action="store_true"); watch.add_argument("--once", action="store_true")
+    sub.add_parser("storage-version")
+    sub.add_parser("storage-remotes")
+    storage_test = sub.add_parser("storage-test"); storage_test.add_argument("remote"); storage_test.add_argument("--remote-path", default="")
+    for name in ("storage-dry-run", "storage-copy", "storage-sync"):
+        command = sub.add_parser(name); command.add_argument("source", type=Path); command.add_argument("remote"); command.add_argument("--remote-path", default=""); command.add_argument("--bwlimit", default=""); command.add_argument("--transfers", type=int, default=4); command.add_argument("--checkers", type=int, default=8)
+        if name == "storage-sync": command.add_argument("--confirm-sync", action="store_true", required=True, help="Required acknowledgement that sync can delete remote-only files")
     return parser
 
 
@@ -149,7 +165,32 @@ def main(argv: list[str] | None = None) -> int:
             if args.no_recursive: watch_argv.append("--no-recursive")
             if args.once: watch_argv.append("--once")
             return watch_main(watch_argv)
-    except (ValueError, OSError, json.JSONDecodeError) as exc:
+        if args.command == "storage-version": _emit({"version": rclone_version()}); return 0
+        if args.command == "storage-remotes": _emit({"remotes": list(list_remotes())}); return 0
+        if args.command == "storage-test":
+            target = remote_target(args.remote, args.remote_path)
+            _emit({"remote": args.remote, "remote_path": args.remote_path, "target": target, "reachable": True, "listing": test_remote(target)}); return 0
+        if args.command in {"storage-dry-run", "storage-copy", "storage-sync"}:
+            mode = "copy" if args.command in {"storage-dry-run", "storage-copy"} else "sync"
+            target = remote_target(args.remote, args.remote_path)
+            options = TransferOptions(
+                mode=mode,
+                dry_run=args.command == "storage-dry-run",
+                transfers=args.transfers,
+                checkers=args.checkers,
+                bwlimit=args.bwlimit,
+            )
+            command = build_transfer_command(args.source, target, options=options)
+            output = run_transfer(args.source, target, options=options)
+            _emit({
+                "mode": mode,
+                "dry_run": bool(options.dry_run),
+                "target": target,
+                "command": command,
+                "output": output,
+            })
+            return 0
+    except (ValueError, OSError, RcloneError, json.JSONDecodeError) as exc:
         raise SystemExit(str(exc)) from exc
     raise SystemExit(f"Unsupported automation command: {args.command}")
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Any
+import os
 
 
 SCROLLABLE_WORKSPACE_KEYS = ("setup", "benchmark", "review")
@@ -298,6 +299,45 @@ def apply_gui_polish(module: Any) -> None:
     def configure_styles(self):
         base_configure_styles(self)
         style = module.ttk.Style(self.root)
+        style.configure("Sidebar.TFrame", background=self.colors["panel"])
+        style.configure(
+            "Sidebar.TButton",
+            background=self.colors["panel"],
+            foreground=self.colors["muted"],
+            borderwidth=0,
+            relief="flat",
+            anchor="w",
+            padding=(12, 9),
+            font=("Sans", 9),
+        )
+        style.map(
+            "Sidebar.TButton",
+            background=[("active", self.colors["panel2"])],
+            foreground=[("active", self.colors["text"])],
+        )
+        style.configure(
+            "SidebarActive.TButton",
+            background=self.colors["panel2"],
+            foreground=self.colors["accent"],
+            borderwidth=0,
+            relief="flat",
+            anchor="w",
+            padding=(12, 9),
+            font=("Sans", 9, "bold"),
+        )
+        style.map(
+            "SidebarActive.TButton",
+            background=[("active", self.colors["panel2"])],
+            foreground=[("active", self.colors["accent"])],
+        )
+        style.configure("SidebarBrand.TLabel", background=self.colors["panel"], foreground=self.colors["text"], font=("Sans", 13, "bold"))
+        style.configure("SidebarCaption.TLabel", background=self.colors["panel"], foreground=self.colors["muted"], font=("Sans", 8))
+        style.configure("Workspace.TNotebook", background=self.colors["panel"], borderwidth=0)
+        if os.environ.get("CATALOGMESH_CLASSIC_TABS", "").strip().lower() not in {"1", "true", "yes", "on"}:
+            try:
+                style.layout("Workspace.TNotebook.Tab", [])
+            except module.tk.TclError:
+                pass
         style.configure(
             "TNotebook.Tab",
             background=self.colors["panel2"],
@@ -421,8 +461,28 @@ def apply_gui_polish(module: Any) -> None:
         if review_page is not None:
             self.review_scroller = _install_workspace_scroller(self, review_page, "review")
 
+        # Figma-inspired workflow sidebar.  The Notebook remains the owner of
+        # every page; the sidebar only selects tabs, so no Tk widget is ever
+        # re-parented and the blank-page regression cannot return.
+        shell = self.main_tabs.master
+        self.main_tabs.pack_forget()
+        self.workspace_sidebar = module.ttk.Frame(shell, style="Sidebar.TFrame", padding=(10, 12))
+        self.workspace_sidebar.pack(side="left", fill="y", padx=(0, 12))
+        self.sidebar_brand = module.ttk.Label(self.workspace_sidebar, text="CatalogMesh", style="SidebarBrand.TLabel")
+        self.sidebar_brand.pack(anchor="w", padx=6, pady=(2, 0))
+        self.sidebar_caption = module.ttk.Label(self.workspace_sidebar, text="AI catalog operations workspace", style="SidebarCaption.TLabel")
+        self.sidebar_caption.pack(anchor="w", padx=6, pady=(0, 12))
+        self.sidebar_workflow_label = module.ttk.Label(self.workspace_sidebar, text="WORKFLOW", style="SidebarCaption.TLabel")
+        self.sidebar_workflow_label.pack(anchor="w", padx=6, pady=(0, 5))
+        self.sidebar_buttons = {}
+        self.main_tabs.configure(style="Workspace.TNotebook")
+        self.main_tabs.pack(side="left", fill="both", expand=True)
+        self.rebuild_workspace_sidebar()
+
         self.workspace_nav_frame = module.ttk.Frame(self.header, style="App.TFrame")
-        self.workspace_nav_frame.pack(side="right", padx=(0, 8), pady=8)
+        # Wide desktop layouts use the workflow sidebar.  The compact header
+        # selector is kept as a responsive fallback for narrow windows.
+        self._workspace_selector_visible = False
         self.workspace_nav_label = module.ttk.Label(
             self.workspace_nav_frame,
             text="Workspace",
@@ -439,6 +499,7 @@ def apply_gui_polish(module: Any) -> None:
         self.workspace_nav.pack(side="left")
         self.workspace_nav.bind("<<ComboboxSelected>>", self.select_workspace_from_nav)
         self.main_tabs.bind("<<NotebookTabChanged>>", self.sync_workspace_nav, add="+")
+        self.main_tabs.bind("<<NotebookTabChanged>>", self.sync_workspace_sidebar, add="+")
 
         self.root.bind("<Control-Tab>", lambda event: self.cycle_workspace(1), add="+")
         self.root.bind(
@@ -453,7 +514,54 @@ def apply_gui_polish(module: Any) -> None:
         self.root.bind("<Button-5>", self._workspace_mousewheel, add="+")
 
         self.sync_workspace_nav()
+        try:
+            self._responsive_workspace_nav(type("_Size", (), {"widget": self.root, "width": self.root.winfo_width()})())
+        except Exception:
+            pass
         sync_raw_widget_colors(self)
+
+    def rebuild_workspace_sidebar(self):
+        if not hasattr(self, "workspace_sidebar"):
+            return
+        for button in getattr(self, "sidebar_buttons", {}).values():
+            try:
+                button.destroy()
+            except module.tk.TclError:
+                pass
+        self.sidebar_buttons = {}
+        for tab_id, label in self.workspace_entries():
+            button = module.ttk.Button(
+                self.workspace_sidebar,
+                text=label,
+                style="Sidebar.TButton",
+                command=lambda value=tab_id: self.select_workspace_tab(value),
+            )
+            button.pack(fill="x", pady=1)
+            self.sidebar_buttons[str(tab_id)] = button
+        self.sync_workspace_sidebar()
+
+    def select_workspace_tab(self, tab_id):
+        try:
+            self.main_tabs.select(tab_id)
+            self.main_tabs.focus_set()
+        except module.tk.TclError:
+            pass
+
+    def sync_workspace_sidebar(self, _event=None):
+        if not hasattr(self, "sidebar_buttons"):
+            return
+        selected = str(self.main_tabs.select())
+        current_entries = {str(tab_id): label for tab_id, label in self.workspace_entries()}
+        # Rebuild if features/language changed the tab set.
+        if set(current_entries) != set(self.sidebar_buttons):
+            self.rebuild_workspace_sidebar()
+            return
+        for tab_id, button in self.sidebar_buttons.items():
+            label = current_entries.get(tab_id, "Workspace")
+            button.configure(
+                text=label,
+                style="SidebarActive.TButton" if tab_id == selected else "Sidebar.TButton",
+            )
 
     def workspace_entries(self):
         entries = []
@@ -511,13 +619,21 @@ def apply_gui_polish(module: Any) -> None:
             return
         width = int(event.width)
         if width < 1080:
+            if hasattr(self, "workspace_sidebar") and self.workspace_sidebar.winfo_manager():
+                self.workspace_sidebar.pack_forget()
+            if not self.workspace_nav_frame.winfo_manager():
+                self.workspace_nav_frame.pack(side="right", padx=(0, 8), pady=8)
+            self._workspace_selector_visible = True
             self.workspace_nav_label.pack_forget()
             self.workspace_nav.configure(width=18)
         else:
+            if self.workspace_nav_frame.winfo_manager():
+                self.workspace_nav_frame.pack_forget()
+            self._workspace_selector_visible = False
+            if hasattr(self, "workspace_sidebar") and not self.workspace_sidebar.winfo_manager():
+                self.workspace_sidebar.pack(side="left", fill="y", padx=(0, 12), before=self.main_tabs)
             if not self.workspace_nav_label.winfo_manager():
-                self.workspace_nav_label.pack(
-                    side="left", padx=(0, 6), before=self.workspace_nav
-                )
+                self.workspace_nav_label.pack(side="left", padx=(0, 6), before=self.workspace_nav)
             self.workspace_nav.configure(width=24 if width < 1320 else 28)
 
     def apply_language(self):
@@ -526,6 +642,8 @@ def apply_gui_polish(module: Any) -> None:
             labels = {"ar": "مساحة العمل", "en": "Workspace", "zh": "工作区"}
             self.workspace_nav_label.configure(text=labels.get(self.lang, "Workspace"))
             self.sync_workspace_nav()
+        if hasattr(self, "workspace_sidebar"):
+            self.rebuild_workspace_sidebar()
 
     module.App.configure_styles = configure_styles
     module.App.build = build
@@ -533,6 +651,9 @@ def apply_gui_polish(module: Any) -> None:
     module.App.sync_raw_widget_colors = sync_raw_widget_colors
     module.App._install_workspace_scroller = _install_workspace_scroller
     module.App._workspace_mousewheel = _workspace_mousewheel
+    module.App.rebuild_workspace_sidebar = rebuild_workspace_sidebar
+    module.App.select_workspace_tab = select_workspace_tab
+    module.App.sync_workspace_sidebar = sync_workspace_sidebar
     module.App.workspace_entries = workspace_entries
     module.App.sync_workspace_nav = sync_workspace_nav
     module.App.select_workspace_from_nav = select_workspace_from_nav

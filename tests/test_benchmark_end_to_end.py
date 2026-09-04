@@ -98,6 +98,7 @@ class BenchmarkEndToEndTests(unittest.TestCase):
                 "3",
                 "--limit",
                 "3",
+                "--non-interactive",
                 "--benchmark",
                 "--benchmark-label",
                 "synthetic-ci",
