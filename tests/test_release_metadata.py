@@ -9,11 +9,19 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 class ReleaseMetadataTests(unittest.TestCase):
+    def project_text(self) -> str:
+        return (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+
     def project_version(self) -> str:
-        text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        text = self.project_text()
         match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)
         self.assertIsNotNone(match)
         return match.group(1)
+
+    def test_primary_pypi_project_is_catalogmesh(self):
+        text = self.project_text()
+        self.assertRegex(text, r'(?m)^name\s*=\s*"catalogmesh"$')
+        self.assertIn('readme = "PYPI_README.md"', text)
 
     def test_pyproject_version_matches_application_version(self):
         self.assertEqual(self.project_version(), VERSION.replace("-rc", "rc"))
@@ -55,6 +63,11 @@ class ReleaseMetadataTests(unittest.TestCase):
         self.assertIn("macos-arm64", workflow)
         self.assertIn("macos-x64", workflow)
         self.assertIn("ProductSorterPro-${{ matrix.artifact }}.zip", workflow)
+
+    def test_release_targets_catalogmesh_pypi(self):
+        workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+        self.assertIn("dist/catalogmesh-*", workflow)
+        self.assertIn("https://pypi.org/project/catalogmesh/", workflow)
 
     def test_macos_bundle_version_comes_from_pyproject(self):
         spec = (ROOT / "packaging" / "pyinstaller" / "product_sorter.spec").read_text(encoding="utf-8")
