@@ -30,6 +30,7 @@ class WorkflowCapability:
     core_cli_flags: tuple[str, ...] = ()
     automation_commands: tuple[str, ...] = ()
     config_commands: tuple[str, ...] = ()
+    report_commands: tuple[str, ...] = ()
     visual_only: bool = False
 
 
@@ -82,8 +83,9 @@ WORKFLOW_CAPABILITIES = (
         "automation.run", "Automation", "catalogmesh-automation", "run_automation_command",
     ),
     WorkflowCapability(
-        "reports.generate_and_view", "Reports", "catalogmesh --md-report", "refresh_reports",
+        "reports.generate_and_view", "Reports", "catalogmesh --md-report / catalogmesh-reports", "refresh_reports",
         core_cli_flags=("--md-report",),
+        report_commands=("list", "show"),
     ),
     WorkflowCapability(
         "benchmark.run", "Benchmark", "catalogmesh --benchmark", "start_benchmark",
@@ -188,6 +190,14 @@ def required_config_commands() -> frozenset[str]:
         command
         for capability in ALL_REAL_CAPABILITIES
         for command in capability.config_commands
+    )
+
+
+def required_report_commands() -> frozenset[str]:
+    return frozenset(
+        command
+        for capability in ALL_REAL_CAPABILITIES
+        for command in capability.report_commands
     )
 
 
