@@ -17,6 +17,7 @@ WORKSPACE_USAGE_ORDER = (
     "Review",
     "SKU Match",
     "Exports",
+    "Storage",
     "Automation",
     "Reports",
     "Benchmark",
