@@ -4,6 +4,51 @@ All notable project changes are documented here.
 
 ## Unreleased
 
+## 3.3.0 — 2026-09-04
+
+### CatalogMesh desktop and GUI/CLI parity
+
+- Promoted **CatalogMesh** as the desktop display brand while preserving the `ai-product-photo-sorter` PyPI package, `product-sorter-*` entry points, `PRODUCT_SORTER_*` settings, and v3.x compatibility paths.
+- Expanded the desktop into the canonical 12-workspace workflow: Operation setup, Models & API keys, Results & activity, Review, SKU Match, Exports, Storage, Automation, Reports, Benchmark, Environment, and About.
+- Added first-class `catalogmesh-*` aliases plus bounded Config, Reports, Storage, and Automation CLIs backed by shared application capabilities.
+- Added a capability parity registry and CI coverage so non-visual desktop capabilities cannot silently lose their corresponding CLI/shared backend surface.
+- Added the parser-driven Automation Center, responsive workspace navigation, scrollable long workspaces, and dark-mode field fixes without re-parenting Tk notebook pages.
+- Added a final runtime EN/AR/ZH translation pass and Arabic shaping/BiDi compatibility while preserving technical tokens and diagnostic text.
+- Added deterministic packaged-Windows GUI documentation for all 12 workspaces in light and dark themes, protected-main PR synchronization, and visual-noise filtering for hosted-runner screenshot churn.
+- Fixed frozen-build configuration persistence so packaged apps use stable per-user config locations instead of PyInstaller `_MEI...` temporary extraction paths, while preserving an explicit portable `.env` beside the executable when already present.
+
+### Storage Center · rclone
+
+- Added a local-first Storage Center and first-class Storage CLI for rclone version/remotes discovery, read-only connectivity tests, dry-run previews, Copy, and manually confirmed Sync.
+- Kept automatic post-sort cloud transfer strictly **Copy-only** and required the exact `SYNC <full-target>` confirmation for manual mirror operations.
+- Added bounded bandwidth/transfers/checkers controls, live activity, cancellation, and credential-free storage audit behavior.
+- Kept rclone execution argv-based with no shell executor, no rclone RC server, no credential-file ownership/parsing, and no MCP storage-transfer surface.
+
+### Human approval and connector execution safety
+
+- Added a read-only Review queue automation bridge plus local approval request/grant artifacts; agents/MCP can request or validate approval state but cannot self-approve actions.
+- Added single-use execution reservations, deterministic idempotency keys, bounded retry metadata, atomic approval writes, append-only redacted execution audit evidence, and recursive rejection/redaction of credential-like payload fields.
+- Routed Shopify draft staging through explicit approved reservations while keeping staged products DRAFT/unpublished and restricting retries to bounded transient failures with the same idempotency identity.
+- Added separately approved Shopify publication and rollback actions so staging approval cannot publish and publication approval cannot authorize rollback.
+- Added zero-network PIM/ERP connector profiles and deterministic write plans that reject embedded credentials and do not expose a generic connector executor.
+- Added approval-aware Akeneo product execution, read-only reconciliation, separately approved rollback, pre-write snapshots, and fresh remote-drift fingerprint checks before rollback reservation consumption.
+- Added approval-aware Odoo updates for existing `product.product` records by `default_code`, with bounded supported fields, full target preflight, read-only reconciliation, and no create/delete path.
+- Hardened execution boundaries against legacy direct Shopify mutation installation, request/action tampering, invalid retry policy values, secret leakage, audit races, ambiguous-write blind retries, generic mutation surfaces, and MCP remote execution.
+
+### Packaging and reliability
+
+- Added validated support for the current `google-genai` 2.x line (`>=2.21,<3`) across tests, safety workflows, cross-platform packages, and packaged Windows GUI smoke.
+- Kept GitHub release packaging for Windows x64, Linux x64/DEB, macOS Apple Silicon, macOS Intel, Python wheel/sdist, and SHA-256 checksums.
+- Preserved the PyPI OIDC Trusted Publishing path and release-trigger/version consistency checks for the v3.3.0 publication.
+
+### Safety boundaries retained
+
+- SKU/catalog identity remains human-confirmed; AI/ranking evidence never auto-confirms a catalog row.
+- External publication remains action-specific and explicitly human-approved; there is no autonomous publish path.
+- Partial or ambiguous connector writes fail closed into reconciliation instead of blind retries.
+- Credentials remain environment/keyring based and are not stored in approval payloads or execution logs.
+- MCP exposes no generic remote mutation, publication, rollback, or rclone transfer executor.
+
 ## 3.2.0 — 2026-09-03
 
 ### Catalog automation and agents

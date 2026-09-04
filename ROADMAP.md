@@ -1,8 +1,8 @@
 # Roadmap
 
 This roadmap describes direction, not a guarantee or delivery schedule. Stable
-releases are promoted only after automated builds and the manual checks in
-`PRODUCTION_CHECKLIST.md` succeed.
+releases are promoted only after automated builds and the applicable verification
+checks in `PRODUCTION_CHECKLIST.md` succeed.
 
 ## 3.1 — First stable desktop release
 
@@ -22,9 +22,9 @@ releases are promoted only after automated builds and the manual checks in
 
 ## 3.2 — Quality and workflow
 
-`v3.2.0` is the current stable feature release target for GitHub Releases and
-PyPI. It combines the quality/benchmark work, local-first catalog pipeline, and
-safe MCP/automation surface developed after `v3.1.1`.
+`v3.2.0` is the previous stable feature release. It combined the quality/benchmark
+work, local-first catalog pipeline, and safe MCP/automation surface developed
+after `v3.1.1`.
 
 - [x] Benchmark Center for isolated real-pipeline timing, provider/model metrics, machine-readable JSON history, Markdown reports, optional ground-truth accuracy, CLI mode, and desktop GUI workflow.
 - [x] Provider preflight and canonical provider selection before desktop/benchmark runs, including safe correction of the observed `gemeni` typo and explicit failure for unknown providers.
@@ -36,9 +36,15 @@ safe MCP/automation surface developed after `v3.1.1`.
 - [ ] Export/import operation profiles without secrets.
 - [ ] Improved accessibility, keyboard navigation, and high-DPI validation.
 
-## 3.3 — Local-first catalog pipeline
+## 3.3 — CatalogMesh local-first catalog workspace
 
-The strategic order is **Ollama / Local Vision → Hybrid visual clustering → Performance / parallel pipeline → Review Center → SKU matching → Shopify/PIM exports**. See [`docs/LOCAL_FIRST_ARCHITECTURE.md`](docs/LOCAL_FIRST_ARCHITECTURE.md) for the design contract.
+`v3.3.0` is the current stable feature release target for GitHub Releases and
+PyPI. It promotes the **CatalogMesh** desktop display brand, preserves v3.x
+package/CLI compatibility, adds the 12-workspace GUI/CLI parity model and
+rclone Storage Center, and lands connector-specific approval-aware execution
+without weakening human SKU/publication boundaries.
+
+The strategic order remains **Ollama / Local Vision → Hybrid visual clustering → Performance / parallel pipeline → Review Center → SKU matching → Shopify/PIM exports**. See [`docs/LOCAL_FIRST_ARCHITECTURE.md`](docs/LOCAL_FIRST_ARCHITECTURE.md) for the design contract.
 
 - [x] First-class Ollama local vision provider in the shared CLI/GUI engine with no API key requirement.
 - [x] Local-only and Ollama-first cloud-fallback modes.
@@ -62,11 +68,16 @@ The strategic order is **Ollama / Local Vision → Hybrid visual clustering → 
 - [x] Safe offline Shopify draft + neutral PIM export profiles in CLI + GUI, built only from fully human-confirmed matches, with fail-closed validation, local image upload manifest, no inventory/shipping/tax invention, and zero publishing/network calls. See [`docs/CATALOG_EXPORTS.md`](docs/CATALOG_EXPORTS.md).
 - [x] Guarded Shopify Admin GraphQL workflow with zero-network local plan, query-only remote preview, explicit draft staging, staged local image upload for new products, exact-SKU collision protection, local idempotency state, append-only remote audit, separately confirmed publication, and rollback to unpublished `DRAFT`. See [`docs/SHOPIFY_PUBLISHING.md`](docs/SHOPIFY_PUBLISHING.md).
 - [ ] Validate the guarded Shopify workflow against a development store using a non-sensitive mock catalog before treating remote publishing as production-verified.
-- [ ] PIM/ERP connector profiles with explicit field mapping, validation, and authenticated write boundaries.
+- [x] PIM/ERP connector profiles with explicit field mapping, validation, deterministic zero-network write plans, credential rejection, and no generic executor. See [`docs/CONNECTOR_PROFILES.md`](docs/CONNECTOR_PROFILES.md).
+- [x] Approval-aware Akeneo apply/reconcile/rollback with connector-specific snapshots, action-specific reservations, and fresh remote-drift checks before rollback. See [`docs/AKENEO_EXECUTION.md`](docs/AKENEO_EXECUTION.md).
+- [x] Approval-aware Odoo existing-product execution/reconciliation by `default_code`, bounded supported fields, full target preflight, and no create/delete path. See [`docs/ODOO_EXECUTION.md`](docs/ODOO_EXECUTION.md).
+- [x] CatalogMesh 12-workspace desktop display brand with tested GUI/CLI capability parity, runtime EN/AR/ZH pass, responsive workspace navigation, and stable frozen configuration persistence.
+- [x] Local-first rclone Storage Center/CLI with read-only test, dry-run, Copy, exact-confirmation manual Sync, and copy-only automatic post-sort transfer.
+- [x] Package and document `v3.3.0` with Windows, Linux, macOS, wheel, sdist, checksums, GitHub Release automation, and PyPI Trusted Publishing.
 
 ## 3.4 — Catalog automation and agents
 
-See [`docs/CATALOG_AUTOMATION.md`](docs/CATALOG_AUTOMATION.md) for the safety contract. The goal is to expose the existing local-first pipeline to modern catalog workflows without allowing agents or connectors to bypass human-reviewed SKU and publishing boundaries.
+See [`docs/CATALOG_AUTOMATION.md`](docs/CATALOG_AUTOMATION.md) for the safety contract. Several approval/execution milestones originally planned for 3.4 landed early in v3.3.0; the remaining items continue here. The goal is to expose the existing local-first pipeline to modern catalog workflows without allowing agents or connectors to bypass human-reviewed SKU and publishing boundaries.
 
 - [x] Non-destructive local shoot ingestion snapshots and deterministic added/changed/removed diffing.
 - [x] Deterministic Missing Asset Audit for catalog rows and conservative exact-stem local-image reconciliation.
@@ -84,7 +95,7 @@ See [`docs/CATALOG_AUTOMATION.md`](docs/CATALOG_AUTOMATION.md) for the safety co
 - [x] Single-use execution reservations with deterministic idempotency keys, retry-policy metadata, append-only redacted execution audit, and credential redaction foundation.
 - [x] Approval-aware Shopify **draft staging** executor that consumes one valid reservation, retries only transient connector failures under the same idempotency key, records execution audit evidence, and always keeps remote products unpublished `DRAFT`.
 - [x] Shopify publication and rollback gates require new action-specific human approvals and single-use reservations; neither mutation is exposed through MCP automation. See [`docs/SHOPIFY_PUBLICATION_GATE.md`](docs/SHOPIFY_PUBLICATION_GATE.md).
-- [ ] Extend the reservation-consumption execution layer to PIM/ERP writes with connector-specific validation, audit, and rollback rules.
+- [x] Extend the reservation-consumption execution layer to connector-specific Akeneo and Odoo PIM/ERP writes with validation, audit, reconciliation, and bounded rollback rules.
 - [ ] Variant-level asset mapping and lifecycle state for SKU variants/options.
 - [ ] Release scheduling for approved product assets with rollback-safe draft state.
 - [ ] Automation rules/triggers for ingest → classify → review queue → match proposal → draft preparation.
@@ -94,7 +105,7 @@ See [`docs/CATALOG_AUTOMATION.md`](docs/CATALOG_AUTOMATION.md) for the safety co
 - [ ] Provider plugin interface and custom OpenAI-compatible endpoints.
 - [ ] Pluggable local visual-embedding, OCR, and barcode backends.
 - [ ] Extension API for custom grouping, naming, review, and export policies.
-- [ ] Team/automation interfaces for connecting Product Sorter to larger catalog workflows.
+- [ ] Team/automation interfaces for connecting CatalogMesh to larger catalog workflows.
 
 Contributions should start with an issue describing the user problem, expected
 behavior, privacy impact, and a practical verification plan.
