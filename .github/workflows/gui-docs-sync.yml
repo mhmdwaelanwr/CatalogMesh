@@ -29,6 +29,13 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install visual diff dependency
+        run: python -m pip install --disable-pip-version-check "Pillow>=10,<13"
+
       - name: Download GUI screenshot artifact from build workflow
         uses: actions/download-artifact@v8
         with:
@@ -37,22 +44,43 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Refresh tracked CI screenshots
+      - name: Refresh tracked CI screenshots with visual noise filter
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p docs/screenshots/ci/windows
-          find docs/screenshots/ci/windows -maxdepth 1 -type f -name '*.png' -delete
 
-          # Track only the 12 workflow screenshots per theme. Debug/theme-transition
-          # captures remain build artifacts and do not become README documentation.
-          cp gui-artifacts/light-[0-9][0-9]-*.png docs/screenshots/ci/windows/
-          cp gui-artifacts/dark-[0-9][0-9]-*.png docs/screenshots/ci/windows/
+          # Windows hosted runners can introduce tiny border/anti-alias differences
+          # between otherwise identical captures. Only replace tracked documentation
+          # screenshots when the normalized RGB RMS delta is visually meaningful.
+          python scripts/gui_docs_visual_sync.py \
+            --candidate-dir gui-artifacts \
+            --tracked-dir docs/screenshots/ci/windows \
+            --threshold 0.005 \
+            --report gui-docs-sync-report.json
 
           light_count="$(find docs/screenshots/ci/windows -maxdepth 1 -type f -name 'light-[0-9][0-9]-*.png' | wc -l)"
           dark_count="$(find docs/screenshots/ci/windows -maxdepth 1 -type f -name 'dark-[0-9][0-9]-*.png' | wc -l)"
           test "$light_count" -eq 12
           test "$dark_count" -eq 12
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          report = json.loads(Path("gui-docs-sync-report.json").read_text(encoding="utf-8"))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write("## GUI documentation visual sync\n\n")
+              summary.write(f"Threshold: `{report['threshold']}`\n\n")
+              summary.write(f"Meaningful changes: **{report['changed_count']}** / {report['expected_count']}\n\n")
+              if report["changed"]:
+                  summary.write("Changed screenshots:\n")
+                  for item in report["changed"]:
+                      summary.write(f"- `{item['file']}` — delta `{item['delta']}`\n")
+              else:
+                  summary.write("All canonical screenshots are already visually current.\n")
+          PY
 
       - name: Commit screenshots on protected-sync branch
         id: commit
@@ -70,7 +98,7 @@ jobs:
 
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Screenshots already current."
+            echo "Screenshots already visually current."
             exit 0
           fi
 
@@ -88,7 +116,8 @@ jobs:
           body=$(cat <<'EOF'
           ## Automated GUI documentation refresh
           - generated from the successful packaged Windows GUI smoke on `main`
-          - contains exactly 12 light + 12 dark workflow screenshots
+          - validates the exact 12 light + 12 dark canonical workflow screenshots
+          - updates only screenshots whose normalized visual delta exceeds the CI noise threshold
           - no application code, release, tag, or version change
           - uses a PR because repository rules intentionally block direct writes to `main`
 
@@ -125,7 +154,7 @@ jobs:
             {
               echo "## GUI screenshot refresh branch ready"
               echo
-              echo "The screenshots were generated, validated, committed, and pushed successfully."
+              echo "The meaningful screenshot changes were generated, validated, committed, and pushed successfully."
               echo
               echo "Repository settings currently prevent the Actions GITHUB_TOKEN from creating a pull request."
               echo
