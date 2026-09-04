@@ -80,7 +80,6 @@ def save_env(values: dict[str, str], path: Path = ENV_FILE) -> None:
     if values.get("USE_KEYRING", "").lower() in {"1", "true", "yes"} and save_secrets(values):
         for name in SECRET_NAMES:
             values[name] = ""
-    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     temp = path.with_name(f"{path.name}.tmp")
     temp.write_text(build_env_text(values), encoding="utf-8")
     os.chmod(temp, 0o600)
@@ -139,42 +138,116 @@ def collect_settings(current: dict[str, str]) -> dict[str, str]:
     for provider in ("gemini","openai","anthropic"):
         if provider not in selected: continue
         print(f"\n{provider.upper()} keys (1 to 4):")
-        for index in range(1,5):
-            name=f"{provider.upper()}_API_KEY_{index}"
-            values[name]=ask_key(index,current.get(name,""),required=(index==1))
-    values["GEMINI_MODEL"] = choose_from_list("gemini", current.get("GEMINI_MODEL", default_model("gemini")), models_for("gemini"))
-    values["OPENAI_MODEL"] = choose_from_list("openai", current.get("OPENAI_MODEL", default_model("openai")), models_for("openai"))
-    values["OPENAI_BASE_URL"] = ask_text("OpenAI base URL (optional)", current.get("OPENAI_BASE_URL", ""))
-    values["ANTHROPIC_MODEL"] = choose_from_list("anthropic", current.get("ANTHROPIC_MODEL", default_model("anthropic")), models_for("anthropic"))
-    values["COST_PER_REQUEST"] = ask_number("Legacy estimated cost per request", current.get("COST_PER_REQUEST", "0"), 0, 1000)
-    values["VALIDATE_KEYS"] = ask_text("Validate keys before processing? (true/false)", current.get("VALIDATE_KEYS", "true"), True)
-    values["USE_KEYRING"] = ask_text("Store supported API keys in OS keyring? (true/false)", current.get("USE_KEYRING", "false"), True)
-    values["GEMINI_INPUT_COST_PER_MILLION"] = ask_number("Gemini input cost per 1M tokens", current.get("GEMINI_INPUT_COST_PER_MILLION", "0"), 0, 100000)
-    values["GEMINI_OUTPUT_COST_PER_MILLION"] = ask_number("Gemini output cost per 1M tokens", current.get("GEMINI_OUTPUT_COST_PER_MILLION", "0"), 0, 100000)
-    values["OPENAI_INPUT_COST_PER_MILLION"] = ask_number("OpenAI input cost per 1M tokens", current.get("OPENAI_INPUT_COST_PER_MILLION", "0"), 0, 100000)
-    values["OPENAI_OUTPUT_COST_PER_MILLION"] = ask_number("OpenAI output cost per 1M tokens", current.get("OPENAI_OUTPUT_COST_PER_MILLION", "0"), 0, 100000)
-    values["ANTHROPIC_INPUT_COST_PER_MILLION"] = ask_number("Anthropic input cost per 1M tokens", current.get("ANTHROPIC_INPUT_COST_PER_MILLION", "0"), 0, 100000)
-    values["ANTHROPIC_OUTPUT_COST_PER_MILLION"] = ask_number("Anthropic output cost per 1M tokens", current.get("ANTHROPIC_OUTPUT_COST_PER_MILLION", "0"), 0, 100000)
-    values["PRODUCT_SOURCE"] = ask_text("Default product source folder", current.get("PRODUCT_SOURCE", ""))
-    values["PRODUCT_OUTPUT"] = ask_text("Default product output folder", current.get("PRODUCT_OUTPUT", ""))
-    values["PRICES_FILE"] = ask_text("Default prices file", current.get("PRICES_FILE", ""))
-    values["BATCH_SIZE"] = ask_number("Batch size", current.get("BATCH_SIZE", "6"), 3, 8, integer=True)
-    values["CONFIDENCE"] = ask_number("Confidence threshold", current.get("CONFIDENCE", "0.75"), 0, 1)
-    values["MAX_RETRIES"] = ask_number("Max retries", current.get("MAX_RETRIES", "5"), 0, 20, integer=True)
-    values["PHOTO_LIMIT"] = ask_text("Default photo limit (blank = all)", current.get("PHOTO_LIMIT", ""))
+        for index in range(1, 5):
+            name = f"{provider.upper()}_API_KEY_{index}"
+            legacy=current.get(f"{provider.upper()}_API_KEY","") if index==1 else ""
+            values[name] = ask_key(index, current.get(name, "") or legacy, required=index == 1)
+    if "openai" in selected:
+        values["OPENAI_BASE_URL"] = ask_text("OpenAI-compatible base URL (optional)", current.get("OPENAI_BASE_URL", ""))
+
+    for provider in ("gemini", "openai", "anthropic"):
+        if provider not in selected:
+            continue
+        keys = [values.get(f"{provider.upper()}_API_KEY_{index}", "") for index in range(1, 5)]
+        try:
+            available = refresh_catalog_for_keys(provider, keys, values.get("OPENAI_BASE_URL", ""))
+            checked = sum(bool(key) for key in keys)
+            print(f"Downloaded {len(available)} models shared by all {checked} configured {provider.title()} keys.")
+        except Exception as exc:
+            available = models_for(provider)
+            print(f"Could not refresh {provider} models; using the saved JSON catalog. Reason: {exc}")
+        env_name = f"{provider.upper()}_MODEL"
+        fallback = default_model(provider) or (available[0] if available else current.get(env_name, ""))
+        values[env_name] = choose_from_list(provider, current.get(env_name, fallback), available)
+
+    source = ask_text(tr("source_path"), current.get("PRODUCT_SOURCE", ""), True)
+    values["PRODUCT_SOURCE"] = str(Path(source).expanduser())
+    default_output = current.get("PRODUCT_OUTPUT", "")
+    if not default_output:
+        default_output = str(Path(source).expanduser().parent / "Sorted_Products")
+    values["PRODUCT_OUTPUT"] = ask_text(tr("output_path"), default_output, True)
+    values["PRICES_FILE"] = ask_text(
+        tr("prices_path"), current.get("PRICES_FILE", "")
+    )
+    values["BATCH_SIZE"] = ask_number(
+        tr("batch_size"), current.get("BATCH_SIZE", "6"), 3, 8, True
+    )
+    values["CONFIDENCE"] = ask_number(
+        tr("confidence"), current.get("CONFIDENCE", "0.75"), 0, 1
+    )
+    values["MAX_RETRIES"] = ask_number(
+        tr("retries"), current.get("MAX_RETRIES", "5"), 0, 20, True
+    )
+    values["COST_PER_REQUEST"] = ask_number("Estimated cost per API request", current.get("COST_PER_REQUEST", "0"), 0, 1000)
+    values["VALIDATE_KEYS"] = ask_text("Validate API keys at startup (true/false)", current.get("VALIDATE_KEYS", "true"), True)
+    values["USE_KEYRING"] = ask_text("Store API keys in OS keyring (true/false)", current.get("USE_KEYRING", "false"), True)
+    values["PHOTO_LIMIT"] = ask_text(
+        tr("photo_limit"), current.get("PHOTO_LIMIT", "")
+    )
+    if values["PHOTO_LIMIT"] and not values["PHOTO_LIMIT"].isdigit():
+        print(tr("bad_photo_limit"))
+        values["PHOTO_LIMIT"] = ""
     return values
+
+
+def run_main(gui: bool = False) -> int:
+    print(f"\n{tr('running')}\n")
+    script = ROOT / ("product_sorter_gui.py" if gui else "product_sorter.py")
+    return subprocess.run([sys.executable, str(script)], cwd=ROOT).returncode
+
+
+def choose_interface_and_run() -> int:
+    print("\n[1] GUI / Tkinter")
+    print("[2] CLI / Terminal")
+    choice = menu(tr("choose_numbers", choices="1 / 2"), {"1", "2"})
+    return run_main(gui=choice == "1")
+
+
+def menu(prompt: str, valid: set[str]) -> str:
+    while True:
+        choice = input(prompt).strip()
+        if choice in valid:
+            return choice
+        print(tr("invalid"))
 
 
 def main() -> int:
     current = read_env(ENV_FILE)
-    language = confirm_language(current.get("APP_LANGUAGE") or get_language())
-    current["APP_LANGUAGE"] = language
-    refresh_catalog_for_keys(current)
+    if current.get("APP_LANGUAGE"):
+        os.environ.setdefault("APP_LANGUAGE", current["APP_LANGUAGE"])
+    language = confirm_language()
+    print("=" * 55)
+    print(tr("setup_title"))
+    print("=" * 55)
+    if ENV_FILE.is_file():
+        print(f"\n{tr('existing_env')}")
+        print(f"[1] {tr('edit_env')}")
+        print(f"[2] {tr('run_existing')}")
+        print(f"[3] {tr('new_env')}")
+        print(f"[4] {tr('exit')}")
+        choice = menu(tr("choose_numbers", choices="1 / 2 / 3 / 4"), {"1", "2", "3", "4"})
+        if choice == "2":
+            return choose_interface_and_run()
+        if choice == "3":
+            current = {}
+        if choice == "4":
+            return 0
+
     values = collect_settings(current)
     values["APP_LANGUAGE"] = language
+    print(f"\n{tr('what_next')}")
+    print(f"[1] {tr('save_only')}")
+    print(f"[2] {tr('save_run')}")
+    print(f"[3] {tr('cancel')}")
+    choice = menu(tr("choose_numbers", choices="1 / 2 / 3"), {"1", "2", "3"})
+    if choice == "3":
+        print(tr("cancelled"))
+        return 0
     save_env(values)
-    print(f"\n{tr('saved_to', path=ENV_FILE)}")
-    print(tr("run_cli", command=f'python "{MAIN_SCRIPT}"'))
+    print(tr("saved", path=ENV_FILE))
+    if choice == "2":
+        return choose_interface_and_run()
+    print(tr("run_later"))
     return 0
 
 
