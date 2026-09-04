@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-Name=Product Sorter Pro
-Comment=AI product photo organizer
+Name=CatalogMesh
+Comment=AI workspace for product catalog operations
 Exec=@INSTALL_DIR@/.venv/bin/python @INSTALL_DIR@/product_sorter_gui.py
 Path=@INSTALL_DIR@
 Terminal=false
