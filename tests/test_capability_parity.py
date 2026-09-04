@@ -3,7 +3,7 @@ import subprocess
 import sys
 import unittest
 
-from ai_product_photo_sorter import config_cli, gui, rclone_storage, storage_cli
+from ai_product_photo_sorter import config_cli, gui, reports_cli, rclone_storage, storage_cli
 from ai_product_photo_sorter.automation_gui import command_names
 from ai_product_photo_sorter.capabilities import (
     ALL_REAL_CAPABILITIES,
@@ -12,6 +12,7 @@ from ai_product_photo_sorter.capabilities import (
     required_automation_commands,
     required_config_commands,
     required_core_cli_flags,
+    required_report_commands,
     storage_automation_commands,
     storage_backend_callables,
     storage_cli_commands,
@@ -78,6 +79,10 @@ class CapabilityParityTests(unittest.TestCase):
     def test_environment_registry_matches_bounded_config_cli(self):
         commands = _subcommands(config_cli.build_parser())
         self.assertEqual(commands, set(required_config_commands()))
+
+    def test_reports_registry_matches_bounded_reports_cli(self):
+        commands = _subcommands(reports_cli.build_parser())
+        self.assertEqual(commands, set(required_report_commands()))
 
     def test_composed_core_cli_help_contains_registered_capability_flags(self):
         completed = subprocess.run(
