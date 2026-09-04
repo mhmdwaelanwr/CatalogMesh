@@ -146,7 +146,7 @@ jobs:
         if: runner.os == 'Linux'
         with:
           name: python-dists
-          path: dist/ai_product_photo_sorter-*
+          path: dist/catalogmesh-*
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v7
@@ -225,8 +225,8 @@ jobs:
         shell: bash
         run: |
           find artifact-check -maxdepth 1 -type f -print
-          test -n "$(find artifact-check -maxdepth 1 -type f -name '*.whl' -print -quit)"
-          test -n "$(find artifact-check -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+          test -n "$(find artifact-check -maxdepth 1 -type f -name 'catalogmesh-*.whl' -print -quit)"
+          test -n "$(find artifact-check -maxdepth 1 -type f -name 'catalogmesh-*.tar.gz' -print -quit)"
 
   release:
     name: Publish GitHub release
@@ -298,7 +298,7 @@ jobs:
           fail_on_unmatched_files: true
 
   publish-pypi:
-    name: Publish Python package to PyPI
+    name: Publish CatalogMesh to PyPI
     if: needs.release.outputs.released == 'true'
     needs:
       - build
@@ -306,7 +306,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/project/ai-product-photo-sorter/
+      url: https://pypi.org/project/catalogmesh/
     permissions:
       id-token: write
     steps:
