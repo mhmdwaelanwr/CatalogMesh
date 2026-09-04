@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "catalogmesh"
-version = "3.3.1"
+version = "3.3.2"
 description = "CatalogMesh multilingual AI workspace for product catalog operations, review, storage and guarded automation"
 readme = "PYPI_README.md"
 license = {file = "LICENSE"}
@@ -36,10 +36,10 @@ local-evidence = ["numpy>=1.26,<3", "rapidocr>=3.9,<4", "onnxruntime>=1.27,<2", 
 mcp = ["mcp>=2,<3"]
 
 [project.urls]
-Homepage = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter"
-Repository = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter"
-Issues = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter/issues"
-Changelog = "https://github.com/mhmdwaelanwr/ai-product-photo-sorter/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/mhmdwaelanwr/CatalogMesh"
+Repository = "https://github.com/mhmdwaelanwr/CatalogMesh"
+Issues = "https://github.com/mhmdwaelanwr/CatalogMesh/issues"
+Changelog = "https://github.com/mhmdwaelanwr/CatalogMesh/blob/main/CHANGELOG.md"
 
 [project.scripts]
 product-sorter = "ai_product_photo_sorter.cli:main"
