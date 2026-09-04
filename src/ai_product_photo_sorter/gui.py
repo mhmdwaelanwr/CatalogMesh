@@ -23,6 +23,7 @@ from .local_evidence_gui import apply_local_evidence_gui
 from .review_center_gui import apply_review_center_gui
 from .sku_matching_gui import apply_sku_matching_gui
 from .catalog_exports_gui import apply_catalog_exports_gui
+from .rclone_gui import apply_rclone_gui
 from .automation_gui import apply_automation_gui
 from .shopify_environment import prepare_shopify_environment_fields
 from .shopify_safety import install_shopify_export_guards
@@ -30,6 +31,8 @@ from .report_gui import apply_report_gui
 from .report_autoload import apply_report_autoload
 from .gui_polish import apply_gui_polish
 from .gui_workflow import apply_gui_workflow
+from .branding_gui import apply_branding_gui
+from .gui_i18n_runtime import apply_global_gui_i18n
 
 _impl.ROOT = runtime_root()
 prepare_ollama_environment_fields(_environment_gui)
@@ -37,6 +40,9 @@ prepare_hybrid_environment_fields(_environment_gui)
 prepare_performance_environment_fields(_environment_gui)
 prepare_shopify_environment_fields(_environment_gui)
 install_shopify_export_guards()
+# User-facing branding is intentionally independent from the stable v3.x
+# package/CLI/environment identifiers.
+apply_branding_gui(_impl)
 
 _REPORT_TEXT = {
     "en": (
@@ -167,6 +173,10 @@ apply_local_evidence_gui(_impl)
 apply_review_center_gui(_impl)
 apply_sku_matching_gui(_impl)
 apply_catalog_exports_gui(_impl)
+# Storage is local-first: the sorter still writes/resumes locally, then rclone
+# copies completed output to an already-configured remote. It is not exposed via
+# MCP and automatic mode never uses destructive sync semantics.
+apply_rclone_gui(_impl)
 # Automation Center is generated from automation_cli.build_parser(), so command
 # additions stay in GUI/CLI parity. Remote mutations still execute only through
 # the approval-aware connector functions used by the canonical CLI.
@@ -175,9 +185,12 @@ apply_report_gui(_impl)
 apply_report_autoload(_impl)
 # Install navigation/spacing polish after every feature workspace exists.
 apply_gui_polish(_impl)
-# Apply usage-first tab ordering and the Linux Arabic BiDi/shaping adapter last
-# so older language hooks can retain their internal tab-index assumptions.
+# Apply usage-first tab ordering and the Linux Arabic BiDi/shaping adapter after
+# every feature tab exists so older language hooks retain their index assumptions.
 apply_gui_workflow(_impl)
+# Final presentation pass: translate seeded/hardcoded widget text, notebook tabs,
+# headings, status variables and dialogs using every loaded three-language catalog.
+apply_global_gui_i18n(_impl)
 
 globals().update({name: getattr(_impl, name) for name in dir(_impl) if not name.startswith("_")})
 main = _impl.main
