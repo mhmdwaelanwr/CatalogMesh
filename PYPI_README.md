@@ -57,4 +57,4 @@ The historical package name `ai-product-photo-sorter`, legacy `product-sorter-*`
 
 Ready-to-run Windows, Linux and macOS artifacts are published on the GitHub Releases page for the project repository.
 
-Repository: https://github.com/mhmdwaelanwr/ai-product-photo-sorter
+Repository: https://github.com/mhmdwaelanwr/CatalogMesh
