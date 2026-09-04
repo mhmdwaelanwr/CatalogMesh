@@ -4,6 +4,15 @@ All notable project changes are documented here.
 
 ## Unreleased
 
+## 3.3.1 — 2026-09-04
+
+### Maintenance release
+
+- Synced the latest tested CatalogMesh desktop icon presentation layer and canonical packaged-Windows GUI documentation into the public release line.
+- Added a dedicated Windows launch guide covering the ready-to-run Windows ZIP/EXE and PyPI installation through `catalogmesh-gui`.
+- Kept the `ai-product-photo-sorter` PyPI name and legacy `ProductSorterPro` release artifact names for v3.x compatibility while retaining **CatalogMesh** as the user-facing product brand.
+- Preserved all existing human-review, connector approval/reservation, MCP, publication, and rclone safety boundaries.
+
 ## 3.3.0 — 2026-09-04
 
 ### CatalogMesh desktop and GUI/CLI parity
