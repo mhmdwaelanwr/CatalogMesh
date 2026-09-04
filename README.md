@@ -56,7 +56,7 @@ CLI parser + Automation Center form
 shared connector / safety implementation
 ```
 
-A CI test compares the complete GUI command catalog with the canonical CLI subcommand set so future command drift fails the test suite.
+The v3.3 capability registry also verifies the real workflow surfaces behind all 12 desktop workspaces. CI fails if a registered non-visual capability loses its GUI handler, CLI surface or bounded shared backend.
 
 ## Installation
 
@@ -72,9 +72,12 @@ Main entry points (the existing `product-sorter-*` names remain compatible; v3.3
 catalogmesh / product-sorter                         normal sorter CLI
 catalogmesh-gui / product-sorter-gui                 desktop GUI
 catalogmesh-setup / product-sorter-setup             guided setup
-catalogmesh-automation / product-sorter-automation   catalog / connector / storage CLI
+catalogmesh-config / product-sorter-config           bounded Environment/Storage settings CLI
+catalogmesh-reports / product-sorter-reports         bounded report discovery/preview CLI
+catalogmesh-storage / product-sorter-storage         first-class rclone Storage CLI
+catalogmesh-automation / product-sorter-automation   catalog / connector / workflow automation CLI
 catalogmesh-watch / product-sorter-watch             watched-folder daemon
-catalogmesh-mcp / product-sorter-mcp                 optional MCP server
+catalogmesh-mcp / product-sorter-mcp                 optional read-only/safe MCP server
 ```
 
 Optional local and MCP extras:
@@ -99,7 +102,7 @@ The stable `v3.2.0` release provides ready-to-run packages from the latest GitHu
 
 ## Test the unreleased source build
 
-To try the newest code from `main` before a public v3.3 release, use a virtual environment and install the repository in editable mode.
+To try the newest code from `main` before a public v3.3 release, use a virtual environment and install the repository in editable mode. The merged v3.3 parity work is already on `main`; no feature branch is required.
 
 ```bash
 git clone https://github.com/mhmdwaelanwr/ai-product-photo-sorter.git
@@ -116,7 +119,7 @@ Activate the environment, then install and run the desktop app.
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e .
-product-sorter-gui
+catalogmesh-gui
 ```
 
 ```powershell
@@ -124,24 +127,18 @@ product-sorter-gui
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -e .
-product-sorter-gui
+catalogmesh-gui
 ```
 
 Useful smoke checks before using real product data:
 
 ```bash
-product-sorter-automation --help
-product-sorter-automation scan ./your-test-photo-folder
+catalogmesh --help
+catalogmesh-automation --help
+catalogmesh-storage version
+catalogmesh-config list
 python -m unittest discover -s tests -t . -v
 python -m compileall -q src product_sorter.py product_sorter_gui.py set_data.py scripts
-```
-
-To test the current CatalogMesh / Storage / i18n branch before it reaches `main`:
-
-```bash
-git fetch origin feat/v3.3-catalogmesh-storage-i18n
-git checkout feat/v3.3-catalogmesh-storage-i18n
-git pull --ff-only
 ```
 
 Do not use production Shopify/Akeneo/Odoo credentials while casually testing the GUI. Local scan, review, SKU matching, offline exports, Storage dry-runs and command previews are enough to validate most of the workflow without external catalog mutation.
@@ -174,7 +171,18 @@ The Storage workspace includes remote discovery, connectivity testing, dry-run p
 
 CatalogMesh does not parse or own the rclone credential file and does not start the rclone remote-control HTTP server. Storage actions are not exposed through MCP.
 
-The same functional storage surface is available from the automation CLI:
+The primary terminal surface is the first-class Storage CLI:
+
+```bash
+catalogmesh-storage version
+catalogmesh-storage remotes
+catalogmesh-storage test gdrive:CatalogMesh
+catalogmesh-storage dry-run ./Sorted_Products gdrive:CatalogMesh --bwlimit 10M --transfers 4 --checkers 8
+catalogmesh-storage copy ./Sorted_Products gdrive:CatalogMesh
+catalogmesh-storage sync ./Sorted_Products gdrive:CatalogMesh --confirm "SYNC gdrive:CatalogMesh"
+```
+
+The older Automation Center aliases remain available and call the same bounded backend:
 
 ```bash
 catalogmesh-automation storage-version
@@ -182,12 +190,37 @@ catalogmesh-automation storage-remotes
 catalogmesh-automation storage-test gdrive: --remote-path CatalogMesh
 catalogmesh-automation storage-dry-run ./Sorted_Products gdrive: --remote-path CatalogMesh
 catalogmesh-automation storage-copy ./Sorted_Products gdrive: --remote-path CatalogMesh
-catalogmesh-automation storage-sync ./Sorted_Products gdrive: --remote-path CatalogMesh --confirm-sync
+catalogmesh-automation storage-sync ./Sorted_Products gdrive: --remote-path CatalogMesh --confirm-sync "SYNC gdrive:CatalogMesh"
 ```
 
-`storage-sync` deliberately requires `--confirm-sync`. CLI transfer output streams through the same rclone backend used by the GUI; terminal interruption provides cancellation while the GUI exposes a Cancel button.
+Manual Sync requires the exact full-target confirmation. Automatic post-sort transfer is forced to **Copy** even if the configured manual mode is `sync`, and failed/ambiguous automatic writes are not blindly retried in the same process.
 
 See [Storage Center / rclone](docs/STORAGE_RCLONE.md) for the detailed safety model and settings.
+
+## Environment / configuration CLI
+
+The desktop Environment workspace has a bounded terminal counterpart:
+
+```bash
+catalogmesh-config list
+catalogmesh-config get APP_THEME
+catalogmesh-config set APP_THEME dark
+catalogmesh-config set-secret GEMINI_API_KEY_1
+catalogmesh-config unset GEMINI_API_KEY_1
+```
+
+Secrets are masked in output and secret values are read through a hidden prompt rather than passed on the normal command line. Destructive credential/config operations require exact confirmation phrases. The command is deliberately a fixed CatalogMesh settings surface, not a generic shell or environment executor.
+
+## Reports CLI
+
+Reports generated by the sorter can be discovered and previewed without opening arbitrary files:
+
+```bash
+catalogmesh-reports list ./Sorted_Products
+catalogmesh-reports show ./Sorted_Products SMART_REPORT.md
+```
+
+`show` accepts only report paths discovered by the shared report backend and retains the desktop preview size limit.
 
 ## Internationalization
 
@@ -201,17 +234,20 @@ Unknown technical exception details are intentionally not machine-translated at 
 
 Current automation commands are defined once in `src/ai_product_photo_sorter/automation_cli.py` and are exposed by both the terminal entry point and the desktop Automation Center.
 
-Examples:
+Local workflow examples:
 
 ```bash
-product-sorter-automation scan ./shoot
-product-sorter-automation missing-assets ./catalog.xlsx
-product-sorter-automation missing-local ./catalog.xlsx ./shoot
-product-sorter-automation propose-matches approved_groups.csv catalog.xlsx --top-k 5
-product-sorter-automation open-review-queue review_manifest.json
-product-sorter-automation prepare-shopify-draft sku_match_manifest.json
-product-sorter-automation prepare-connector-plan export_manifest.json profile.json
+catalogmesh-automation scan ./shoot
+catalogmesh-automation missing-assets ./catalog.xlsx
+catalogmesh-automation missing-local ./catalog.xlsx ./shoot
+catalogmesh-automation review-init ./Sorted_Products
+catalogmesh-automation review-summary review_manifest.json
+catalogmesh-automation sku-generate review_manifest.json catalog.xlsx
+catalogmesh-automation export-catalog sku_match_manifest.json --output ./exports --profile all
+catalogmesh-automation prepare-connector-plan export_manifest.json profile.json
 ```
+
+Review/SKU operations remain human-controlled. Review corrections and approval operate on review metadata; SKU confirmation still requires an explicit human choice. Offline export commands do not publish externally.
 
 Approval lifecycle commands are also available in both surfaces:
 
@@ -256,21 +292,26 @@ Local approval artifacts provide integrity checks for the expected local workflo
 
 ## Desktop GUI
 
-The desktop app includes Operation setup, Models/API, Results, Review, SKU Match, Exports, Storage, Automation, Reports, Benchmark, Environment and About workspaces.
+The desktop app includes all 12 daily-workflow workspaces in this order: Operation setup, Models & API keys, Results & activity, Review, SKU Match, Exports, Storage, Automation, Reports, Benchmark, Environment and About.
 
 The v3.3 source UI adds compact workspace navigation for crowded tab sets and vertically scrollable feature workspaces. Use the header Workspace picker, `Ctrl+Tab` / `Ctrl+Shift+Tab`, or `Alt+W` to move quickly between workspaces on smaller displays.
 
-Light/dark packaged-Windows screenshots are generated by CI. After a successful `main` build, the `gui-docs-sync` workflow downloads the real executable smoke-test artifact and refreshes `docs/screenshots/ci/windows/` automatically, so README screenshots do not depend on manual captures.
+Light/dark packaged-Windows screenshots are generated by CI from the real packaged executable. After a successful `main` build, `gui-docs-sync` refreshes `docs/screenshots/ci/windows/` from that smoke-test artifact.
 
 | Workspace | Light | Dark |
 |---|---|---|
 | **Operation** | ![Operation light](docs/screenshots/ci/windows/light-01-operation.png) | ![Operation dark](docs/screenshots/ci/windows/dark-01-operation.png) |
 | **Models** | ![Models light](docs/screenshots/ci/windows/light-02-models.png) | ![Models dark](docs/screenshots/ci/windows/dark-02-models.png) |
 | **Results** | ![Results light](docs/screenshots/ci/windows/light-03-results.png) | ![Results dark](docs/screenshots/ci/windows/dark-03-results.png) |
-| **Benchmark** | ![Benchmark light](docs/screenshots/ci/windows/light-04-benchmark.png) | ![Benchmark dark](docs/screenshots/ci/windows/dark-04-benchmark.png) |
-| **Environment** | ![Environment light](docs/screenshots/ci/windows/light-05-environment.png) | ![Environment dark](docs/screenshots/ci/windows/dark-05-environment.png) |
-| **Reports** | ![Reports light](docs/screenshots/ci/windows/light-06-reports.png) | ![Reports dark](docs/screenshots/ci/windows/dark-06-reports.png) |
-| **About** | ![About light](docs/screenshots/ci/windows/light-07-about.png) | ![About dark](docs/screenshots/ci/windows/dark-07-about.png) |
+| **Review** | ![Review light](docs/screenshots/ci/windows/light-04-review.png) | ![Review dark](docs/screenshots/ci/windows/dark-04-review.png) |
+| **SKU Match** | ![SKU Match light](docs/screenshots/ci/windows/light-05-sku-match.png) | ![SKU Match dark](docs/screenshots/ci/windows/dark-05-sku-match.png) |
+| **Exports** | ![Exports light](docs/screenshots/ci/windows/light-06-exports.png) | ![Exports dark](docs/screenshots/ci/windows/dark-06-exports.png) |
+| **Storage** | ![Storage light](docs/screenshots/ci/windows/light-07-storage.png) | ![Storage dark](docs/screenshots/ci/windows/dark-07-storage.png) |
+| **Automation** | ![Automation light](docs/screenshots/ci/windows/light-08-automation.png) | ![Automation dark](docs/screenshots/ci/windows/dark-08-automation.png) |
+| **Reports** | ![Reports light](docs/screenshots/ci/windows/light-09-reports.png) | ![Reports dark](docs/screenshots/ci/windows/dark-09-reports.png) |
+| **Benchmark** | ![Benchmark light](docs/screenshots/ci/windows/light-10-benchmark.png) | ![Benchmark dark](docs/screenshots/ci/windows/dark-10-benchmark.png) |
+| **Environment** | ![Environment light](docs/screenshots/ci/windows/light-11-environment.png) | ![Environment dark](docs/screenshots/ci/windows/dark-11-environment.png) |
+| **About** | ![About light](docs/screenshots/ci/windows/light-12-about.png) | ![About dark](docs/screenshots/ci/windows/dark-12-about.png) |
 
 ## Project layout
 
@@ -279,9 +320,14 @@ Light/dark packaged-Windows screenshots are generated by CI. After a successful 
 ├── src/ai_product_photo_sorter/   canonical application package
 │   ├── core.py                    shared sorter facade
 │   ├── gui.py                     desktop composition
+│   ├── capabilities.py            12-workspace GUI/CLI capability registry
 │   ├── branding*.py               CatalogMesh display-brand layer
 │   ├── gui_i18n_runtime.py        final three-language GUI translation pass
+│   ├── config_cli.py              bounded Environment/Storage settings CLI
+│   ├── reports_cli.py             bounded report discovery/preview CLI
+│   ├── storage_cli.py             first-class rclone Storage CLI
 │   ├── rclone_storage.py          safe local-first rclone transfer core
+│   ├── rclone_autocopy.py         copy-only terminal post-run storage hook
 │   ├── rclone_gui.py              translated Storage Center
 │   ├── automation_cli.py          canonical automation command parser
 │   ├── automation_gui.py          parser-driven, scrollable Automation Center
