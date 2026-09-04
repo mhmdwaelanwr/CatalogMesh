@@ -33,7 +33,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install visual diff dependency
+      - name: Install visual documentation dependencies
         run: python -m pip install --disable-pip-version-check "Pillow>=10,<13"
 
       - name: Download GUI screenshot artifact from build workflow
@@ -82,7 +82,18 @@ jobs:
                   summary.write("All canonical screenshots are already visually current.\n")
           PY
 
-      - name: Commit screenshots on protected-sync branch
+      - name: Generate README hero from canonical screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/generate_readme_hero.py \
+            --source-dir docs/screenshots/ci/windows \
+            --output docs/screenshots/ci/windows/readme-hero.png
+
+          test -s docs/screenshots/ci/windows/readme-hero.png
+          echo "README hero generated from Operation, Review, Storage and Automation canonical captures." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit screenshots and README hero on protected-sync branch
         id: commit
         shell: bash
         run: |
@@ -91,19 +102,20 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           # PNG is globally ignored for user catalog media. CI documentation images
-          # are an intentional exception and must be force-added when first created.
+          # are intentional exceptions and must be force-added when first created.
           git add -A docs/screenshots/ci/windows
           git add -f docs/screenshots/ci/windows/light-[0-9][0-9]-*.png
           git add -f docs/screenshots/ci/windows/dark-[0-9][0-9]-*.png
+          git add -f docs/screenshots/ci/windows/readme-hero.png
 
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Screenshots already visually current."
+            echo "Screenshots and README hero are already visually current."
             exit 0
           fi
 
           git checkout -B "$SYNC_BRANCH"
-          git commit -m "docs: refresh GUI screenshots from CI"
+          git commit -m "docs: refresh GUI screenshots and README hero from CI"
           git push --force-with-lease origin "HEAD:refs/heads/$SYNC_BRANCH"
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
@@ -118,7 +130,8 @@ jobs:
           - generated from the successful packaged Windows GUI smoke on `main`
           - validates the exact 12 light + 12 dark canonical workflow screenshots
           - updates only screenshots whose normalized visual delta exceeds the CI noise threshold
-          - no application code, release, tag, or version change
+          - regenerates the README hero from the canonical Operation, Review, Storage and Automation captures
+          - no application code, release, tag, version or publishing change
           - uses a PR because repository rules intentionally block direct writes to `main`
 
           The normal repository status checks and review/merge rules still apply.
@@ -127,7 +140,7 @@ jobs:
 
           if [ -n "$existing" ]; then
             gh pr edit "$existing" \
-              --title "docs: refresh packaged Windows GUI screenshots" \
+              --title "docs: refresh packaged Windows GUI screenshots and README hero" \
               --body "$body"
             echo "Updated screenshot PR #$existing"
             exit 0
@@ -137,7 +150,7 @@ jobs:
           create_output="$(gh pr create \
             --base main \
             --head "$SYNC_BRANCH" \
-            --title "docs: refresh packaged Windows GUI screenshots" \
+            --title "docs: refresh packaged Windows GUI screenshots and README hero" \
             --body "$body" 2>&1)"
           create_status=$?
           set -e
@@ -152,9 +165,9 @@ jobs:
             compare_url="https://github.com/${GITHUB_REPOSITORY}/compare/main...${encoded_branch}?expand=1"
             echo "::warning::Repository settings prevent GITHUB_TOKEN from creating pull requests. The refreshed screenshot branch is ready: $compare_url"
             {
-              echo "## GUI screenshot refresh branch ready"
+              echo "## GUI documentation refresh branch ready"
               echo
-              echo "The meaningful screenshot changes were generated, validated, committed, and pushed successfully."
+              echo "Meaningful screenshot/README hero changes were generated, validated, committed, and pushed successfully."
               echo
               echo "Repository settings currently prevent the Actions GITHUB_TOKEN from creating a pull request."
               echo
