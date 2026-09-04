@@ -29,6 +29,7 @@ class WorkflowCapability:
     gui_method: str
     core_cli_flags: tuple[str, ...] = ()
     automation_commands: tuple[str, ...] = ()
+    config_commands: tuple[str, ...] = ()
     visual_only: bool = False
 
 
@@ -89,7 +90,8 @@ WORKFLOW_CAPABILITIES = (
         core_cli_flags=("--benchmark",),
     ),
     WorkflowCapability(
-        "environment.configure", "Environment", "catalogmesh-setup", "save_environment",
+        "environment.configure", "Environment", "catalogmesh-config / catalogmesh-setup", "save_environment",
+        config_commands=("list", "get", "set", "set-secret", "unset", "clear-api-keys", "delete"),
     ),
     WorkflowCapability(
         "about.display", "About", "n/a", "copy_contact", visual_only=True,
@@ -118,6 +120,26 @@ INTERNAL_CAPABILITIES = (
     WorkflowCapability(
         "performance.preprocessing", "Environment", "catalogmesh --preprocess-workers", "command",
         core_cli_flags=("--preprocess-workers", "--preprocess-memory-mb", "--image-cache-entries"),
+    ),
+    WorkflowCapability(
+        "environment.reload", "Environment", "catalogmesh-config list", "reload_environment",
+        config_commands=("list",),
+    ),
+    WorkflowCapability(
+        "environment.set", "Environment", "catalogmesh-config set/set-secret", "set_environment_value",
+        config_commands=("set", "set-secret"),
+    ),
+    WorkflowCapability(
+        "environment.clear_value", "Environment", "catalogmesh-config unset", "clear_environment_value",
+        config_commands=("unset",),
+    ),
+    WorkflowCapability(
+        "environment.clear_keys", "Environment", "catalogmesh-config clear-api-keys", "clear_environment_keys",
+        config_commands=("clear-api-keys",),
+    ),
+    WorkflowCapability(
+        "environment.delete", "Environment", "catalogmesh-config delete", "delete_environment",
+        config_commands=("delete",),
     ),
     WorkflowCapability(
         "local_evidence.generate", "Benchmark", "catalogmesh --local-evidence", "run_local_evidence",
@@ -158,6 +180,14 @@ def required_automation_commands() -> frozenset[str]:
         command
         for capability in ALL_REAL_CAPABILITIES
         for command in capability.automation_commands
+    )
+
+
+def required_config_commands() -> frozenset[str]:
+    return frozenset(
+        command
+        for capability in ALL_REAL_CAPABILITIES
+        for command in capability.config_commands
     )
 
 
