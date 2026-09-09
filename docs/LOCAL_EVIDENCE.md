@@ -1,15 +1,15 @@
 # Local OCR + Barcode Evidence
 
-Product Sorter can collect catalog-identification evidence from product photos entirely on the local machine before any future SKU/catalog matching step.
+CatalogMesh can collect catalog-identification evidence from product photos entirely on the local machine before any future SKU/catalog matching step.
 
 This stage is intentionally **evidence-only**. It does not change product grouping, choose a catalog row, rename a product from a detected code, or publish anything.
 
 ## Optional local runtime
 
-The default Product Sorter install remains lightweight. Install the evidence runtime only when needed:
+The default CatalogMesh install remains lightweight. Install the evidence runtime only when needed:
 
 ```bash
-python -m pip install "ai-product-photo-sorter[local-evidence]"
+python -m pip install "catalogmesh[local-evidence]"
 ```
 
 The optional extra contains:
@@ -45,10 +45,12 @@ A decoded barcode is high-value deterministic evidence, but it is still only a c
 ## CLI
 
 ```bash
-product-sorter \
+catalogmesh \
   --local-evidence /path/to/product-photos \
   --local-evidence-output ./local-evidence
 ```
+
+The historical `product-sorter` command remains available as a v3.x compatibility alias.
 
 Optional controls:
 
@@ -98,5 +100,3 @@ The evidence layer does not decide that two photos belong together and does not 
 ## Why this matters for the hybrid pipeline
 
 Visual embeddings answer **"does this look like the same product?"** while OCR/barcodes can answer **"what printed identifier evidence is visible?"**.
-
-Combining those signals later allows Product Sorter to distinguish visually similar variants more reliably and gives SKU matching deterministic evidence before asking a Vision LLM or a human reviewer.

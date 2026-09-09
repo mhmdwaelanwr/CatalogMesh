@@ -23,7 +23,7 @@ Version: $version
 Architecture: all
 Depends: python3 (>= 3.10), python3-venv, python3-tk
 Maintainer: Mohamed Anwar
-Homepage: https://github.com/mhmdwaelanwr/ai-product-photo-sorter
+Homepage: https://github.com/mhmdwaelanwr/CatalogMesh
 Description: Multilingual AI product photo sorter
 EOF
 cat > "$root/usr/bin/product-sorter-pro" <<'EOF'
